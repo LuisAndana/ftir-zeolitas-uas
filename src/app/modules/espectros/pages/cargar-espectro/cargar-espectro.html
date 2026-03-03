@@ -1,1 +1,67 @@
-<p>cargar-espectro works!</p>
+<div class="cargar-container">
+  <h2>Cargar Espectro FTIR</h2>
+  <p class="subtitle">Sube un archivo CSV, TXT, XLSX o JSON con tus datos espectrales</p>
+
+  <!-- Zona de carga -->
+  <div class="upload-zone">
+    <input 
+      #fileInput
+      type="file" 
+      id="fileInput" 
+      (change)="onFileSelected($event)"
+      accept=".csv,.txt,.xlsx,.json"
+      hidden>
+    
+    <button class="upload-btn" (click)="fileInput.click()" [disabled]="uploading">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="17 8 12 3 7 8"/>
+        <line x1="12" y1="3" x2="12" y2="15"/>
+      </svg>
+      <span *ngIf="!uploading">Seleccionar Archivo</span>
+      <span *ngIf="uploading">Cargando...</span>
+    </button>
+  </div>
+
+  <!-- Mensajes -->
+  <div *ngIf="errorMessage" class="alert error">
+    {{ errorMessage }}
+  </div>
+  <div *ngIf="successMessage" class="alert success">
+    {{ successMessage }}
+  </div>
+
+  <!-- Lista de espectros -->
+  <div class="spectra-list" *ngIf="spectra.length > 0">
+    <h3>Espectros Cargados ({{ spectra.length }})</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Nombre</th>
+          <th>Fecha</th>
+          <th>Puntos</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let spectrum of spectra">
+          <td>{{ spectrum.filename }}</td>
+          <td>{{ spectrum.uploadedDate | date: 'short' }}</td>
+          <td>{{ spectrum.data.length }}</td>
+          <td>
+            <a routerLink="/dashboard/busqueda" [queryParams]="{spectrum: spectrum.id}" class="action-link">
+              Buscar
+            </a>
+            <button class="action-link delete" (click)="deleteSpectrum(spectrum.id)">
+              Eliminar
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div *ngIf="spectra.length === 0" class="empty-state">
+    <p>No hay espectros cargados aún</p>
+  </div>
+</div>

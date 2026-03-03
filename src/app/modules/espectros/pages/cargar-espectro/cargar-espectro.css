@@ -1,0 +1,156 @@
+.cargar-container {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+h2 {
+  color: #0F172A;
+  margin-bottom: 0.5rem;
+}
+
+.subtitle {
+  color: #6B7280;
+  margin-bottom: 2rem;
+}
+
+.upload-zone {
+  background: #f8fafc;
+  border: 2px dashed #2E75B6;
+  border-radius: 0.75rem;
+  padding: 3rem 2rem;
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.upload-btn {
+  background: linear-gradient(135deg, #2E75B6, #1F4E79);
+  color: white;
+  border: none;
+  padding: 1rem 2rem;
+  border-radius: 0.75rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  transition: all 0.2s ease;
+}
+
+.upload-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(46, 117, 182, 0.3);
+}
+
+.upload-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.upload-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+.alert {
+  padding: 1rem;
+  border-radius: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.alert.error {
+  background: #FEE2E2;
+  color: #DC2626;
+  border: 1px solid #FECACA;
+}
+
+.alert.success {
+  background: #DCFCE7;
+  color: #166534;
+  border: 1px solid #BBF7D0;
+}
+
+.spectra-list {
+  margin-top: 2rem;
+}
+
+.spectra-list h3 {
+  color: #0F172A;
+  margin-bottom: 1rem;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+thead {
+  background: #f8fafc;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+th {
+  padding: 1rem;
+  text-align: left;
+  font-weight: 600;
+  color: #374151;
+}
+
+td {
+  padding: 1rem;
+  border-bottom: 1px solid #e5e7eb;
+  color: #6B7280;
+}
+
+tbody tr:hover {
+  background: #f9fafb;
+}
+
+.action-link {
+  background: none;
+  border: none;
+  color: #2E75B6;
+  cursor: pointer;
+  text-decoration: underline;
+  font-weight: 500;
+  margin-right: 1rem;
+  transition: color 0.2s ease;
+}
+
+.action-link:hover {
+  color: #1F4E79;
+}
+
+.action-link.delete {
+  color: #EF4444;
+}
+
+.action-link.delete:hover {
+  color: #DC2626;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 3rem 2rem;
+  color: #9CA3AF;
+  background: #f8fafc;
+  border-radius: 0.75rem;
+}
+
+@media (max-width: 640px) {
+  .cargar-container {
+    margin: 0;
+  }
+
+  table {
+    font-size: 0.875rem;
+  }
+
+  th, td {
+    padding: 0.75rem 0.5rem;
+  }
+}

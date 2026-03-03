@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
 import { LoginModal } from '../../components/login-modal/login-modal';
 import { RegisterModal } from '../../components/register-modal/register-modal';
 
@@ -15,6 +16,8 @@ export class WelcomeComponent implements OnInit {
   showRegisterModal = false;
   currentUser: any = null;
 
+  constructor(private router: Router) {}
+
   ngOnInit() {
     // Verificar si hay usuario logueado
     this.checkCurrentUser();
@@ -26,8 +29,8 @@ export class WelcomeComponent implements OnInit {
       try {
         this.currentUser = JSON.parse(user);
         console.log('Usuario autenticado:', this.currentUser);
-        // Aquí redirigir al dashboard
-        // this.router.navigate(['/dashboard']);
+        // Redirigir al dashboard
+        this.router.navigate(['/dashboard']);
       } catch (e) {
         console.error('Error al cargar usuario:', e);
       }
@@ -53,8 +56,11 @@ export class WelcomeComponent implements OnInit {
   handleLoginSuccess(event: { email: string; name: string }) {
     console.log('✅ Login exitoso:', event.name);
     this.currentUser = event;
+    this.showLoginModal = false;
     // Redirigir al dashboard
-    // this.router.navigate(['/dashboard']);
+    setTimeout(() => {
+      this.router.navigate(['/dashboard']);
+    }, 500);
   }
 
   handleRegisterSuccess(event: { email: string; name: string }) {

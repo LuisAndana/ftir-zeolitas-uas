@@ -1,11 +1,86 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { RouterLink } from '@angular/router';
+import { EspectroLoaderService } from '../../../../core/services/espectro-loader.service';
 
 @Component({
   selector: 'app-cargar-espectro',
-  imports: [],
+  standalone: true,
+  imports: [CommonModule, RouterLink],
   templateUrl: './cargar-espectro.html',
-  styleUrl: './cargar-espectro.css',
+  styleUrl: './cargar-espectro.css'
 })
-export class CargarEspectro {
+export class CargarEspectro implements OnInit {
+  
+  @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
+  
+  spectra: any[] = [];
+  uploading = false;
+  errorMessage = '';
+  successMessage = '';
 
+  constructor(private espectroLoader: EspectroLoaderService) {}
+
+  ngOnInit() {
+    this.loadSpectra();
+  }
+
+  loadSpectra() {
+    this.spectra = this.espectroLoader.getAllSpectra();
+  }
+
+  /**
+   * CU-F-001: Cargar archivo
+   */
+  onFileSelected(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+
+    if (!file) return;
+
+    this.errorMessage = '';
+    this.successMessage = '';
+    this.uploading = true;
+
+    // Validar extensión
+    const validExtensions = ['.csv', '.txt', '.xlsx', '.json'];
+    const filename = file.name.toLowerCase();
+    const isValid = validExtensions.some(ext => filename.endsWith(ext));
+
+    if (!isValid) {
+      this.errorMessage = `Formato no soportado. Use: ${validExtensions.join(', ')}`;
+      this.uploading = false;
+      return;
+    }
+
+    // Validar tamaño (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      this.errorMessage = 'Archivo muy grande (máximo 5MB)';
+      this.uploading = false;
+      return;
+    }
+
+    // Cargar archivo
+    this.espectroLoader.loadSpectrumFile(file)
+      .then(spectrum => {
+        console.log('✅ Espectro cargado:', spectrum);
+        this.successMessage = `Espectro "${file.name}" cargado correctamente`;
+        this.loadSpectra();
+        input.value = '';
+      })
+      .catch(error => {
+        console.error('❌ Error:', error);
+        this.errorMessage = `Error al cargar: ${error}`;
+      })
+      .finally(() => {
+        this.uploading = false;
+      });
+  }
+
+  deleteSpectrum(id: string) {
+    if (confirm('¿Estás seguro de eliminar este espectro?')) {
+      this.espectroLoader.deleteSpectrum(id);
+      this.loadSpectra();
+    }
+  }
 }
