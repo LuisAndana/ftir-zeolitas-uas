@@ -1,0 +1,67 @@
+:host {
+  display: block;
+}
+
+/* Contenedor general */
+mat-dialog-content {
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+
+/* Título */
+h2 {
+  text-align: center;
+  font-weight: 600;
+  color: #2E75B6; /* Azul UAS */
+  margin-bottom: 10px;
+}
+
+/* Campos */
+.full-width {
+  width: 100%;
+  margin-bottom: 15px;
+}
+
+/* Botones */
+mat-dialog-actions {
+  margin-top: 10px;
+}
+
+/* Botón principal */
+button[color="primary"] {
+  background-color: #2E75B6 !important;
+  color: white !important;
+  border-radius: 8px;
+  padding: 6px 20px;
+  font-weight: 500;
+}
+
+/* Botón cancelar */
+button[mat-button] {
+  color: #555;
+}
+
+/* Hover efecto profesional */
+button[color="primary"]:hover {
+  background-color: #1F4E79 !important;
+}
+
+/* Animación suave */
+.mat-mdc-dialog-container {
+  border-radius: 16px !important;
+}
+
+/* Inputs más elegantes */
+.mat-mdc-form-field {
+  font-size: 14px;
+}
+
+/* Ajuste para modo oscuro */
+.dark-theme h2 {
+  color: #FFC107; /* Dorado UAS en dark */
+}
+
+.dark-theme .mat-mdc-dialog-container {
+  background-color: #1E1E1E !important;
+  color: white;
+}

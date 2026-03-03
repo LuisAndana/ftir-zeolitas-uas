@@ -1,1 +1,35 @@
-/* You can add global styles to this file, and also import other style files */
+@import "@angular/material/prebuilt-themes/indigo-pink.css";
+
+/* Colores UAS personalizados */
+:root {
+  --uas-primary: #2E75B6;
+  --uas-secondary: #1F4E79;
+  --uas-accent: #FFC107;
+}
+
+/* Navbar */
+.mat-toolbar {
+  background-color: var(--uas-primary) !important;
+  color: white !important;
+}
+
+/* Botones principales */
+.mat-mdc-raised-button.mat-primary {
+  background-color: var(--uas-primary) !important;
+}
+
+/* Acentos */
+.mat-mdc-button.mat-accent {
+  background-color: var(--uas-accent) !important;
+}
+
+.dark-theme {
+  background-color: #121212;
+  color: white;
+}
+
+.dark-theme .mat-toolbar {
+  background-color: #1F4E79 !important;
+}
+html, body { height: 100%; }
+body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }

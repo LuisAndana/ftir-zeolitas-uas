@@ -1,0 +1,57 @@
+<h2 mat-dialog-title>Crear Cuenta</h2>
+
+<mat-dialog-content>
+
+  <form #registerForm="ngForm">
+
+    <!-- Nombre -->
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Nombre Completo</mat-label>
+      <input 
+        matInput
+        type="text"
+        name="name"
+        [(ngModel)]="name"
+        required>
+    </mat-form-field>
+
+    <!-- Email -->
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Correo Electrónico</mat-label>
+      <input 
+        matInput
+        type="email"
+        name="email"
+        [(ngModel)]="email"
+        required
+        email>
+    </mat-form-field>
+
+    <!-- Contraseña -->
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Contraseña</mat-label>
+      <input 
+        matInput
+        type="password"
+        name="password"
+        [(ngModel)]="password"
+        required>
+    </mat-form-field>
+
+  </form>
+
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button mat-dialog-close>
+    Cancelar
+  </button>
+
+  <button 
+    mat-raised-button 
+    color="primary"
+    [disabled]="!registerForm.valid"
+    (click)="register()">
+    Registrarse
+  </button>
+</mat-dialog-actions>
