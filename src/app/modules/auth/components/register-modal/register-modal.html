@@ -1,57 +1,172 @@
-<h2 mat-dialog-title>Crear Cuenta</h2>
+<div class="modal-overlay" (click)="closeModal()">
+  <div class="modal-card" (click)="$event.stopPropagation()">
+    
+    <!-- Header -->
+    <div class="modal-header">
+      <h2 class="modal-title">Crear Cuenta</h2>
+      <button class="modal-close" (click)="closeModal()" aria-label="Cerrar">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
 
-<mat-dialog-content>
+    <p class="modal-subtitle">Únete a nuestra comunidad de investigadores</p>
 
-  <form #registerForm="ngForm">
+    <!-- Mensaje de Error -->
+    <div class="error-message" *ngIf="errorMessage">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="12" y1="8" x2="12" y2="12"/>
+        <line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      {{ errorMessage }}
+    </div>
 
-    <!-- Nombre -->
-    <mat-form-field appearance="outline" class="full-width">
-      <mat-label>Nombre Completo</mat-label>
-      <input 
-        matInput
-        type="text"
-        name="name"
-        [(ngModel)]="name"
-        required>
-    </mat-form-field>
+    <!-- Formulario -->
+    <form (ngSubmit)="register()" class="register-form">
 
-    <!-- Email -->
-    <mat-form-field appearance="outline" class="full-width">
-      <mat-label>Correo Electrónico</mat-label>
-      <input 
-        matInput
-        type="email"
-        name="email"
-        [(ngModel)]="email"
-        required
-        email>
-    </mat-form-field>
+      <!-- Nombre Completo -->
+      <div class="form-group">
+        <label for="name" class="form-label">Nombre Completo</label>
+        <div class="input-wrapper">
+          <svg class="input-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
+          <input 
+            id="name"
+            type="text"
+            [(ngModel)]="name"
+            name="name"
+            placeholder="Juan Pérez"
+            required
+            minlength="3">
+        </div>
+        <span class="form-error" *ngIf="name && name.length < 3">Nombre muy corto</span>
+      </div>
 
-    <!-- Contraseña -->
-    <mat-form-field appearance="outline" class="full-width">
-      <mat-label>Contraseña</mat-label>
-      <input 
-        matInput
-        type="password"
-        name="password"
-        [(ngModel)]="password"
-        required>
-    </mat-form-field>
+      <!-- Email -->
+      <div class="form-group">
+        <label for="email" class="form-label">Correo Electrónico</label>
+        <div class="input-wrapper">
+          <svg class="input-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="2" y="4" width="20" height="16" rx="2"/>
+            <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+          </svg>
+          <input 
+            id="email"
+            type="email"
+            [(ngModel)]="email"
+            name="email"
+            placeholder="usuario@ejemplo.com"
+            required>
+        </div>
+        <span class="form-error" *ngIf="email && !isValidEmail(email)">Email inválido</span>
+      </div>
 
-  </form>
+      <!-- Contraseña -->
+      <div class="form-group">
+        <label for="password" class="form-label">Contraseña</label>
+        <div class="input-wrapper">
+          <svg class="input-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+          </svg>
+          <input 
+            id="password"
+            [type]="showPassword ? 'text' : 'password'"
+            [(ngModel)]="password"
+            name="password"
+            placeholder="••••••••"
+            required
+            minlength="8"
+            (input)="updatePasswordStrength()">
+          <button 
+            type="button"
+            class="toggle-password"
+            (click)="togglePasswordVisibility()">
+            <svg *ngIf="!showPassword" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+            <svg *ngIf="showPassword" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+              <line x1="1" y1="1" x2="23" y2="23"/>
+            </svg>
+          </button>
+        </div>
 
-</mat-dialog-content>
+        <!-- Indicador de fortaleza -->
+        <div class="password-strength" *ngIf="password && password.length > 0">
+          <div class="strength-bar">
+            <div class="strength-fill" [ngClass]="passwordStrengthClass"></div>
+          </div>
+          <p class="strength-text" [ngClass]="passwordStrengthClass">
+            Fortaleza: {{ passwordStrengthText }}
+          </p>
+        </div>
 
-<mat-dialog-actions align="end">
-  <button mat-button mat-dialog-close>
-    Cancelar
-  </button>
+        <span class="form-error" *ngIf="password && password.length < 8">Mínimo 8 caracteres</span>
+      </div>
 
-  <button 
-    mat-raised-button 
-    color="primary"
-    [disabled]="!registerForm.valid"
-    (click)="register()">
-    Registrarse
-  </button>
-</mat-dialog-actions>
+      <!-- Confirmar Contraseña -->
+      <div class="form-group">
+        <label for="confirmPassword" class="form-label">Confirmar Contraseña</label>
+        <div class="input-wrapper">
+          <svg class="input-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+          <input 
+            id="confirmPassword"
+            [type]="showPassword ? 'text' : 'password'"
+            [(ngModel)]="confirmPassword"
+            name="confirmPassword"
+            placeholder="••••••••"
+            required>
+          <span class="match-indicator" *ngIf="password && confirmPassword && password === confirmPassword">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+          </span>
+        </div>
+        <span class="form-error" *ngIf="password && confirmPassword && password !== confirmPassword">Las contraseñas no coinciden</span>
+      </div>
+
+      <!-- Términos y condiciones -->
+      <div class="form-checkbox">
+        <input 
+          id="terms"
+          type="checkbox"
+          [(ngModel)]="acceptTerms"
+          name="acceptTerms"
+          required>
+        <label for="terms">
+          Acepto los 
+          <a href="#" class="terms-link">términos y condiciones</a> 
+          y la 
+          <a href="#" class="terms-link">política de privacidad</a>
+        </label>
+      </div>
+
+      <span class="form-error" *ngIf="showTermsError && !acceptTerms">Debes aceptar los términos</span>
+
+      <!-- Botones -->
+      <div class="form-actions">
+        <button type="button" class="btn btn-secondary" (click)="closeModal()">Cancelar</button>
+        <button 
+          type="submit" 
+          class="btn btn-primary"
+          [disabled]="!isFormValid()">
+          Crear Cuenta
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 5v14M5 12h14"/>
+          </svg>
+        </button>
+      </div>
+
+    </form>
+
+  </div>
+</div>

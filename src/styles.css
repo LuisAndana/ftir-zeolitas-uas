@@ -1,35 +1,220 @@
-@import "@angular/material/prebuilt-themes/indigo-pink.css";
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Inter:wght@400;500;600&display=swap');
 
-/* Colores UAS personalizados */
+/* ========================================
+   VARIABLES GLOBALES
+   ======================================== */
 :root {
   --uas-primary: #2E75B6;
   --uas-secondary: #1F4E79;
   --uas-accent: #FFC107;
+  
+  --color-white: #FFFFFF;
+  --color-light-bg: #F8FAFC;
+  --color-gray-50: #F9FAFB;
+  --color-gray-100: #F3F4F6;
+  --color-gray-200: #E5E7EB;
+  --color-gray-300: #D1D5DB;
+  --color-gray-400: #9CA3AF;
+  --color-gray-500: #6B7280;
+  --color-gray-600: #4B5563;
+  --color-gray-700: #374151;
+  --color-gray-800: #1F2937;
+  --color-gray-900: #111827;
+  
+  --color-success: #10B981;
+  --color-warning: #F59E0B;
+  --color-error: #EF4444;
+  
+  --font-display: 'Poppins', sans-serif;
+  --font-body: 'Inter', sans-serif;
+  
+  --transition-fast: 150ms ease-in-out;
+  --transition-base: 250ms ease-in-out;
 }
 
-/* Navbar */
-.mat-toolbar {
-  background-color: var(--uas-primary) !important;
-  color: white !important;
+/* ========================================
+   RESET GLOBAL
+   ======================================== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
-/* Botones principales */
-.mat-mdc-raised-button.mat-primary {
-  background-color: var(--uas-primary) !important;
+html, body {
+  height: 100%;
+  width: 100%;
+  overflow-x: hidden;
 }
 
-/* Acentos */
-.mat-mdc-button.mat-accent {
-  background-color: var(--uas-accent) !important;
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: #374151;
+  background-color: #FFFFFF;
+  transition: background-color var(--transition-base);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-.dark-theme {
-  background-color: #121212;
-  color: white;
+/* ========================================
+   TIPOGRAFÍA
+   ======================================== */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.5px;
+  color: #0F172A;
 }
 
-.dark-theme .mat-toolbar {
-  background-color: #1F4E79 !important;
+h1 { font-size: 2.5rem; font-weight: 700; }
+h2 { font-size: 1.875rem; font-weight: 700; }
+h3 { font-size: 1.5rem; font-weight: 600; }
+
+p { margin: 0; color: #6B7280; }
+
+a {
+  color: var(--uas-primary);
+  text-decoration: none;
+  transition: color var(--transition-fast);
 }
-html, body { height: 100%; }
-body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
+
+a:hover {
+  color: var(--uas-secondary);
+}
+
+/* ========================================
+   BOTONES GLOBALES
+   ======================================== */
+button {
+  font-family: var(--font-body);
+  border: none;
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ========================================
+   FORM FIELDS GENÉRICOS
+   ======================================== */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="checkbox"],
+textarea {
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+}
+
+input[type="text"],
+input[type="email"],
+input[type="password"],
+textarea {
+  width: 100%;
+  padding: 0.875rem 1rem;
+  border: 2px solid #E5E7EB;
+  border-radius: 0.75rem;
+  background: #FFFFFF;
+  color: #1F2937;
+  transition: all var(--transition-fast);
+}
+
+input[type="text"]:hover,
+input[type="email"]:hover,
+input[type="password"]:hover,
+textarea:hover {
+  border-color: var(--uas-primary);
+  background: #F8FAFC;
+}
+
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--uas-primary);
+  background: #FFFFFF;
+  box-shadow: 0 0 0 3px rgba(46, 117, 182, 0.1);
+}
+
+input::placeholder {
+  color: #9CA3AF;
+}
+
+/* ========================================
+   ANIMACIONES
+   ======================================== */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-30px); }
+}
+
+.animate-slideInUp {
+  animation: slideInUp 0.6s ease-out;
+}
+
+.animate-slideInDown {
+  animation: slideInDown 0.4s ease-out;
+}
+
+.animate-scaleIn {
+  animation: scaleIn 0.4s ease-out;
+}
+
+.animate-delay-1 { animation-delay: 0.2s; }
+.animate-delay-2 { animation-delay: 0.3s; }
+.animate-delay-3 { animation-delay: 0.4s; }
+
+/* ========================================
+   UTILIDADES
+   ======================================== */
+.mt-4 { margin-top: 1.5rem; }
+.mb-4 { margin-bottom: 1.5rem; }
+.mb-6 { margin-bottom: 2.5rem; }
+.text-center { text-align: center; }
+.text-muted { color: #9CA3AF; }

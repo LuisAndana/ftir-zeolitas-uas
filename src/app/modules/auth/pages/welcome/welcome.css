@@ -1,30 +1,299 @@
-.welcome-container {
-  height: 100vh;
+.welcome-wrapper {
+  position: relative;
+  min-height: 100vh;
+  width: 100%;
   display: flex;
-  justify-content: center;
   align-items: center;
-  background: linear-gradient(135deg, #2E75B6, #1F4E79);
+  justify-content: center;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, #FFFFFF 0%, #F0F4F8 100%);
+  overflow: hidden;
 }
 
-.card-welcome {
-  background: white;
-  padding: 3rem;
-  border-radius: 16px;
-  text-align: center;
+/* ========================================
+   FONDO DECORATIVO
+   ======================================== */
+
+.welcome-background {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.gradient-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.12;
+  animation: float 15s ease-in-out infinite;
+}
+
+.orb-1 {
   width: 400px;
+  height: 400px;
+  background: linear-gradient(135deg, #2E75B6, #1F4E79);
+  top: -100px;
+  left: -100px;
 }
 
-h1 {
-  margin-bottom: 10px;
-  color: #2E75B6;
+.orb-2 {
+  width: 300px;
+  height: 300px;
+  background: linear-gradient(135deg, #FFC107, #FFB300);
+  bottom: -50px;
+  right: -50px;
+  animation-delay: -7s;
 }
 
-p {
-  margin-bottom: 30px;
-  color: #555;
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-40px); }
 }
 
-.buttons {
+/* ========================================
+   CONTENEDOR Y TARJETA
+   ======================================== */
+
+.welcome-container {
+  position: relative;
+  z-index: 10;
+  width: 100%;
+  max-width: 540px;
+}
+
+.welcome-card {
+  background: #FFFFFF;
+  border-radius: 1.25rem;
+  padding: 3rem;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+}
+
+/* ========================================
+   HEADER
+   ======================================== */
+
+.welcome-header {
+  text-align: center;
+  margin-bottom: 2rem;
+  animation: slideInDown 0.4s ease-out 0.1s both;
+}
+
+.logo-icon {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 1.5rem;
+  background: linear-gradient(135deg, #2E75B6, #1F4E79);
+  border-radius: 1rem;
   display: flex;
-  justify-content: space-between;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  box-shadow: 0 8px 20px rgba(46, 117, 182, 0.3);
+  animation: scaleIn 0.4s ease-out 0.2s both;
+}
+
+.logo-icon svg {
+  width: 32px;
+  height: 32px;
+  stroke-width: 2;
+}
+
+.welcome-title {
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: #0F172A;
+  margin: 0 0 0.5rem 0;
+  line-height: 1.2;
+}
+
+.welcome-subtitle {
+  font-size: 0.95rem;
+  color: #6B7280;
+  margin: 0;
+  font-weight: 400;
+}
+
+
+
+/* ========================================
+   BOTONES
+   ======================================== */
+
+.welcome-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.btn {
+  padding: 0.875rem 1.5rem;
+  border-radius: 0.875rem;
+  font-size: 1rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  border: 2px solid transparent;
+  transition: all var(--transition-base);
+  animation: slideInUp 0.4s ease-out;
+}
+
+.btn svg {
+  width: 20px;
+  height: 20px;
+  stroke-width: 2;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #2E75B6, #1F4E79);
+  color: white;
+  box-shadow: 0 8px 20px rgba(46, 117, 182, 0.3);
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px rgba(46, 117, 182, 0.4);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+.btn-secondary {
+  background: white;
+  color: #2E75B6;
+  border: 2px solid #2E75B6;
+}
+
+.btn-secondary:hover {
+  background: rgba(46, 117, 182, 0.08);
+  color: #1F4E79;
+  border-color: #1F4E79;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(46, 117, 182, 0.2);
+}
+
+.btn-secondary:active {
+  transform: translateY(0);
+}
+
+.btn:nth-of-type(1) { animation-delay: 0.3s; }
+.btn:nth-of-type(2) { animation-delay: 0.4s; }
+
+/* ========================================
+   FOOTER
+   ======================================== */
+
+.welcome-footer {
+  text-align: center;
+  padding-top: 1.5rem;
+  border-top: 1px solid #E5E7EB;
+  font-size: 0.85rem;
+  color: #9CA3AF;
+  margin: 0;
+  animation: slideInUp 0.4s ease-out 0.5s both;
+}
+
+/* ========================================
+   RESPONSIVE
+   ======================================== */
+
+@media (max-width: 640px) {
+  .welcome-card {
+    padding: 2rem 1.5rem;
+  }
+
+  .welcome-title {
+    font-size: 1.5rem;
+  }
+
+  .welcome-subtitle {
+    font-size: 0.9rem;
+  }
+
+  .btn {
+    padding: 0.75rem 1.25rem;
+    font-size: 0.95rem;
+  }
+
+  .feature {
+    padding: 0.875rem;
+  }
+
+  .feature span {
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .welcome-wrapper {
+    padding: 1rem;
+  }
+
+  .welcome-card {
+    padding: 1.5rem 1.25rem;
+    border-radius: 1rem;
+  }
+
+  .welcome-header {
+    margin-bottom: 1.5rem;
+  }
+
+  .logo-icon {
+    width: 56px;
+    height: 56px;
+  }
+
+  .logo-icon svg {
+    width: 28px;
+    height: 28px;
+  }
+
+  .welcome-title {
+    font-size: 1.25rem;
+  }
+
+  .welcome-subtitle {
+    font-size: 0.85rem;
+  }
+
+  .features {
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .feature {
+    padding: 0.75rem;
+  }
+
+  .feature-badge {
+    font-size: 1.25rem;
+  }
+
+  .feature span {
+    font-size: 0.85rem;
+  }
+
+  .welcome-buttons {
+    gap: 0.75rem;
+  }
+
+  .btn {
+    padding: 0.7rem 1rem;
+    font-size: 0.9rem;
+  }
+
+  .btn svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .welcome-footer {
+    font-size: 0.8rem;
+    padding-top: 1rem;
+  }
 }

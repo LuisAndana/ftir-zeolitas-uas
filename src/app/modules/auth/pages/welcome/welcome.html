@@ -1,20 +1,65 @@
-<div class="welcome-container">
-
-  <div class="card-welcome mat-elevation-z6">
-
-    <h1>Software FTIR Zeolitas</h1>
-    <p>Biblioteca de huellas espectrales y ranking por similitud</p>
-
-    <div class="buttons">
-      <button mat-raised-button color="primary" (click)="openLogin()">
-        Iniciar Sesión
-      </button>
-
-      <button mat-stroked-button color="primary" (click)="openRegister()">
-        Registrarse
-      </button>
-    </div>
-
+<div class="welcome-wrapper">
+  <!-- Fondo decorativo -->
+  <div class="welcome-background">
+    <div class="gradient-orb orb-1"></div>
+    <div class="gradient-orb orb-2"></div>
   </div>
 
+  <!-- Contenido principal -->
+  <div class="welcome-container">
+    <div class="welcome-card animate-scaleIn">
+      
+      <!-- Logo y Header -->
+      <div class="welcome-header">
+        <div class="logo-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2L15.09 8.26H22L17.45 12.88L20.09 19.26L12 14.64L3.91 19.26L6.55 12.88L2 8.26H8.91L12 2Z"/>
+          </svg>
+        </div>
+        <h1 class="welcome-title">Software FTIR Zeolitas</h1>
+        <p class="welcome-subtitle">Biblioteca de huellas espectrales y ranking por similitud</p>
+      </div>
+
+
+
+      <!-- Botones -->
+      <div class="welcome-buttons">
+        <button class="btn btn-primary animate-delay-1" (click)="openLogin()">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M15 3H6a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3h9a3 3 0 0 0 3-3V6a3 3 0 0 0-3-3Z"/>
+            <path d="M9 17a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z"/>
+          </svg>
+          Iniciar Sesión
+        </button>
+        
+        <button class="btn btn-secondary animate-delay-2" (click)="openRegister()">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+            <line x1="19" y1="8" x2="19" y2="14"/>
+            <line x1="22" y1="11" x2="16" y2="11"/>
+          </svg>
+          Registrarse
+        </button>
+      </div>
+
+      <!-- Footer -->
+      <p class="welcome-footer">© 2024 Software FTIR Zeolitas. Todos los derechos reservados.</p>
+
+    </div>
+  </div>
 </div>
+
+<!-- Modal de Login -->
+<app-login-modal 
+  *ngIf="showLoginModal"
+  (closeRequest)="closeLoginModal()"
+  (loginSuccess)="handleLoginSuccess($event)">
+</app-login-modal>
+
+<!-- Modal de Registro -->
+<app-register-modal 
+  *ngIf="showRegisterModal"
+  (closeRequest)="closeRegisterModal()"
+  (registerSuccess)="handleRegisterSuccess($event)">
+</app-register-modal>

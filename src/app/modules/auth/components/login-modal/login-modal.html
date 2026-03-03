@@ -1,24 +1,111 @@
-<h2 mat-dialog-title>Iniciar Sesión</h2>
+<div class="modal-overlay" (click)="closeModal()">
+  <div class="modal-card" (click)="$event.stopPropagation()">
+    
+    <!-- Header -->
+    <div class="modal-header">
+      <h2 class="modal-title">Iniciar Sesión</h2>
+      <button class="modal-close" (click)="closeModal()" aria-label="Cerrar">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
 
-<mat-dialog-content>
-  <form #loginForm="ngForm">
+    <p class="modal-subtitle">Accede a tu cuenta para continuar</p>
 
-    <mat-form-field appearance="outline" class="full-width">
-      <mat-label>Email</mat-label>
-      <input matInput type="email" [(ngModel)]="email" name="email" required>
-    </mat-form-field>
+    <!-- Mensaje de Error -->
+    <div class="error-message" *ngIf="errorMessage">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="12" y1="8" x2="12" y2="12"/>
+        <line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      {{ errorMessage }}
+    </div>
 
-    <mat-form-field appearance="outline" class="full-width">
-      <mat-label>Contraseña</mat-label>
-      <input matInput type="password" [(ngModel)]="password" name="password" required>
-    </mat-form-field>
+    <!-- Formulario -->
+    <form (ngSubmit)="login()" class="login-form">
 
-  </form>
-</mat-dialog-content>
+      <!-- Email -->
+      <div class="form-group">
+        <label for="email" class="form-label">Correo Electrónico</label>
+        <div class="input-wrapper">
+          <svg class="input-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="2" y="4" width="20" height="16" rx="2"/>
+            <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+          </svg>
+          <input 
+            id="email"
+            type="email" 
+            [(ngModel)]="email" 
+            name="email" 
+            placeholder="usuario@ejemplo.com"
+            required>
+        </div>
+        <span class="form-error" *ngIf="email && !isValidEmail(email)">Email inválido</span>
+      </div>
 
-<mat-dialog-actions align="end">
-  <button mat-button mat-dialog-close>Cancelar</button>
-  <button mat-raised-button color="primary" (click)="login()">
-    Entrar
-  </button>
-</mat-dialog-actions>
+      <!-- Contraseña -->
+      <div class="form-group">
+        <label for="password" class="form-label">Contraseña</label>
+        <div class="input-wrapper">
+          <svg class="input-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+          </svg>
+          <input 
+            id="password"
+            [type]="showPassword ? 'text' : 'password'" 
+            [(ngModel)]="password" 
+            name="password" 
+            placeholder="••••••••"
+            required>
+          <button 
+            type="button"
+            class="toggle-password"
+            (click)="togglePasswordVisibility()">
+            <svg *ngIf="!showPassword" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+            <svg *ngIf="showPassword" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+              <line x1="1" y1="1" x2="23" y2="23"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Recuérdame -->
+      <div class="form-checkbox">
+        <input 
+          id="remember"
+          type="checkbox" 
+          [(ngModel)]="rememberMe" 
+          name="rememberMe">
+        <label for="remember">Recuérdame en este dispositivo</label>
+      </div>
+
+      <!-- Botones -->
+      <div class="form-actions">
+        <button type="button" class="btn btn-secondary" (click)="closeModal()">Cancelar</button>
+        <button type="submit" class="btn btn-primary" [disabled]="!email || !password">
+          Iniciar Sesión
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M5 12h14M12 5l7 7-7 7"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Links -->
+      <div class="form-links">
+        <a href="#" class="forgot-link">¿Olvidaste tu contraseña?</a>
+        <span class="divider">•</span>
+        <a href="#" class="signup-link">Crear cuenta</a>
+      </div>
+
+    </form>
+
+  </div>
+</div>
