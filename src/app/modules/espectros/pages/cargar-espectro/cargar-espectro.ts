@@ -77,6 +77,48 @@ export class CargarEspectro implements OnInit {
       });
   }
 
+  /**
+   * Drag & Drop: Cuando el usuario arrastra archivos sobre la zona
+   */
+  onDragOver(event: DragEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+    const target = event.target as HTMLElement;
+    target.closest('.upload-zone')?.classList.add('drag-over');
+  }
+
+  /**
+   * Drag & Drop: Cuando el usuario saca los archivos de la zona
+   */
+  onDragLeave(event: DragEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+    const target = event.target as HTMLElement;
+    target.closest('.upload-zone')?.classList.remove('drag-over');
+  }
+
+  /**
+   * Drag & Drop: Cuando el usuario suelta los archivos
+   */
+  onDrop(event: DragEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    const target = event.target as HTMLElement;
+    target.closest('.upload-zone')?.classList.remove('drag-over');
+    
+    const files = event.dataTransfer?.files;
+    if (files && files[0]) {
+      // Crear un evento falso para reutilizar onFileSelected
+      const fakeEvent = {
+        target: {
+          files: files
+        }
+      } as any;
+      this.onFileSelected(fakeEvent);
+    }
+  }
+
   deleteSpectrum(id: string) {
     if (confirm('¿Estás seguro de eliminar este espectro?')) {
       this.espectroLoader.deleteSpectrum(id);

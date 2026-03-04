@@ -1,17 +1,18 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, RouterLink, RouterOutlet } from '@angular/router';
+import { Router, RouterOutlet } from '@angular/router';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterLink, RouterOutlet],
+  imports: [CommonModule, RouterOutlet],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.css'
 })
 export class DashboardComponent implements OnInit {
   currentUser: any = null;
   menuOpen = false;
+  showLogoutModal = false;
 
   constructor(private router: Router) {}
 
@@ -28,11 +29,17 @@ export class DashboardComponent implements OnInit {
     }
   }
 
-  logout() {
-    if (confirm('¿Estás seguro de que deseas cerrar sesión?')) {
-      localStorage.removeItem('currentUser');
-      this.router.navigate(['/welcome']);
-    }
+  openLogoutModal() {
+    this.showLogoutModal = true;
+  }
+
+  closeLogoutModal() {
+    this.showLogoutModal = false;
+  }
+
+  confirmLogout() {
+    localStorage.removeItem('currentUser');
+    this.router.navigate(['/welcome']);
   }
 
   toggleMenu() {

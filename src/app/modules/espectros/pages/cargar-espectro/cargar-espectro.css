@@ -1,45 +1,86 @@
 .cargar-container {
-  max-width: 800px;
+  max-width: 1000px;
   margin: 0 auto;
 }
 
-h2 {
-  color: #0F172A;
-  margin-bottom: 0.5rem;
-}
-
-.subtitle {
-  color: #6B7280;
+.content-header {
   margin-bottom: 2rem;
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 1.5rem;
 }
 
+.content-header h1 {
+  font-size: 2rem;
+  color: #0f172a;
+  margin: 0 0 0.5rem 0;
+  font-weight: 700;
+}
+
+.content-header p {
+  color: #6b7280;
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+/* ===== ZONA DE CARGA ===== */
 .upload-zone {
-  background: #f8fafc;
+  background: linear-gradient(135deg, #f8fafc 0%, #f0f4f8 100%);
   border: 2px dashed #2E75B6;
-  border-radius: 0.75rem;
-  padding: 3rem 2rem;
+  border-radius: 1rem;
+  padding: 4rem 2rem;
   text-align: center;
   margin-bottom: 2rem;
+  transition: all 0.3s ease;
+}
+
+.upload-zone:hover {
+  border-color: #1F4E79;
+  background: linear-gradient(135deg, #f0f4f8 0%, #e8f1f8 100%);
+  box-shadow: 0 4px 12px rgba(46, 117, 182, 0.1);
+}
+
+.upload-zone.drag-over {
+  border-color: #2E75B6;
+  background: linear-gradient(135deg, #e8f1f8 0%, #dce8f4 100%);
+  box-shadow: 0 8px 20px rgba(46, 117, 182, 0.15);
+}
+
+.upload-icon {
+  font-size: 3rem;
+  color: #2E75B6;
+  margin-bottom: 1rem;
+}
+
+.upload-zone p {
+  color: #4b5563;
+  font-size: 0.95rem;
+  margin: 0 0 0.5rem 0;
 }
 
 .upload-btn {
   background: linear-gradient(135deg, #2E75B6, #1F4E79);
   color: white;
   border: none;
-  padding: 1rem 2rem;
-  border-radius: 0.75rem;
-  font-size: 1rem;
+  padding: 0.875rem 2rem;
+  border-radius: 0.5rem;
+  font-size: 0.95rem;
   font-weight: 600;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   gap: 0.75rem;
   transition: all 0.2s ease;
+  font-family: inherit;
+  box-shadow: 0 4px 12px rgba(46, 117, 182, 0.3);
 }
 
 .upload-btn:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(46, 117, 182, 0.3);
+  box-shadow: 0 8px 20px rgba(46, 117, 182, 0.4);
+}
+
+.upload-btn:active:not(:disabled) {
+  transform: translateY(0);
 }
 
 .upload-btn:disabled {
@@ -47,45 +88,74 @@ h2 {
   cursor: not-allowed;
 }
 
-.upload-btn svg {
-  width: 20px;
-  height: 20px;
-}
-
+/* ===== ALERTAS ===== */
 .alert {
   padding: 1rem;
   border-radius: 0.75rem;
   margin-bottom: 1rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  animation: slideDown 0.3s ease;
+}
+
+.alert-icon {
+  flex-shrink: 0;
+  font-size: 1.25rem;
+  margin-top: 0.125rem;
+}
+
+.alert-content {
+  flex: 1;
+}
+
+.alert-content p {
+  margin: 0;
+  font-size: 0.95rem;
 }
 
 .alert.error {
-  background: #FEE2E2;
-  color: #DC2626;
-  border: 1px solid #FECACA;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+}
+
+.alert.error .alert-icon {
+  color: #dc2626;
 }
 
 .alert.success {
-  background: #DCFCE7;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
   color: #166534;
-  border: 1px solid #BBF7D0;
 }
 
+.alert.success .alert-icon {
+  color: #10b981;
+}
+
+/* ===== LISTA DE ESPECTROS ===== */
 .spectra-list {
   margin-top: 2rem;
 }
 
 .spectra-list h3 {
-  color: #0F172A;
-  margin-bottom: 1rem;
+  color: #0f172a;
+  margin-bottom: 1.5rem;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.table-wrapper {
+  overflow-x: auto;
+  border-radius: 0.75rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
 table {
   width: 100%;
   border-collapse: collapse;
   background: white;
-  border-radius: 0.75rem;
-  overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 thead {
@@ -98,16 +168,31 @@ th {
   text-align: left;
   font-weight: 600;
   color: #374151;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 td {
   padding: 1rem;
-  border-bottom: 1px solid #e5e7eb;
-  color: #6B7280;
+  border-bottom: 1px solid #f3f4f6;
+  color: #4b5563;
+  font-size: 0.95rem;
 }
 
 tbody tr:hover {
   background: #f9fafb;
+}
+
+tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* ===== ACCIONES ===== */
+.actions {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
 }
 
 .action-link {
@@ -115,42 +200,138 @@ tbody tr:hover {
   border: none;
   color: #2E75B6;
   cursor: pointer;
-  text-decoration: underline;
+  text-decoration: none;
   font-weight: 500;
-  margin-right: 1rem;
-  transition: color 0.2s ease;
+  font-size: 0.9rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.375rem;
+  transition: all 0.2s ease;
+  font-family: inherit;
 }
 
 .action-link:hover {
+  background: rgba(46, 117, 182, 0.1);
   color: #1F4E79;
 }
 
 .action-link.delete {
-  color: #EF4444;
+  color: #ef4444;
 }
 
 .action-link.delete:hover {
-  color: #DC2626;
+  background: rgba(239, 68, 68, 0.1);
+  color: #dc2626;
 }
 
+/* ===== ESTADO VACÍO ===== */
 .empty-state {
   text-align: center;
-  padding: 3rem 2rem;
-  color: #9CA3AF;
-  background: #f8fafc;
+  padding: 4rem 2rem;
+  color: #9ca3af;
+  background: #f9fafb;
   border-radius: 0.75rem;
+  border: 1px dashed #e5e7eb;
 }
 
-@media (max-width: 640px) {
+.empty-state-icon {
+  font-size: 3rem;
+  color: #d1d5db;
+  margin-bottom: 1rem;
+}
+
+.empty-state p {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+/* ===== INPUT FILE (OCULTO) ===== */
+input[type="file"] {
+  display: none;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
   .cargar-container {
     margin: 0;
   }
 
+  .upload-zone {
+    padding: 3rem 1.5rem;
+  }
+
+  .upload-btn {
+    padding: 0.75rem 1.5rem;
+    font-size: 0.9rem;
+  }
+
   table {
-    font-size: 0.875rem;
+    font-size: 0.85rem;
   }
 
   th, td {
     padding: 0.75rem 0.5rem;
+  }
+
+  th {
+    font-size: 0.8rem;
+  }
+
+  .action-link {
+    padding: 0.5rem;
+    font-size: 0.85rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .cargar-container {
+    margin: 0;
+    padding: 0;
+  }
+
+  .upload-zone {
+    padding: 2rem 1rem;
+    border-radius: 0.75rem;
+    margin-bottom: 1rem;
+  }
+
+  .content-header {
+    margin-bottom: 1.5rem;
+  }
+
+  .content-header h1 {
+    font-size: 1.5rem;
+  }
+
+  .spectra-list h3 {
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+  }
+
+  table {
+    font-size: 0.8rem;
+  }
+
+  th, td {
+    padding: 0.5rem 0.25rem;
+  }
+
+  .actions {
+    gap: 0.25rem;
+  }
+
+  .action-link {
+    padding: 0.25rem;
+    font-size: 0.75rem;
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }

@@ -3,25 +3,21 @@
   <nav class="navbar">
     <div class="navbar-content">
       <div class="navbar-left">
-        <button class="menu-toggle" (click)="toggleMenu()">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="3" y1="6" x2="21" y2="6"/>
-            <line x1="3" y1="12" x2="21" y2="12"/>
-            <line x1="3" y1="18" x2="21" y2="18"/>
-          </svg>
+        <button class="menu-toggle" (click)="toggleMenu()" title="Abrir menú">
+          <span>&#9776;</span>
         </button>
         <h1 class="navbar-title">FTIR Zeolitas</h1>
       </div>
       
       <div class="navbar-right">
-        <span class="user-name">{{ currentUser?.name }}</span>
-        <button class="logout-btn" (click)="logout()">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-            <polyline points="16 17 21 12 16 7"/>
-            <line x1="21" y1="12" x2="9" y2="12"/>
-          </svg>
-          Salir
+        <div class="user-info">
+          <div class="user-avatar" title="Perfil de usuario">
+            {{ currentUser?.name?.charAt(0)?.toUpperCase() }}
+          </div>
+          <span class="user-name">{{ currentUser?.name }}</span>
+        </div>
+        <button class="logout-btn" (click)="openLogoutModal()" title="Cerrar sesión">
+          Cerrar Sesión
         </button>
       </div>
     </div>
@@ -31,16 +27,51 @@
     <!-- SIDEBAR -->
     <aside class="sidebar" [class.open]="menuOpen">
       <div class="sidebar-header">
-        <h2>Menú</h2>
-        <button class="close-btn" (click)="toggleMenu()">✕</button>
+        <h2>Navegación</h2>
+        <button class="close-btn" (click)="toggleMenu()" title="Cerrar menú">×</button>
       </div>
       
       <ul class="menu">
-        <li><a routerLink="/dashboard/cargar" (click)="menuOpen = false">📤 Cargar Espectro</a></li>
-        <li><a routerLink="/dashboard/busqueda" (click)="menuOpen = false">🔍 Búsqueda</a></li>
-        <li><a routerLink="/dashboard/biblioteca" (click)="menuOpen = false">📚 Biblioteca</a></li>
-        <li><a routerLink="/dashboard/perfil" (click)="menuOpen = false">👤 Mi Perfil</a></li>
-        <li><a routerLink="/dashboard/preferencias" (click)="menuOpen = false">⚙️ Preferencias</a></li>
+        <li>
+          <a routerLink="/dashboard/cargar" 
+             (click)="menuOpen = false" 
+             routerLinkActive="active"
+             title="Subir archivos de espectros">
+            Cargar Espectro
+          </a>
+        </li>
+        <li>
+          <a routerLink="/dashboard/busqueda" 
+             (click)="menuOpen = false" 
+             routerLinkActive="active"
+             title="Buscar espectros similares">
+            Búsqueda
+          </a>
+        </li>
+        <li>
+          <a routerLink="/dashboard/biblioteca" 
+             (click)="menuOpen = false" 
+             routerLinkActive="active"
+             title="Ver biblioteca de espectros">
+            Biblioteca
+          </a>
+        </li>
+        <li>
+          <a routerLink="/dashboard/perfil" 
+             (click)="menuOpen = false" 
+             routerLinkActive="active"
+             title="Ver y editar perfil">
+            Mi Perfil
+          </a>
+        </li>
+        <li>
+          <a routerLink="/dashboard/preferencias" 
+             (click)="menuOpen = false" 
+             routerLinkActive="active"
+             title="Configurar preferencias">
+            Preferencias
+          </a>
+        </li>
       </ul>
     </aside>
 
@@ -51,5 +82,29 @@
   </div>
 </div>
 
+<!-- LOGOUT MODAL -->
+<div class="logout-modal-overlay" *ngIf="showLogoutModal" (click)="closeLogoutModal()">
+  <div class="logout-modal" (click)="$event.stopPropagation()">
+    <!-- MODAL HEADER -->
+    <div class="modal-header">
+      <button class="modal-close" (click)="closeLogoutModal()" title="Cerrar">×</button>
+    </div>
+
+    <!-- MODAL CONTENT -->
+    <div class="modal-body">
+      <div class="modal-icon">⚠</div>
+      <h2 class="modal-title">Cerrar Sesión</h2>
+      <p class="modal-message">¿Estás seguro de que deseas cerrar sesión?</p>
+      <p class="modal-submessage">Tendrás que volver a iniciar sesión para acceder a tu cuenta.</p>
+    </div>
+
+    <!-- MODAL ACTIONS -->
+    <div class="modal-footer">
+      <button class="btn-cancel" (click)="closeLogoutModal()">Cancelar</button>
+      <button class="btn-logout" (click)="confirmLogout()">Cerrar Sesión</button>
+    </div>
+  </div>
+</div>
+
 <!-- Overlay para cerrar sidebar en móvil -->
-<div class="sidebar-overlay" *ngIf="menuOpen" (click)="toggleMenu()"></div>
+<div class="sidebar-overlay" [class.hidden]="!menuOpen" *ngIf="menuOpen" (click)="toggleMenu()"></div>
