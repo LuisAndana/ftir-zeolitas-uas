@@ -1,1 +1,319 @@
-<p>busqueda works!</p>
+<div class="busqueda-container">
+
+  <!-- HEADER -->
+  <div class="content-header">
+    <h1>Búsqueda por Similitud</h1>
+    <p>Compara tu espectro experimental contra la biblioteca y encuentra los más similares</p>
+  </div>
+
+  <!-- SELECCIÓN DE ESPECTRO -->
+  <div class="section-card">
+    <h3 class="section-title">
+      <span class="section-icon">1</span>
+      Seleccionar Espectro de Consulta
+    </h3>
+
+    <div class="select-wrapper" *ngIf="spectra.length > 0">
+      <select [(ngModel)]="selectedSpectrumId" (change)="onSpectrumSelected()" class="form-select">
+        <option value="">-- Selecciona un espectro cargado --</option>
+        <option *ngFor="let s of spectra" [value]="s.id">
+          {{ s.filename }} ({{ s.data.length }} puntos)
+        </option>
+      </select>
+    </div>
+
+    <div class="empty-hint" *ngIf="spectra.length === 0">
+      <span class="hint-icon">📁</span>
+      <p>No hay espectros cargados. <a routerLink="/dashboard/cargar">Cargar un espectro primero</a></p>
+    </div>
+
+    <!-- Preview del espectro seleccionado -->
+    <div class="spectrum-preview" *ngIf="selectedSpectrum">
+      <div class="preview-info">
+        <div class="info-item">
+          <span class="info-label">Archivo:</span>
+          <span class="info-value">{{ selectedSpectrum.filename }}</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Puntos:</span>
+          <span class="info-value">{{ selectedSpectrum.data.length }}</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Rango:</span>
+          <span class="info-value">
+            {{ selectedSpectrum.wavenumbers[0] | number:'1.0-0' }} -
+            {{ selectedSpectrum.wavenumbers[selectedSpectrum.wavenumbers.length - 1] | number:'1.0-0' }} cm⁻¹
+          </span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Técnica:</span>
+          <span class="info-value">{{ selectedSpectrum.metadata?.technique || 'N/D' }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONFIGURACIÓN DE BÚSQUEDA -->
+  <div class="section-card">
+    <h3 class="section-title">
+      <span class="section-icon">2</span>
+      Configuración de Búsqueda
+    </h3>
+
+    <div class="config-grid">
+
+      <!-- Método de similitud -->
+      <div class="config-group">
+        <label class="config-label">Método de Similitud</label>
+        <select [(ngModel)]="config.method" class="form-select">
+          <option value="cosine">Similitud Coseno</option>
+          <option value="pearson">Correlación de Pearson</option>
+          <option value="euclidean">Distancia Euclidiana</option>
+        </select>
+        <span class="config-hint">
+          {{ config.method === 'cosine' ? 'Mide la similitud angular entre vectores' :
+             config.method === 'pearson' ? 'Mide la correlación lineal entre señales' :
+             'Mide la distancia geométrica entre puntos' }}
+        </span>
+      </div>
+
+      <!-- Tolerancia -->
+      <div class="config-group">
+        <label class="config-label">
+          Tolerancia (±{{ config.tolerance }} cm⁻¹)
+        </label>
+        <div class="range-input">
+          <input type="range" [(ngModel)]="config.tolerance" min="1" max="20" step="1" class="slider">
+          <div class="range-labels">
+            <span>±1</span>
+            <span>±10</span>
+            <span>±20</span>
+          </div>
+        </div>
+        <span class="config-hint">
+          Grado de libertad para considerar match entre picos
+        </span>
+      </div>
+
+      <!-- Rango espectral -->
+      <div class="config-group">
+        <label class="config-label">Rango Espectral (cm⁻¹)</label>
+        <div class="range-inputs">
+          <div class="input-group">
+            <label class="mini-label">Mínimo</label>
+            <input type="number" [(ngModel)]="config.rangeMin" min="200" max="4000" class="form-input">
+          </div>
+          <span class="range-separator">—</span>
+          <div class="input-group">
+            <label class="mini-label">Máximo</label>
+            <input type="number" [(ngModel)]="config.rangeMax" min="200" max="4000" class="form-input">
+          </div>
+        </div>
+        <div class="quick-ranges">
+          <button class="chip" (click)="config.rangeMin=400; config.rangeMax=4000">Completo</button>
+          <button class="chip" (click)="config.rangeMin=400; config.rangeMax=1400">Huella dactilar</button>
+          <button class="chip" (click)="config.rangeMin=950; config.rangeMax=1250">T-O-T asim.</button>
+          <button class="chip" (click)="config.rangeMin=650; config.rangeMax=850">T-O-T sim.</button>
+          <button class="chip" (click)="config.rangeMin=3200; config.rangeMax=3800">Región OH</button>
+          <button class="chip" (click)="config.rangeMin=500; config.rangeMax=650">Anillos D4R/D6R</button>
+        </div>
+      </div>
+
+      <!-- Top N resultados -->
+      <div class="config-group">
+        <label class="config-label">Número de resultados (Top-N)</label>
+        <select [(ngModel)]="config.topN" class="form-select">
+          <option [value]="5">Top 5</option>
+          <option [value]="10">Top 10</option>
+          <option [value]="20">Top 20</option>
+          <option [value]="50">Top 50</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- FILTROS AVANZADOS -->
+    <button class="toggle-advanced" (click)="showAdvancedFilters = !showAdvancedFilters">
+      {{ showAdvancedFilters ? '▲ Ocultar' : '▼ Mostrar' }} Filtros Avanzados
+    </button>
+
+    <div class="advanced-filters" *ngIf="showAdvancedFilters">
+
+      <!-- Filtro por familia de zeolita -->
+      <div class="config-group full-width">
+        <label class="config-label">Filtrar por Familia de Zeolita</label>
+
+        <div class="family-selector">
+          <div class="family-input-wrapper" (click)="showFamilyDropdown = !showFamilyDropdown">
+            <input
+              type="text"
+              [(ngModel)]="familySearchTerm"
+              (input)="filterFamilies()"
+              (focus)="showFamilyDropdown = true"
+              placeholder="Buscar familia (ej: MFI, FAU, Beta, Chabazita...)"
+              class="form-input family-search"
+              autocomplete="off">
+            <span class="family-clear" *ngIf="config.familyFilter" (click)="selectFamily(null); $event.stopPropagation()">✕</span>
+          </div>
+
+          <div class="selected-family" *ngIf="selectedFamilyName">
+            <span class="family-badge">{{ selectedFamilyName }}</span>
+          </div>
+
+          <!-- Filtro por categoría -->
+          <div class="category-filter">
+            <select [(ngModel)]="selectedCategory" (change)="filterFamilies()" class="form-select small">
+              <option value="">Todas las categorías</option>
+              <option *ngFor="let cat of zeoliteCategories" [value]="cat">{{ cat }}</option>
+            </select>
+          </div>
+
+          <!-- Dropdown de familias -->
+          <div class="family-dropdown" *ngIf="showFamilyDropdown">
+            <div class="family-dropdown-header">
+              <span>{{ filteredFamilies.length }} familias encontradas</span>
+            </div>
+            <div class="family-dropdown-scroll">
+              <div
+                *ngFor="let family of filteredFamilies; trackBy: trackByCode"
+                class="family-option"
+                (click)="selectFamily(family)">
+                <span class="family-code">{{ family.code }}</span>
+                <div class="family-details">
+                  <span class="family-name">{{ family.name }}</span>
+                  <span class="family-category">{{ family.category }}</span>
+                </div>
+                <span class="family-pore" *ngIf="family.poreSize">{{ family.poreSize }} Å</span>
+              </div>
+              <div class="family-empty" *ngIf="filteredFamilies.length === 0">
+                No se encontraron familias
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ventanas espectrales -->
+      <div class="config-group full-width">
+        <label class="config-label">
+          <input type="checkbox" [(ngModel)]="config.useWindows" class="check-inline">
+          Analizar por Ventanas Espectrales
+        </label>
+        <div class="windows-grid" *ngIf="config.useWindows">
+          <div
+            *ngFor="let window of spectralWindows"
+            class="window-chip"
+            [class.active]="isWindowSelected(window.name)"
+            (click)="toggleWindow(window.name)">
+            <span class="window-name">{{ window.name }}</span>
+            <span class="window-range">{{ window.min }}-{{ window.max }} cm⁻¹</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTÓN DE BÚSQUEDA -->
+  <div class="search-action">
+    <button
+      class="btn-search"
+      (click)="search()"
+      [disabled]="!selectedSpectrum || searching">
+      <span *ngIf="!searching">
+        🔍 Ejecutar Búsqueda de Similitud
+      </span>
+      <span *ngIf="searching" class="loading-text">
+        ⏳ Calculando similitudes...
+      </span>
+    </button>
+    <p class="search-summary" *ngIf="selectedSpectrum">
+      {{ formatMethod(config.method) }} · Tolerancia ±{{ config.tolerance }} cm⁻¹ ·
+      Rango {{ config.rangeMin }}-{{ config.rangeMax }} cm⁻¹ ·
+      Top {{ config.topN }}
+      <span *ngIf="config.familyFilter"> · Familia: {{ selectedFamilyName }}</span>
+    </p>
+  </div>
+
+  <!-- RESULTADOS -->
+  <div class="results-section" *ngIf="searchDone">
+
+    <div class="results-header">
+      <h3>Resultados del Ranking</h3>
+      <span class="results-count">{{ results.length }} espectros encontrados</span>
+    </div>
+
+    <!-- Sin resultados -->
+    <div class="empty-results" *ngIf="results.length === 0">
+      <span class="empty-icon">🔬</span>
+      <p>No se encontraron espectros que coincidan con los criterios de búsqueda.</p>
+      <p class="empty-hint-text">Intenta ampliar el rango espectral, aumentar la tolerancia o quitar el filtro de familia.</p>
+    </div>
+
+    <!-- Tabla de resultados -->
+    <div class="results-table-wrapper" *ngIf="results.length > 0">
+      <table class="results-table">
+        <thead>
+          <tr>
+            <th class="col-rank">#</th>
+            <th class="col-name">Espectro</th>
+            <th class="col-family">Familia</th>
+            <th class="col-score">Similitud</th>
+            <th class="col-peaks">Picos Match</th>
+            <th class="col-actions">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let result of results; let i = index" [class]="getScoreClass(result.globalScore)">
+            <td class="col-rank">
+              <span class="rank-badge" [class]="getScoreClass(result.globalScore)">{{ i + 1 }}</span>
+            </td>
+            <td class="col-name">{{ result.filename }}</td>
+            <td class="col-family">
+              <span class="family-tag">{{ result.family }}</span>
+            </td>
+            <td class="col-score">
+              <div class="score-display">
+                <div class="score-bar-bg">
+                  <div class="score-bar-fill" [style.width]="getScorePercent(result.globalScore) + '%'"
+                       [class]="getScoreClass(result.globalScore)"></div>
+                </div>
+                <span class="score-value">{{ getScorePercent(result.globalScore) }}%</span>
+                <span class="score-label" [class]="getScoreClass(result.globalScore)">
+                  {{ getScoreLabel(result.globalScore) }}
+                </span>
+              </div>
+            </td>
+            <td class="col-peaks">
+              {{ result.matchingPeaks }}/{{ result.totalPeaks }}
+            </td>
+            <td class="col-actions">
+              <a routerLink="/dashboard/comparacion"
+                 [queryParams]="{ query: selectedSpectrumId, ref: result.spectrumId }"
+                 class="action-btn">
+                Comparar
+              </a>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Desglose por ventanas -->
+    <div class="window-results" *ngIf="config.useWindows && results.length > 0 && results[0].windowScores.length > 0">
+      <h4>Desglose por Ventanas Espectrales (Top 1: {{ results[0].filename }})</h4>
+      <div class="window-scores-grid">
+        <div *ngFor="let ws of results[0].windowScores" class="window-score-card">
+          <span class="ws-name">{{ ws.window }}</span>
+          <div class="ws-bar-bg">
+            <div class="ws-bar-fill" [style.width]="getScorePercent(ws.score) + '%'"
+                 [class]="getScoreClass(ws.score)"></div>
+          </div>
+          <span class="ws-value">{{ getScorePercent(ws.score) }}%</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Click outside to close dropdown -->
+<div class="dropdown-backdrop" *ngIf="showFamilyDropdown" (click)="showFamilyDropdown = false"></div>

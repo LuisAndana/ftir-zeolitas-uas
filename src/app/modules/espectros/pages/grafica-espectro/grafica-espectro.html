@@ -1,1 +1,66 @@
-<p>grafica-espectro works!</p>
+<div class="grafica-container">
+
+  <!-- HEADER -->
+  <div class="content-header">
+    <h1>Visualización de Espectros</h1>
+    <p>Grafica y superpone espectros experimentales para análisis visual</p>
+  </div>
+
+  <div class="grafica-layout">
+
+    <!-- Panel de control -->
+    <div class="control-panel">
+      <h4>Espectros Disponibles</h4>
+
+      <div class="control-actions">
+        <button class="sm-btn" (click)="selectAll()">Seleccionar todos</button>
+        <button class="sm-btn" (click)="clearAll()">Limpiar</button>
+      </div>
+
+      <div class="spectra-checklist" *ngIf="spectra.length > 0">
+        <label *ngFor="let s of spectra; let i = index" class="check-item"
+               [style.border-left-color]="isSelected(s.id) ? colors[selectedSpectrumIds.indexOf(s.id) % colors.length] : '#e5e7eb'">
+          <input type="checkbox"
+                 [checked]="isSelected(s.id)"
+                 (change)="onSpectrumToggle(s.id)">
+          <span class="check-label">{{ s.filename }}</span>
+          <span class="check-meta">{{ s.data.length }} pts</span>
+        </label>
+      </div>
+
+      <div class="empty-panel" *ngIf="spectra.length === 0">
+        <p>No hay espectros cargados.</p>
+        <a routerLink="/dashboard/cargar">Cargar →</a>
+      </div>
+
+      <!-- Opciones de gráfica -->
+      <div class="chart-options">
+        <h4>Opciones</h4>
+        <label class="option-item">
+          <input type="checkbox" [(ngModel)]="invertX" (change)="updateChart()">
+          Invertir eje X (4000 → 400)
+        </label>
+        <label class="option-item">
+          <input type="checkbox" [(ngModel)]="showGrid" (change)="updateChart()">
+          Mostrar cuadrícula
+        </label>
+        <div class="option-item">
+          <label>Grosor de línea: {{ lineWidth }}px</label>
+          <input type="range" [(ngModel)]="lineWidth" min="1" max="5" step="0.5" (change)="updateChart()">
+        </div>
+      </div>
+    </div>
+
+    <!-- Gráfica -->
+    <div class="chart-area">
+      <div class="chart-container" *ngIf="selectedSpectrumIds.length > 0">
+        <canvas #chartCanvas></canvas>
+      </div>
+      <div class="chart-placeholder" *ngIf="selectedSpectrumIds.length === 0">
+        <span class="placeholder-icon">📊</span>
+        <p>Selecciona uno o más espectros para visualizar</p>
+      </div>
+    </div>
+
+  </div>
+</div>

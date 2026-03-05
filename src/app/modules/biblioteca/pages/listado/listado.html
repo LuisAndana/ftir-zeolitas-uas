@@ -1,1 +1,134 @@
-<p>listado works!</p>
+<div class="biblioteca-container">
+
+  <!-- HEADER -->
+  <div class="content-header">
+    <h1>Biblioteca de Espectros</h1>
+    <p>Explora espectros cargados y el catálogo completo de familias de zeolitas y aluminosilicatos</p>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab" [class.active]="activeTab === 'spectra'" (click)="activeTab = 'spectra'">
+      Mis Espectros ({{ spectra.length }})
+    </button>
+    <button class="tab" [class.active]="activeTab === 'catalog'" (click)="activeTab = 'catalog'">
+      Catálogo de Zeolitas ({{ totalFamilies }})
+    </button>
+  </div>
+
+  <!-- TAB: MIS ESPECTROS -->
+  <div *ngIf="activeTab === 'spectra'">
+
+    <div class="table-wrapper" *ngIf="spectra.length > 0">
+      <table>
+        <thead>
+          <tr>
+            <th>Archivo</th>
+            <th>Fecha</th>
+            <th>Puntos</th>
+            <th>Técnica</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let s of spectra">
+            <td class="filename">{{ s.filename }}</td>
+            <td>{{ s.uploadedDate | date:'short' }}</td>
+            <td>{{ s.data.length }}</td>
+            <td>{{ s.metadata?.technique || 'N/D' }}</td>
+            <td>
+              <div class="actions">
+                <a routerLink="/dashboard/busqueda" [queryParams]="{spectrum: s.id}" class="action-link">Buscar</a>
+                <button class="action-link delete" (click)="deleteSpectrum(s.id)">Eliminar</button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="empty-state" *ngIf="spectra.length === 0">
+      <span class="empty-icon">📋</span>
+      <p>No tienes espectros cargados aún.</p>
+      <a routerLink="/dashboard/cargar" class="empty-link">Cargar tu primer espectro →</a>
+    </div>
+  </div>
+
+  <!-- TAB: CATÁLOGO DE ZEOLITAS -->
+  <div *ngIf="activeTab === 'catalog'">
+
+    <!-- Categorías resumen -->
+    <div class="category-chips">
+      <button class="cat-chip" [class.active]="!selectedCategory" (click)="selectedCategory=''; filterCatalog()">
+        Todas ({{ totalFamilies }})
+      </button>
+      <button
+        *ngFor="let cat of zeoliteCategories"
+        class="cat-chip"
+        [class.active]="selectedCategory === cat"
+        (click)="selectedCategory = cat; filterCatalog()">
+        {{ cat }} ({{ getCategoryCount(cat) }})
+      </button>
+    </div>
+
+    <!-- Barra de búsqueda -->
+    <div class="search-bar">
+      <input
+        type="text"
+        [(ngModel)]="searchTerm"
+        (input)="filterCatalog()"
+        placeholder="Buscar por código IZA o nombre (ej: MFI, Beta, Chabazita...)"
+        class="search-input">
+      <button class="clear-btn" *ngIf="searchTerm || selectedCategory" (click)="clearFilters()">Limpiar</button>
+      <span class="results-info">{{ filteredFamilies.length }} de {{ totalFamilies }}</span>
+    </div>
+
+    <!-- Tabla del catálogo -->
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Código</th>
+            <th>Nombre</th>
+            <th>Categoría</th>
+            <th>Si/Al</th>
+            <th>Poro</th>
+            <th>Bandas FTIR típicas</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let f of paginatedFamilies; trackBy: trackByCode">
+            <td class="code-cell">{{ f.code }}</td>
+            <td class="name-cell">{{ f.name }}</td>
+            <td><span class="cat-tag">{{ f.category }}</span></td>
+            <td>{{ f.siAlRatio || '—' }}</td>
+            <td>{{ f.poreSize ? f.poreSize + ' Å' : '—' }}</td>
+            <td class="bands-cell">
+              <span *ngIf="f.typicalBands" class="bands">
+                <span *ngFor="let b of f.typicalBands; let last = last" class="band-tag">{{ b }}{{ last ? '' : ',' }}</span>
+              </span>
+              <span *ngIf="!f.typicalBands" class="no-data">—</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Paginación -->
+    <div class="pagination" *ngIf="totalPages > 1">
+      <button class="page-btn" (click)="goToPage(1)" [disabled]="currentPage === 1">«</button>
+      <button class="page-btn" (click)="goToPage(currentPage - 1)" [disabled]="currentPage === 1">‹</button>
+      <button
+        *ngFor="let p of pageNumbers"
+        class="page-btn"
+        [class.active]="p === currentPage"
+        (click)="goToPage(p)">
+        {{ p }}
+      </button>
+      <button class="page-btn" (click)="goToPage(currentPage + 1)" [disabled]="currentPage === totalPages">›</button>
+      <button class="page-btn" (click)="goToPage(totalPages)" [disabled]="currentPage === totalPages">»</button>
+      <span class="page-info">Página {{ currentPage }} de {{ totalPages }}</span>
+    </div>
+  </div>
+
+</div>

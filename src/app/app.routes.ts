@@ -22,7 +22,7 @@ export const routes: Routes = [
         .then(m => m.Register)
   },
 
-  // ✨ NUEVO: Dashboard y sus sub-rutas
+  // Dashboard y sus sub-rutas
   {
     path: 'dashboard',
     component: DashboardComponent,
@@ -34,28 +34,28 @@ export const routes: Routes = [
             .then(m => m.CargarEspectro)
       },
       {
+        path: 'grafica',
+        loadComponent: () =>
+          import('./modules/espectros/pages/grafica-espectro/grafica-espectro')
+            .then(m => m.GraficaEspectro)
+      },
+      {
         path: 'busqueda',
         loadComponent: () =>
           import('./modules/similitud/pages/busqueda/busqueda')
             .then(m => m.Busqueda)
       },
       {
+        path: 'comparacion',
+        loadComponent: () =>
+          import('./modules/similitud/pages/comparacion/comparacion')
+            .then(m => m.Comparacion)
+      },
+      {
         path: 'biblioteca',
         loadComponent: () =>
           import('./modules/biblioteca/pages/listado/listado')
             .then(m => m.Listado)
-//      },
-//      {
-//        path: 'perfil',
-//        loadComponent: () =>
-//          import('./modules/perfil/pages/perfil/perfil')
-//            .then(m => m.PerfilComponent)
-//      },
-//      {
-//        path: 'preferencias',
-//        loadComponent: () =>
-//          import('./modules/perfil/pages/preferencias/preferencias')
-//            .then(m => m.PreferenciasComponent)
       },
       {
         path: '',

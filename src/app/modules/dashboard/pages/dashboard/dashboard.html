@@ -32,44 +32,49 @@
       </div>
       
       <ul class="menu">
+        <li class="menu-section">Espectros</li>
         <li>
           <a routerLink="/dashboard/cargar" 
              (click)="menuOpen = false" 
              routerLinkActive="active"
              title="Subir archivos de espectros">
-            Cargar Espectro
+            📁 Cargar Espectro
           </a>
         </li>
+        <li>
+          <a routerLink="/dashboard/grafica" 
+             (click)="menuOpen = false" 
+             routerLinkActive="active"
+             title="Visualizar espectros">
+            📊 Graficar Espectros
+          </a>
+        </li>
+
+        <li class="menu-section">Análisis</li>
         <li>
           <a routerLink="/dashboard/busqueda" 
              (click)="menuOpen = false" 
              routerLinkActive="active"
              title="Buscar espectros similares">
-            Búsqueda
+            🔍 Búsqueda por Similitud
           </a>
         </li>
+        <li>
+          <a routerLink="/dashboard/comparacion" 
+             (click)="menuOpen = false" 
+             routerLinkActive="active"
+             title="Comparar dos espectros">
+            ⚖️ Comparación
+          </a>
+        </li>
+
+        <li class="menu-section">Biblioteca</li>
         <li>
           <a routerLink="/dashboard/biblioteca" 
              (click)="menuOpen = false" 
              routerLinkActive="active"
-             title="Ver biblioteca de espectros">
-            Biblioteca
-          </a>
-        </li>
-        <li>
-          <a routerLink="/dashboard/perfil" 
-             (click)="menuOpen = false" 
-             routerLinkActive="active"
-             title="Ver y editar perfil">
-            Mi Perfil
-          </a>
-        </li>
-        <li>
-          <a routerLink="/dashboard/preferencias" 
-             (click)="menuOpen = false" 
-             routerLinkActive="active"
-             title="Configurar preferencias">
-            Preferencias
+             title="Ver biblioteca de espectros y catálogo de zeolitas">
+            📚 Biblioteca
           </a>
         </li>
       </ul>
@@ -85,20 +90,15 @@
 <!-- LOGOUT MODAL -->
 <div class="logout-modal-overlay" *ngIf="showLogoutModal" (click)="closeLogoutModal()">
   <div class="logout-modal" (click)="$event.stopPropagation()">
-    <!-- MODAL HEADER -->
     <div class="modal-header">
       <button class="modal-close" (click)="closeLogoutModal()" title="Cerrar">×</button>
     </div>
-
-    <!-- MODAL CONTENT -->
     <div class="modal-body">
       <div class="modal-icon">⚠</div>
       <h2 class="modal-title">Cerrar Sesión</h2>
       <p class="modal-message">¿Estás seguro de que deseas cerrar sesión?</p>
       <p class="modal-submessage">Tendrás que volver a iniciar sesión para acceder a tu cuenta.</p>
     </div>
-
-    <!-- MODAL ACTIONS -->
     <div class="modal-footer">
       <button class="btn-cancel" (click)="closeLogoutModal()">Cancelar</button>
       <button class="btn-logout" (click)="confirmLogout()">Cerrar Sesión</button>
