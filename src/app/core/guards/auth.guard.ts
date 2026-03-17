@@ -15,7 +15,7 @@ export class AuthGuard implements CanActivate {
     const token = localStorage.getItem('access_token');
     const user = localStorage.getItem('current_user');
 
-    console.log('🔐 AuthGuard - Verificando autenticación:', {
+    console.log(' AuthGuard - Verificando autenticación:', {
       tieneToken: !!token,
       tieneUsuario: !!user
     });
@@ -27,7 +27,7 @@ export class AuthGuard implements CanActivate {
     }
 
     // Usuario NO está autenticado - redirigir a welcome
-    console.log('❌ Usuario no autenticado - redirigiendo a /welcome');
+    console.log(' Usuario no autenticado - redirigiendo a /welcome');
     this.router.navigate(['/welcome']);
     return false;
   }
