@@ -171,8 +171,9 @@ export class Register implements OnInit {
   handleRegisterSuccess(event: any) {
     console.log('✅ Registro exitoso:', event);
     this.showRegisterModal = false;
+    // Redirigir a welcome con parámetro para abrir el modal de login
     setTimeout(() => {
-      this.router.navigate(['/dashboard']);
+      this.router.navigate(['/welcome'], { queryParams: { showLogin: true } });
     }, 500);
   }
 }

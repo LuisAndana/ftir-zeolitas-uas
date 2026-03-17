@@ -76,7 +76,7 @@
             (click)="showPassword = !showPassword"
             [attr.aria-label]="showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'"
           >
-            {{ showPassword ? '👁️' : '👁️‍🗨️' }}
+            {{ showPassword ? '' : '' }}
           </button>
         </div>
 
@@ -126,7 +126,7 @@
       >
         <span *ngIf="!loading">Crear Cuenta</span>
         <span *ngIf="loading" class="loading-spinner">
-          ⏳ Registrando...
+           Registrando...
         </span>
       </button>
 

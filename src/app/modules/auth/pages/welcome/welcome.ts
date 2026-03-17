@@ -1,6 +1,6 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, RouterModule } from '@angular/router';
+import { Router, RouterModule, ActivatedRoute } from '@angular/router';
 import { LoginModal } from '../../components/login-modal/login-modal';
 import { RegisterModal } from '../../components/register-modal/register-modal';
 
@@ -11,11 +11,23 @@ import { RegisterModal } from '../../components/register-modal/register-modal';
   templateUrl: './welcome.html',
   styleUrls: ['./welcome.css']
 })
-export class WelcomeComponent {
+export class WelcomeComponent implements OnInit {
   showLoginModal = false;
   showRegisterModal = false;
 
-  constructor(private router: Router) {}
+  constructor(
+    private router: Router,
+    private route: ActivatedRoute
+  ) {}
+
+  ngOnInit() {
+    // Verificar si viene del registro y debe abrir el modal de login
+    this.route.queryParams.subscribe(params => {
+      if (params['showLogin']) {
+        this.openLoginModal();
+      }
+    });
+  }
 
   openLoginModal() {
     this.showLoginModal = true;
@@ -45,7 +57,7 @@ export class WelcomeComponent {
     console.log('✅ Registro exitoso:', event);
     this.showRegisterModal = false;
     setTimeout(() => {
-      this.router.navigate(['/dashboard']);
+      this.router.navigate(['/welcome'], { queryParams: { showLogin: true } });
     }, 500);
   }
 }
