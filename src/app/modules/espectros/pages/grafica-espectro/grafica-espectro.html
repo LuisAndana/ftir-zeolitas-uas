@@ -2,65 +2,126 @@
 
   <!-- HEADER -->
   <div class="content-header">
-    <h1>Visualización de Espectros</h1>
-    <p>Grafica y superpone espectros experimentales para análisis visual</p>
+    <h1>Visualización de Espectros FTIR</h1>
+    <p>Grafica, superpone y analiza espectros con zoom interactivo, pan y exportación</p>
   </div>
 
   <div class="grafica-layout">
 
-    <!-- Panel de control -->
+    <!-- Panel de control izquierdo -->
     <div class="control-panel">
-      <h4>Espectros Disponibles</h4>
+      
+      <!-- Acciones principales -->
+      <div class="panel-section">
+        <h3 class="section-title">Espectros ({{ selectedCount }})</h3>
+        
+        <div class="control-actions">
+          <button class="sm-btn" (click)="selectAll()" title="Seleccionar todos">Todos</button>
+          <button class="sm-btn" (click)="clearAll()" title="Deseleccionar todos">Limpiar</button>
+        </div>
 
-      <div class="control-actions">
-        <button class="sm-btn" (click)="selectAll()">Seleccionar todos</button>
-        <button class="sm-btn" (click)="clearAll()">Limpiar</button>
-      </div>
+        <!-- Lista de espectros -->
+        <div class="spectra-checklist" *ngIf="spectra.length > 0">
+          <label *ngFor="let item of selectedSpectra" class="check-item"
+                 [style.border-left-color]="isSelected(item.id) ? item.color : '#e5e7eb'">
+            <input type="checkbox"
+                   [checked]="isSelected(item.id)"
+                   (change)="onSpectrumToggle(item.id)">
+            <span class="check-label" [title]="item.name">{{ item.name }}</span>
+            <span class="check-meta">{{ getSpectrumInfo(item.id) }}</span>
+          </label>
+        </div>
 
-      <div class="spectra-checklist" *ngIf="spectra.length > 0">
-        <label *ngFor="let s of spectra; let i = index" class="check-item"
-               [style.border-left-color]="isSelected(s.id) ? colors[selectedSpectrumIds.indexOf(s.id) % colors.length] : '#e5e7eb'">
-          <input type="checkbox"
-                 [checked]="isSelected(s.id)"
-                 (change)="onSpectrumToggle(s.id)">
-          <span class="check-label">{{ s.filename }}</span>
-          <span class="check-meta">{{ s.data.length }} pts</span>
-        </label>
-      </div>
-
-      <div class="empty-panel" *ngIf="spectra.length === 0">
-        <p>No hay espectros cargados.</p>
-        <a routerLink="/dashboard/cargar">Cargar →</a>
+        <div class="empty-panel" *ngIf="spectra.length === 0">
+          <p>No hay espectros cargados.</p>
+          <a routerLink="/dashboard/cargar">Cargar →</a>
+        </div>
       </div>
 
       <!-- Opciones de gráfica -->
-      <div class="chart-options">
-        <h4>Opciones</h4>
-        <label class="option-item">
-          <input type="checkbox" [(ngModel)]="invertX" (change)="updateChart()">
-          Invertir eje X (4000 → 400)
+      <div class="panel-section">
+        <h3 class="section-title">Opciones</h3>
+
+        <!-- Título -->
+        <div class="option-item">
+          <label>Título</label>
+          <input type="text" [(ngModel)]="title" (change)="updateChart()" class="option-input">
+        </div>
+
+        <!-- Invertir eje X -->
+        <label class="option-item checkbox">
+          <input type="checkbox" [(ngModel)]="invertX" (change)="onOptionChange()">
+          <span>Invertir X (4000→400)</span>
         </label>
-        <label class="option-item">
-          <input type="checkbox" [(ngModel)]="showGrid" (change)="updateChart()">
-          Mostrar cuadrícula
+
+        <!-- Mostrar cuadrícula -->
+        <label class="option-item checkbox">
+          <input type="checkbox" [(ngModel)]="showGrid" (change)="onOptionChange()">
+          <span>Mostrar cuadrícula</span>
         </label>
+
+        <!-- Mostrar leyenda -->
+        <label class="option-item checkbox">
+          <input type="checkbox" [(ngModel)]="showLegend" (change)="onOptionChange()">
+          <span>Mostrar leyenda</span>
+        </label>
+
+        <!-- Grosor de línea -->
         <div class="option-item">
           <label>Grosor de línea: {{ lineWidth }}px</label>
-          <input type="range" [(ngModel)]="lineWidth" min="1" max="5" step="0.5" (change)="updateChart()">
+          <input type="range" [(ngModel)]="lineWidth" min="1" max="5" step="0.5" (change)="updateChart()" class="slider">
+        </div>
+
+        <!-- Suavizado -->
+        <div class="option-item">
+          <label>Suavizado: {{ (smoothing * 100).toFixed(0) }}%</label>
+          <input type="range" [(ngModel)]="smoothing" min="0" max="1" step="0.1" (change)="updateChart()" class="slider">
         </div>
       </div>
+
+      <!-- Acciones de gráfica -->
+      <div class="panel-section">
+        <h3 class="section-title">Herramientas</h3>
+
+        <button class="tool-btn" (click)="resetZoom()" title="Resetear zoom">
+          🔍 Resetear Zoom
+        </button>
+
+        <button class="tool-btn" (click)="downloadChart()" title="Descargar como PNG">
+          ⬇️ Descargar PNG
+        </button>
+      </div>
+
     </div>
 
-    <!-- Gráfica -->
+    <!-- Área de gráfica -->
     <div class="chart-area">
-      <div class="chart-container" *ngIf="selectedSpectrumIds.length > 0">
-        <canvas #chartCanvas></canvas>
-      </div>
-      <div class="chart-placeholder" *ngIf="selectedSpectrumIds.length === 0">
+      
+      <!-- Gráfica con Plotly -->
+      <div #chartContainer class="chart-container" *ngIf="hasData"></div>
+
+      <!-- Estado vacío -->
+      <div class="chart-placeholder" *ngIf="!hasData">
         <span class="placeholder-icon">📊</span>
         <p>Selecciona uno o más espectros para visualizar</p>
+        <p class="hint-text">La gráfica soporta zoom (arrastra para seleccionar), pan (clic derecho) y exportación</p>
       </div>
+
     </div>
 
   </div>
+
+  <!-- Información del usuario -->
+  <div class="info-footer">
+    <div class="info-box">
+      <strong>💡 Controles Interactivos:</strong>
+      <ul>
+        <li><strong>Zoom:</strong> Arrastra para seleccionar un área</li>
+        <li><strong>Pan:</strong> Haz clic derecho y arrastra para mover</li>
+        <li><strong>Doble clic:</strong> Resetea el zoom automáticamente</li>
+        <li><strong>Exportar:</strong> Usa el botón 📷 en la barra superior</li>
+      </ul>
+    </div>
+  </div>
+
 </div>

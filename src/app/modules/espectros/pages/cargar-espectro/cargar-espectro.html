@@ -1,82 +1,209 @@
 <div class="cargar-container">
-  
-  <!-- ENCABEZADO -->
+
+  <!-- HEADER -->
   <div class="content-header">
-    <h1>Cargar Espectro</h1>
-    <p>Sube un archivo CSV, TXT, XLSX o JSON con tus datos espectrales</p>
+    <h1>Cargar Espectros FTIR</h1>
+    <p>Carga espectros en múltiples formatos (DPT, CSV, TXT, JSON, XLSX) y gestiona tu biblioteca</p>
   </div>
 
-  <!-- ZONA DE CARGA -->
-  <div class="upload-zone" (dragover)="onDragOver($event)" (dragleave)="onDragLeave($event)" (drop)="onDrop($event)">
-    <input 
-      #fileInput
-      type="file" 
-      id="fileInput" 
-      (change)="onFileSelected($event)"
-      accept=".csv,.txt,.xlsx,.json">
-    
-    <div class="upload-icon">↓</div>
-    
-    <p>Arrastra archivos aquí o</p>
-    
-    <button class="upload-btn" (click)="fileInput.click()" [disabled]="uploading">
-      <span *ngIf="!uploading">Seleccionar Archivo</span>
-      <span *ngIf="uploading">Cargando...</span>
-    </button>
-    
-    <p style="margin-top: 1rem; color: #9ca3af; font-size: 0.85rem;">
-      Formatos soportados: CSV, TXT, XLSX, JSON (máximo 5 MB)
-    </p>
-  </div>
+  <!-- ÁREA DE CARGA -->
+  <div class="upload-section">
+    <div class="upload-card">
+      
+      <!-- Zona de arrastre -->
+      <div class="drop-zone" 
+           [class.dragover]="dragover"
+           (dragover)="onDragOver($event)"
+           (dragleave)="onDragLeave($event)"
+           (drop)="onDrop($event)">
+        
+        <div class="drop-content">
+          <span class="drop-icon">📂</span>
+          <h3>Arrastra archivos aquí</h3>
+          <p>o haz clic para seleccionar</p>
+          <p class="drop-formats">Formatos: DPT • CSV • TXT • JSON • XLSX</p>
+        </div>
 
-  <!-- MENSAJES DE ERROR Y ÉXITO -->
-  <div *ngIf="errorMessage" class="alert error">
-    <div class="alert-icon">!</div>
-    <div class="alert-content">
-      <p>{{ errorMessage }}</p>
+        <input type="file" 
+               #fileInput
+               (change)="onFileSelected($event)"
+               accept=".csv,.txt,.dpt,.json,.xlsx"
+               style="display: none">
+        
+        <button class="btn-primary" (click)="fileInput.click()" type="button">
+          📁 Seleccionar Archivo
+        </button>
+      </div>
+
+      <!-- Información de archivo seleccionado -->
+      <div class="file-info" *ngIf="uploadedFile">
+        <p><strong>📄 Archivo:</strong> {{ uploadedFile.name }}</p>
+        <p><strong>📊 Tamaño:</strong> {{ (uploadedFile.size / 1024).toFixed(2) }} KB</p>
+      </div>
+
+    </div>
+
+    <!-- Opciones de metadata -->
+    <div class="metadata-card">
+      <h3>Información del Espectro</h3>
+      
+      <div class="metadata-grid">
+        <!-- Material -->
+        <div class="form-group">
+          <label>Material</label>
+          <input type="text" [(ngModel)]="material" placeholder="Ej: Zeolita Y">
+        </div>
+
+        <!-- Técnica -->
+        <div class="form-group">
+          <label>Técnica</label>
+          <select [(ngModel)]="technique">
+            <option>ATR</option>
+            <option>Transmisión</option>
+            <option>Reflexión</option>
+            <option>DRIFT</option>
+          </select>
+        </div>
+
+        <!-- Estado de hidratación -->
+        <div class="form-group">
+          <label>Estado de Hidratación</label>
+          <select [(ngModel)]="hydrationState">
+            <option>As-synthesized</option>
+            <option>Secado 110°C</option>
+            <option>Secado 200°C</option>
+            <option>Calcinado</option>
+            <option>Rehidratado</option>
+          </select>
+        </div>
+
+        <!-- Temperatura -->
+        <div class="form-group">
+          <label>Temperatura</label>
+          <input type="text" [(ngModel)]="temperature" placeholder="Ej: 25°C">
+        </div>
+      </div>
+
+      <!-- Descripción -->
+      <div class="form-group full-width">
+        <label>Descripción (Opcional)</label>
+        <textarea [(ngModel)]="description" placeholder="Notas sobre el espectro..." rows="3"></textarea>
+      </div>
     </div>
   </div>
 
-  <div *ngIf="successMessage" class="alert success">
-    <div class="alert-icon">✓</div>
-    <div class="alert-content">
-      <p>{{ successMessage }}</p>
+  <!-- MENSAJES -->
+  <div class="messages-section">
+    <div class="alert alert-success" *ngIf="successMessage">
+      {{ successMessage }}
+      <button class="close-btn" (click)="successMessage = ''">✕</button>
+    </div>
+
+    <div class="alert alert-error" *ngIf="errorMessage">
+      {{ errorMessage }}
+      <button class="close-btn" (click)="errorMessage = ''">✕</button>
+    </div>
+
+    <!-- Información de carga -->
+    <div class="alert alert-info" *ngIf="loading">
+      ⏳ Cargando espectro...
+    </div>
+  </div>
+
+  <!-- INFORMACIÓN DEL ESPECTRO CARGADO -->
+  <div class="file-details" *ngIf="fileInfo">
+    <h3>📊 Detalles del Espectro Cargado</h3>
+    <div class="details-grid">
+      <div class="detail-item">
+        <strong>Archivo:</strong>
+        <span>{{ fileInfo.filename }}</span>
+      </div>
+      <div class="detail-item">
+        <strong>Puntos:</strong>
+        <span>{{ fileInfo.points }}</span>
+      </div>
+      <div class="detail-item">
+        <strong>Rango (cm⁻¹):</strong>
+        <span>{{ fileInfo.wavenumberMin }} - {{ fileInfo.wavenumberMax }}</span>
+      </div>
+      <div class="detail-item">
+        <strong>Absorbancia:</strong>
+        <span>{{ fileInfo.absorbanceMin }} - {{ fileInfo.absorbanceMax }}</span>
+      </div>
+      <div class="detail-item">
+        <strong>Material:</strong>
+        <span>{{ fileInfo.material }}</span>
+      </div>
+      <div class="detail-item">
+        <strong>Técnica:</strong>
+        <span>{{ fileInfo.technique }}</span>
+      </div>
     </div>
   </div>
 
   <!-- LISTA DE ESPECTROS -->
-  <div class="spectra-list" *ngIf="spectra.length > 0">
-    <h3>Espectros Cargados ({{ spectra.length }})</h3>
-    
-    <div class="table-wrapper">
+  <div class="spectra-list-section">
+    <div class="section-header">
+      <h2>📚 Tus Espectros</h2>
+      
+      <!-- Filtros -->
+      <div class="filters">
+        <input type="text" 
+               placeholder="Filtrar por material..." 
+               [(ngModel)]="filterMaterial"
+               class="filter-input">
+        
+        <select [(ngModel)]="filterTechnique" class="filter-select">
+          <option value="">Todas las técnicas</option>
+          <option value="ATR">ATR</option>
+          <option value="Transmisión">Transmisión</option>
+          <option value="Reflexión">Reflexión</option>
+          <option value="DRIFT">DRIFT</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Estado vacío -->
+    <div class="empty-state" *ngIf="filteredSpectra.length === 0">
+      <span class="empty-icon">📭</span>
+      <p>No hay espectros cargados</p>
+      <p class="hint">Carga tu primer espectro usando la zona de arriba</p>
+    </div>
+
+    <!-- Tabla de espectros -->
+    <div class="spectra-table" *ngIf="filteredSpectra.length > 0">
       <table>
         <thead>
           <tr>
-            <th>Nombre del Archivo</th>
-            <th>Fecha de Carga</th>
-            <th>Número de Puntos</th>
+            <th>Archivo</th>
+            <th>Puntos</th>
+            <th>Material</th>
+            <th>Técnica</th>
+            <th>Fecha</th>
             <th>Acciones</th>
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let spectrum of spectra">
-            <td>{{ spectrum.filename }}</td>
-            <td>{{ spectrum.uploadedDate | date: 'short' }}</td>
-            <td>{{ spectrum.data.length }}</td>
-            <td>
-              <div class="actions">
-                <a routerLink="/dashboard/busqueda" 
-                   [queryParams]="{spectrum: spectrum.id}" 
-                   class="action-link"
-                   title="Buscar espectros similares">
-                  Buscar
-                </a>
-                <button class="action-link delete" 
-                        (click)="deleteSpectrum(spectrum.id)"
-                        title="Eliminar este espectro">
-                  Eliminar
-                </button>
-              </div>
+          <tr *ngFor="let spectrum of filteredSpectra" class="spectrum-row">
+            <td class="filename-cell">
+              <span class="format-icon">{{ getFormatIcon(spectrum.filename) }}</span>
+              <span class="filename" [title]="spectrum.filename">{{ spectrum.filename }}</span>
+            </td>
+            <td>{{ spectrum.wavenumbers.length }}</td>
+            <td>{{ spectrum.metadata.material }}</td>
+            <td>{{ spectrum.metadata.technique }}</td>
+            <td class="date-cell">{{ getFormattedDate(spectrum.uploadedDate) }}</td>
+            <td class="actions-cell">
+              <button class="btn-icon" 
+                      (click)="downloadSpectrum(spectrum.id, spectrum.filename)"
+                      title="Descargar como CSV">
+                ⬇️
+              </button>
+              <button class="btn-icon btn-danger" 
+                      (click)="deleteSpectrum(spectrum.id, spectrum.filename)"
+                      title="Eliminar">
+                🗑️
+              </button>
             </td>
           </tr>
         </tbody>
@@ -84,10 +211,58 @@
     </div>
   </div>
 
-  <!-- ESTADO VACÍO -->
-  <div *ngIf="spectra.length === 0 && !uploading" class="empty-state">
-    <div class="empty-state-icon">📋</div>
-    <p>No hay espectros cargados aún. Sube tu primer archivo para comenzar</p>
+  <!-- INFORMACIÓN DE FORMATOS -->
+  <div class="info-section">
+    <h3>ℹ️ Información de Formatos</h3>
+    
+    <div class="format-cards">
+      <!-- DPT -->
+      <div class="format-card">
+        <h4>🔬 DPT (Perkin Elmer)</h4>
+        <p>Formato nativo de espectrómetros Perkin Elmer</p>
+        <code>índice   wavenumber   absorbance<br>1   3997.23779   0.99338</code>
+        <p class="note">Soporta índice opcional en primera columna</p>
+      </div>
+
+      <!-- CSV -->
+      <div class="format-card">
+        <h4>📊 CSV</h4>
+        <p>Formato universal de valores separados por comas</p>
+        <code>wavenumber,absorbance<br>4000.0,0.5<br>3995.5,0.51</code>
+        <p class="note">Con o sin encabezados</p>
+      </div>
+
+      <!-- TXT -->
+      <div class="format-card">
+        <h4>📄 TXT</h4>
+        <p>Texto plano con números separados por espacios</p>
+        <code>4000.0 0.5<br>3995.5 0.51<br>3991.0 0.52</code>
+        <p class="note">Flexible y portable</p>
+      </div>
+
+      <!-- JSON -->
+      <div class="format-card">
+        <h4>🔶 JSON</h4>
+        <p>Formato JavaScript Object Notation</p>
+        <code>{{'{'}}wavenumbers: [...], absorbance: [...]{{'}'}}</code>
+        <p class="note">O array de objetos con keys</p>
+      </div>
+
+      <!-- XLSX -->
+      <div class="format-card">
+        <h4>📈 XLSX</h4>
+        <p>Formato Excel (requiere npm install xlsx)</p>
+        <code>Columnas: wavenumber, absorbance</code>
+        <p class="note">Instala librería SheetJS para soporte</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- NAVEGACIÓN -->
+  <div class="nav-footer">
+    <a routerLink="/dashboard/graficar" class="btn-secondary">
+      📊 Ver Gráficas →
+    </a>
   </div>
 
 </div>
