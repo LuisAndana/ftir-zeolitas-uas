@@ -1,13 +1,16 @@
 import { Routes } from '@angular/router';
+import { AuthGuard } from './core/guards/auth.guard';
 import { DashboardComponent } from './modules/dashboard/pages/dashboard/dashboard';
 
 export const routes: Routes = [
+  // Ruta por defecto
   {
     path: '',
     redirectTo: 'welcome',
     pathMatch: 'full'
   },
 
+  // Página de bienvenida (sin protección)
   {
     path: 'welcome',
     loadComponent: () =>
@@ -15,6 +18,7 @@ export const routes: Routes = [
         .then(m => m.WelcomeComponent)
   },
 
+  // Página de registro (sin protección)
   {
     path: 'register',
     loadComponent: () =>
@@ -22,10 +26,11 @@ export const routes: Routes = [
         .then(m => m.Register)
   },
 
-  // Dashboard y sus sub-rutas
+  // Dashboard y sus sub-rutas (PROTEGIDAS con AuthGuard)
   {
     path: 'dashboard',
     component: DashboardComponent,
+    canActivate: [AuthGuard],
     children: [
       {
         path: 'cargar',
@@ -65,7 +70,7 @@ export const routes: Routes = [
     ]
   },
 
-  // Ruta comodín
+  // Ruta comodín (redirigir a welcome)
   {
     path: '**',
     redirectTo: 'welcome'

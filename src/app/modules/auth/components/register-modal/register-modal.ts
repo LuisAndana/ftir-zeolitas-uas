@@ -1,150 +1,120 @@
-import { Component, Output, EventEmitter } from '@angular/core';
+import { Component, EventEmitter, Output, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { AuthBackendService } from '../../../../core/services/auth-backend.service';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 
 @Component({
   selector: 'app-register-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule],
   templateUrl: './register-modal.html',
-  styleUrl: './register-modal.css'
+  styleUrls: ['./register-modal.css']
 })
-export class RegisterModal {
+export class RegisterModal implements OnDestroy {
   @Output() closeRequest = new EventEmitter<void>();
   @Output() registerSuccess = new EventEmitter<{ email: string; name: string }>();
 
-  name: string = '';
-  email: string = '';
-  password: string = '';
-  confirmPassword: string = '';
-  acceptTerms: boolean = false;
-  showPassword: boolean = false;
-  showTermsError: boolean = false;
-  errorMessage: string = '';
+  form!: FormGroup;
+  loading = false;
+  errorMessage = '';
+  showPassword = false;
+  passwordStrength = 0;
 
-  passwordStrength: number = 0;
-  passwordStrengthClass: string = '';
-  passwordStrengthText: string = '';
+  private destroy$ = new Subject<void>();
 
-  togglePasswordVisibility() {
-    this.showPassword = !this.showPassword;
+  constructor(
+    private fb: FormBuilder,
+    private authService: AuthBackendService
+  ) {
+    this.initForm();
   }
 
-  isValidEmail(email: string): boolean {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
+  private initForm() {
+    this.form = this.fb.group({
+      name: ['', [Validators.required, Validators.minLength(2)]],
+      email: ['', [Validators.required, Validators.email]],
+      password: ['', [Validators.required, Validators.minLength(8)]],
+      passwordConfirm: ['', Validators.required]
+    }, { validators: this.passwordMatchValidator });
   }
 
-  updatePasswordStrength() {
+  passwordMatchValidator(group: FormGroup): { [key: string]: boolean } | null {
+    const password = group.get('password')?.value;
+    const passwordConfirm = group.get('passwordConfirm')?.value;
+    return password === passwordConfirm ? null : { passwordMismatch: true };
+  }
+
+  checkPasswordStrength() {
+    const password = this.form.get('password')?.value || '';
     let strength = 0;
 
-    // Longitud
-    if (this.password.length >= 8) strength++;
-    if (this.password.length >= 12) strength++;
-
-    // Tipos de caracteres
-    if (/[a-z]/.test(this.password)) strength++;
-    if (/[A-Z]/.test(this.password)) strength++;
-    if (/[0-9]/.test(this.password)) strength++;
-    if (/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(this.password)) strength++;
+    if (password.length >= 8) strength++;
+    if (/[a-z]/.test(password) && /[A-Z]/.test(password)) strength++;
+    if (/\d/.test(password)) strength++;
+    if (/[^a-zA-Z\d]/.test(password)) strength++;
 
     this.passwordStrength = strength;
-    this.updatePasswordStrengthDisplay();
   }
 
-  updatePasswordStrengthDisplay() {
-    if (this.passwordStrength <= 2) {
-      this.passwordStrengthClass = 'strength-weak';
-      this.passwordStrengthText = 'Débil';
-    } else if (this.passwordStrength <= 4) {
-      this.passwordStrengthClass = 'strength-medium';
-      this.passwordStrengthText = 'Medio';
-    } else {
-      this.passwordStrengthClass = 'strength-strong';
-      this.passwordStrengthText = 'Fuerte';
+  submit() {
+    if (this.form.invalid) {
+      this.errorMessage = 'Por favor, completa todos los campos correctamente';
+      console.warn('❌ Formulario inválido');
+      return;
     }
-  }
 
-  isFormValid(): boolean {
-    return (
-      this.name.length >= 3 &&
-      this.isValidEmail(this.email) &&
-      this.password.length >= 8 &&
-      this.password === this.confirmPassword &&
-      this.acceptTerms
-    );
-  }
-
-  register() {
+    this.loading = true;
     this.errorMessage = '';
-    this.showTermsError = false;
 
-    // Validar términos
-    if (!this.acceptTerms) {
-      this.showTermsError = true;
-      this.errorMessage = 'Debes aceptar los términos y condiciones';
-      return;
-    }
+    const { name, email, password } = this.form.value;
 
-    // Validar formulario
-    if (!this.isFormValid()) {
-      this.errorMessage = 'Por favor completa todos los campos correctamente';
-      return;
-    }
+    console.log('📝 Registrando usuario:', { name, email });
 
-    // Obtener usuarios existentes
-    const users = this.getAllUsers();
+    this.authService.register(name, email, password)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (response: any) => {
+          console.log('✅ Registro EXITOSO:', response);
+          console.log('📦 Tokens guardados en localStorage:', {
+            access_token: localStorage.getItem('access_token')?.substring(0, 20) + '...',
+            refresh_token: localStorage.getItem('refresh_token')?.substring(0, 20) + '...',
+            current_user: localStorage.getItem('current_user')
+          });
 
-    // Verificar si el email ya existe
-    if (users.some(user => user.email === this.email)) {
-      this.errorMessage = 'Este email ya está registrado. Intenta con otro.';
-      return;
-    }
+          this.registerSuccess.emit({
+            email: response.data.user.email,
+            name: response.data.user.name
+          });
 
-    // Crear nuevo usuario
-    const newUser = {
-      id: Date.now().toString(),
-      name: this.name,
-      email: this.email,
-      password: this.hashPassword(this.password),
-      createdAt: new Date().toISOString()
-    };
+          this.loading = false;
+          this.form.reset();
+        },
+        error: (error: any) => {
+          console.error('❌ Error en registro:', error);
 
-    // Guardar usuario
-    users.push(newUser);
-    localStorage.setItem('users', JSON.stringify(users));
+          this.loading = false;
 
-    // Establecer sesión
-    const userData = {
-      id: newUser.id,
-      name: newUser.name,
-      email: newUser.email,
-      loginTime: new Date().toISOString()
-    };
+          if (error.status === 400) {
+            this.errorMessage = error.error?.detail || 'El email ya está registrado';
+          } else if (error.status === 422) {
+            this.errorMessage = 'Datos inválidos. Verifica el formulario';
+          } else {
+            this.errorMessage = 'Error en el servidor. Intenta más tarde';
+          }
 
-    localStorage.setItem('currentUser', JSON.stringify(userData));
-
-    console.log('✅ Usuario registrado:', newUser);
-    this.registerSuccess.emit({ email: this.email, name: this.name });
-    this.closeModal();
+          console.error('Error details:', this.errorMessage);
+        }
+      });
   }
 
-  private getAllUsers(): any[] {
-    try {
-      const users = localStorage.getItem('users');
-      return users ? JSON.parse(users) : [];
-    } catch (e) {
-      console.error('Error al leer usuarios:', e);
-      return [];
-    }
-  }
-
-  private hashPassword(password: string): string {
-    // En producción: usar bcrypt en el backend
-    return btoa(password);
-  }
-
-  closeModal() {
+  close() {
     this.closeRequest.emit();
+  }
+
+  ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 }

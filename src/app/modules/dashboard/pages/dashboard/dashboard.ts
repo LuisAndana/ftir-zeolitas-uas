@@ -21,10 +21,17 @@ export class DashboardComponent implements OnInit {
   }
 
   loadCurrentUser() {
-    const user = localStorage.getItem('currentUser');
+    const user = localStorage.getItem('current_user');
     if (user) {
-      this.currentUser = JSON.parse(user);
+      try {
+        this.currentUser = JSON.parse(user);
+        console.log('✅ Usuario cargado:', this.currentUser.name);
+      } catch (e) {
+        console.error('Error al cargar usuario:', e);
+        this.router.navigate(['/welcome']);
+      }
     } else {
+      console.warn('No hay usuario en localStorage');
       this.router.navigate(['/welcome']);
     }
   }
@@ -38,7 +45,13 @@ export class DashboardComponent implements OnInit {
   }
 
   confirmLogout() {
-    localStorage.removeItem('currentUser');
+    // Limpiar localStorage
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+    localStorage.removeItem('current_user');
+    localStorage.removeItem('token_expires_at');
+
+    console.log('✅ Sesión cerrada');
     this.router.navigate(['/welcome']);
   }
 

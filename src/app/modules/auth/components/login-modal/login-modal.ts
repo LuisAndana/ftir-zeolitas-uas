@@ -1,124 +1,98 @@
-import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
+import { Component, EventEmitter, Output, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { AuthBackendService } from '../../../../core/services/auth-backend.service';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 
 @Component({
   selector: 'app-login-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule],
   templateUrl: './login-modal.html',
-  styleUrl: './login-modal.css'
+  styleUrls: ['./login-modal.css']
 })
-export class LoginModal implements OnInit {
+export class LoginModal implements OnDestroy {
   @Output() closeRequest = new EventEmitter<void>();
   @Output() loginSuccess = new EventEmitter<{ email: string; name: string }>();
 
-  email: string = '';
-  password: string = '';
-  rememberMe: boolean = false;
-  showPassword: boolean = false;
-  errorMessage: string = '';
+  form!: FormGroup;
+  loading = false;
+  errorMessage = '';
+  showPassword = false;
 
-  ngOnInit() {
-    this.loadSavedCredentials();
+  private destroy$ = new Subject<void>();
+
+  constructor(
+    private fb: FormBuilder,
+    private authService: AuthBackendService
+  ) {
+    this.initForm();
   }
 
-  togglePasswordVisibility() {
-    this.showPassword = !this.showPassword;
+  private initForm() {
+    this.form = this.fb.group({
+      email: ['', [Validators.required, Validators.email]],
+      password: ['', [Validators.required, Validators.minLength(8)]]
+    });
   }
 
-  isValidEmail(email: string): boolean {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-  }
-
-  loadSavedCredentials() {
-    const savedLogin = localStorage.getItem('loginCredentials');
-    if (savedLogin) {
-      try {
-        const credentials = JSON.parse(savedLogin);
-        this.email = credentials.email;
-        this.rememberMe = true;
-      } catch (e) {
-        console.error('Error al cargar credenciales guardadas:', e);
-      }
+  submit() {
+    if (this.form.invalid) {
+      this.errorMessage = 'Por favor, completa todos los campos correctamente';
+      return;
     }
-  }
 
-  login() {
+    this.loading = true;
     this.errorMessage = '';
 
-    // Validaciones
-    if (!this.email) {
-      this.errorMessage = 'Por favor ingresa tu correo electrónico';
-      return;
-    }
+    const { email, password } = this.form.value;
 
-    if (!this.isValidEmail(this.email)) {
-      this.errorMessage = 'Por favor ingresa un correo válido';
-      return;
-    }
+    console.log('🔐 Iniciando sesión:', { email });
 
-    if (!this.password) {
-      this.errorMessage = 'Por favor ingresa tu contraseña';
-      return;
-    }
+    this.authService.login(email, password)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (response: any) => {
+          console.log('✅ Login EXITOSO:', response);
+          console.log('📦 Tokens guardados en localStorage:', {
+            access_token: localStorage.getItem('access_token')?.substring(0, 20) + '...',
+            refresh_token: localStorage.getItem('refresh_token')?.substring(0, 20) + '...',
+            current_user: localStorage.getItem('current_user')
+          });
 
-    // Obtener usuarios registrados
-    const users = this.getAllUsers();
-    
-    // Buscar usuario con ese email
-    const user = users.find(u => u.email === this.email);
+          this.loginSuccess.emit({
+            email: response.data.user.email,
+            name: response.data.user.name
+          });
 
-    if (!user) {
-      this.errorMessage = 'Usuario no encontrado. Por favor regístrate primero.';
-      return;
-    }
+          this.loading = false;
+          this.form.reset();
+        },
+        error: (error: any) => {
+          console.error('❌ Error en login:', error);
 
-    // Verificar contraseña
-    if (!this.verifyPassword(this.password, user.password)) {
-      this.errorMessage = 'Contraseña incorrecta';
-      return;
-    }
+          this.loading = false;
 
-    // Login exitoso
-    const userData = {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      loginTime: new Date().toISOString()
-    };
+          if (error.status === 401) {
+            this.errorMessage = 'Email o contraseña incorrectos';
+          } else if (error.status === 422) {
+            this.errorMessage = 'Datos inválidos. Verifica el formulario';
+          } else {
+            this.errorMessage = 'Error en el servidor. Intenta más tarde';
+          }
 
-    localStorage.setItem('currentUser', JSON.stringify(userData));
-
-    // Guardar credenciales si se marcó "Recuérdame"
-    if (this.rememberMe) {
-      localStorage.setItem('loginCredentials', JSON.stringify({ email: this.email }));
-    } else {
-      localStorage.removeItem('loginCredentials');
-    }
-
-    console.log('✅ Login exitoso:', userData);
-    this.loginSuccess.emit({ email: user.email, name: user.name });
-    this.closeModal();
+          console.error('Error details:', this.errorMessage);
+        }
+      });
   }
 
-  private getAllUsers(): any[] {
-    try {
-      const users = localStorage.getItem('users');
-      return users ? JSON.parse(users) : [];
-    } catch (e) {
-      console.error('Error al leer usuarios:', e);
-      return [];
-    }
-  }
-
-  private verifyPassword(inputPassword: string, hashedPassword: string): boolean {
-    // Comparar el hash (en producción usarías bcrypt en backend)
-    return btoa(inputPassword) === hashedPassword;
-  }
-
-  closeModal() {
+  close() {
     this.closeRequest.emit();
+  }
+
+  ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 }

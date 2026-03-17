@@ -1,20 +1,13 @@
-.welcome-wrapper {
+.welcome-page {
   position: relative;
   min-height: 100vh;
   width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 1.5rem;
   background: linear-gradient(135deg, #FFFFFF 0%, #F0F4F8 100%);
   overflow: hidden;
 }
 
-/* ========================================
-   FONDO DECORATIVO
-   ======================================== */
-
-.welcome-background {
+/* Background decorativo */
+.page-background {
   position: absolute;
   inset: 0;
   z-index: 0;
@@ -51,101 +44,107 @@
   50% { transform: translateY(-40px); }
 }
 
-/* ========================================
-   CONTENEDOR Y TARJETA
-   ======================================== */
-
-.welcome-container {
+/* Contenedor */
+.page-container {
   position: relative;
   z-index: 10;
-  width: 100%;
-  max-width: 540px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 2rem;
 }
 
 .welcome-card {
-  background: #FFFFFF;
-  border-radius: 1.25rem;
+  background: white;
+  border-radius: 1.5rem;
   padding: 3rem;
+  max-width: 600px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.12);
   border: 1px solid rgba(255, 255, 255, 0.8);
+  animation: slideInDown 0.4s ease-out;
 }
 
-/* ========================================
-   HEADER
-   ======================================== */
-
-.welcome-header {
+/* Logo Section */
+.logo-section {
   text-align: center;
-  margin-bottom: 2rem;
-  animation: slideInDown 0.4s ease-out 0.1s both;
+  margin-bottom: 3rem;
 }
 
 .logo-icon {
-  width: 64px;
-  height: 64px;
+  width: 80px;
+  height: 80px;
   margin: 0 auto 1.5rem;
   background: linear-gradient(135deg, #2E75B6, #1F4E79);
-  border-radius: 1rem;
+  border-radius: 1.5rem;
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
-  box-shadow: 0 8px 20px rgba(46, 117, 182, 0.3);
+  box-shadow: 0 12px 30px rgba(46, 117, 182, 0.3);
   animation: scaleIn 0.4s ease-out 0.2s both;
 }
 
 .logo-icon svg {
-  width: 32px;
-  height: 32px;
-  stroke-width: 2;
+  width: 48px;
+  height: 48px;
 }
 
-.welcome-title {
-  font-size: 1.875rem;
+.logo-section h1 {
+  font-size: 2rem;
   font-weight: 700;
-  color: #0F172A;
+  color: #0f172a;
   margin: 0 0 0.5rem 0;
-  line-height: 1.2;
+  letter-spacing: -0.5px;
 }
 
-.welcome-subtitle {
-  font-size: 0.95rem;
-  color: #6B7280;
+.logo-section p {
+  font-size: 1rem;
+  color: #6b7280;
   margin: 0;
-  font-weight: 400;
 }
 
+/* Description Section */
+.description-section {
+  text-align: center;
+  margin-bottom: 2rem;
+}
 
+.description-section h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0 0 1rem 0;
+}
 
-/* ========================================
-   BOTONES
-   ======================================== */
+.description-section p {
+  font-size: 1rem;
+  color: #6b7280;
+  line-height: 1.6;
+  margin: 0;
+}
 
-.welcome-buttons {
+/* Buttons Section */
+.buttons-section {
   display: flex;
-  flex-direction: column;
   gap: 1rem;
-  margin-bottom: 1.5rem;
+  margin-bottom: 3rem;
 }
 
 .btn {
-  padding: 0.875rem 1.5rem;
+  flex: 1;
+  padding: 1rem;
   border-radius: 0.875rem;
   font-size: 1rem;
   font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 0.75rem;
-  border: 2px solid transparent;
-  transition: all var(--transition-base);
-  animation: slideInUp 0.4s ease-out;
-}
-
-.btn svg {
-  width: 20px;
-  height: 20px;
-  stroke-width: 2;
+  font-family: inherit;
 }
 
 .btn-primary {
@@ -167,133 +166,202 @@
   background: white;
   color: #2E75B6;
   border: 2px solid #2E75B6;
+  box-shadow: 0 8px 20px rgba(46, 117, 182, 0.15);
 }
 
 .btn-secondary:hover {
-  background: rgba(46, 117, 182, 0.08);
-  color: #1F4E79;
-  border-color: #1F4E79;
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(46, 117, 182, 0.2);
+  background: #f0f4f8;
 }
 
 .btn-secondary:active {
   transform: translateY(0);
 }
 
-.btn:nth-of-type(1) { animation-delay: 0.3s; }
-.btn:nth-of-type(2) { animation-delay: 0.4s; }
-
-/* ========================================
-   FOOTER
-   ======================================== */
-
-.welcome-footer {
-  text-align: center;
-  padding-top: 1.5rem;
-  border-top: 1px solid #E5E7EB;
-  font-size: 0.85rem;
-  color: #9CA3AF;
-  margin: 0;
-  animation: slideInUp 0.4s ease-out 0.5s both;
+.btn-icon {
+  font-size: 1.25rem;
 }
 
-/* ========================================
-   RESPONSIVE
-   ======================================== */
+/* Features Section */
+.features-section {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+  padding-top: 2rem;
+  border-top: 1px solid #e5e7eb;
+}
 
-@media (max-width: 640px) {
+.feature {
+  text-align: center;
+}
+
+.feature-icon {
+  font-size: 2rem;
+  margin-bottom: 0.75rem;
+}
+
+.feature h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0 0 0.5rem 0;
+}
+
+.feature p {
+  font-size: 0.85rem;
+  color: #6b7280;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Animaciones */
+@keyframes slideInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
   .welcome-card {
-    padding: 2rem 1.5rem;
+    padding: 2rem;
   }
 
-  .welcome-title {
+  .logo-section h1 {
     font-size: 1.5rem;
   }
 
-  .welcome-subtitle {
-    font-size: 0.9rem;
-  }
-
-  .btn {
-    padding: 0.75rem 1.25rem;
+  .description-section p {
     font-size: 0.95rem;
   }
 
-  .feature {
-    padding: 0.875rem;
+  .buttons-section {
+    gap: 0.75rem;
   }
 
-  .feature span {
-    font-size: 0.9rem;
+  .btn {
+    padding: 0.875rem;
+    font-size: 0.95rem;
+  }
+
+  .features-section {
+    gap: 1rem;
+  }
+
+  .feature h3 {
+    font-size: 0.95rem;
+  }
+
+  .feature p {
+    font-size: 0.8rem;
   }
 }
 
-@media (max-width: 480px) {
-  .welcome-wrapper {
+@media (max-width: 640px) {
+  .page-container {
     padding: 1rem;
   }
 
   .welcome-card {
-    padding: 1.5rem 1.25rem;
-    border-radius: 1rem;
+    padding: 1.5rem;
+    border-radius: 1.25rem;
   }
 
-  .welcome-header {
-    margin-bottom: 1.5rem;
+  .logo-section {
+    margin-bottom: 2rem;
   }
 
   .logo-icon {
-    width: 56px;
-    height: 56px;
+    width: 70px;
+    height: 70px;
   }
 
   .logo-icon svg {
-    width: 28px;
-    height: 28px;
+    width: 40px;
+    height: 40px;
   }
 
-  .welcome-title {
+  .logo-section h1 {
     font-size: 1.25rem;
   }
 
-  .welcome-subtitle {
-    font-size: 0.85rem;
-  }
-
-  .features {
-    gap: 0.75rem;
-    margin-bottom: 1.5rem;
-  }
-
-  .feature {
-    padding: 0.75rem;
-  }
-
-  .feature-badge {
-    font-size: 1.25rem;
-  }
-
-  .feature span {
-    font-size: 0.85rem;
-  }
-
-  .welcome-buttons {
-    gap: 0.75rem;
-  }
-
-  .btn {
-    padding: 0.7rem 1rem;
+  .logo-section p {
     font-size: 0.9rem;
   }
 
-  .btn svg {
-    width: 18px;
-    height: 18px;
+  .description-section h2 {
+    font-size: 1.25rem;
+    margin-bottom: 0.75rem;
   }
 
-  .welcome-footer {
-    font-size: 0.8rem;
-    padding-top: 1rem;
+  .description-section p {
+    font-size: 0.9rem;
+  }
+
+  .buttons-section {
+    flex-direction: column;
+    margin-bottom: 2rem;
+  }
+
+  .btn {
+    width: 100%;
+  }
+
+  .features-section {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    padding-top: 1.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .welcome-card {
+    padding: 1.25rem;
+  }
+
+  .logo-icon {
+    width: 60px;
+    height: 60px;
+  }
+
+  .logo-icon svg {
+    width: 35px;
+    height: 35px;
+  }
+
+  .logo-section h1 {
+    font-size: 1.1rem;
+  }
+
+  .logo-section p {
+    font-size: 0.85rem;
+  }
+
+  .feature-icon {
+    font-size: 1.75rem;
+  }
+
+  .feature h3 {
+    font-size: 0.9rem;
+  }
+
+  .feature p {
+    font-size: 0.75rem;
   }
 }
