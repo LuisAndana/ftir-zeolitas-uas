@@ -1,17 +1,14 @@
-import { Component, OnInit, OnDestroy, ElementRef, ViewChild } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
-import { EspectroLoaderService, Spectrum } from '../../../../core/services/espectro-loader.service';
+import { ActivatedRoute, RouterLink } from '@angular/router';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
+
+// Importar servicios
+import { SpectraBackendService, SpectrumData } from '../../../../core/services/spectra-backend.service';
 
 declare var Plotly: any;
-
-interface SpectrumSelection {
-  id: string;
-  name: string;
-  selected: boolean;
-  color: string;
-}
 
 @Component({
   selector: 'app-grafica-espectro',
@@ -21,215 +18,285 @@ interface SpectrumSelection {
   styleUrl: './grafica-espectro.css'
 })
 export class GraficaEspectro implements OnInit, OnDestroy {
-
-  @ViewChild('chartContainer', { static: false }) chartContainer!: ElementRef<HTMLDivElement>;
-
-  // Datos
-  spectra: Spectrum[] = [];
-  selectedSpectra: SpectrumSelection[] = [];
-
-  // Opciones de visualización
-  invertX: boolean = true;
-  showGrid: boolean = true;
-  showLegend: boolean = true;
-  lineWidth: number = 2;
-  smoothing: number = 0;
-  title: string = 'Espectros FTIR';
-
-  // Colores para múltiples espectros
-  colors = [
-    '#2E75B6', '#E74C3C', '#27AE60', '#F39C12', '#8E44AD',
-    '#16A085', '#D35400', '#2C3E50', '#C0392B', '#1ABC9C'
-  ];
-
+  
   // Estado
+  spectra: SpectrumData[] = [];
+  selectedSpectra: SpectrumData[] = [];
   loading = false;
-  hasData = false;
-  selectedCount = 0;
+  error: string | null = null;
+  
+  // Opciones de gráfica
+  invertirX = true;
+  mostrarCuadricula = true;
+  mostrarLeyenda = true;
+  grosorLinea = 2;
+  suavizado = 0;
+  
+  // Filtros
+  filterMaterial = '';
+  filterTechnique = '';
+  
+  // Paginación
+  skip = 0;
+  limit = 100;
+  total = 0;
+  page = 1;
+  total_pages = 1;
+  
+  private destroy$ = new Subject<void>();
 
-  constructor(private espectroLoader: EspectroLoaderService) {}
+  constructor(
+    private spectraService: SpectraBackendService,
+    private route: ActivatedRoute
+  ) {}
 
-  ngOnInit() {
+  ngOnInit(): void {
+    console.log('✅ GraficaEspectro inicializado');
+    
+    // Cargar espectros del backend
     this.loadSpectra();
-    this.loadPlotly();
+    
+    // Si viene un ID en la ruta, seleccionar ese espectro
+    this.route.params
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(params => {
+        if (params['id']) {
+          console.log(`📍 Parámetro ID detectado: ${params['id']}`);
+          this.selectSpectrumById(parseInt(params['id']));
+        }
+      });
   }
 
-  ngOnDestroy() {
-    if (this.chartContainer) {
-      Plotly.purge(this.chartContainer.nativeElement);
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  /**
+   * Cargar lista de espectros del backend
+   */
+  loadSpectra(): void {
+    console.log('📊 Cargando espectros del backend...');
+    this.loading = true;
+    this.error = null;
+
+    this.spectraService.getSpectra(this.skip, this.limit)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (response) => {
+          console.log('✅ Espectros cargados:', response.data);
+          this.spectra = response.data;
+          this.total = response.total;
+          this.page = response.page;
+          this.total_pages = response.total_pages;
+          this.loading = false;
+        },
+        error: (error) => {
+          console.error('❌ Error cargando espectros:', error);
+          this.error = error.message || 'Error al cargar espectros';
+          this.loading = false;
+        }
+      });
+  }
+
+  /**
+   * Cuando cambian los filtros, actualizar gráfica
+   */
+  onFilterChange(): void {
+    console.log(`🔍 Filtros cambiados: material="${this.filterMaterial}", technique="${this.filterTechnique}"`);
+    console.log(`📊 Espectros filtrados: ${this.filteredSpectra.length}`);
+    // La gráfica se actualiza automáticamente gracias a *ngFor
+  }
+
+  /**
+   * Obtener espectros filtrados
+   */
+  get filteredSpectra(): SpectrumData[] {
+    return this.spectra.filter(s => {
+      // Filtro por material (búsqueda parcial, sin importar mayúsculas)
+      const materialMatch = !this.filterMaterial || 
+        (s.material || '').toLowerCase().includes(this.filterMaterial.toLowerCase());
+      
+      // Filtro por técnica (coincidencia exacta)
+      const techniqueMatch = !this.filterTechnique || 
+        (s.technique || '').toLowerCase() === this.filterTechnique.toLowerCase();
+      
+      return materialMatch && techniqueMatch;
+    });
+  }
+
+  /**
+   * Seleccionar/deseleccionar espectro
+   */
+  toggleSpectrum(spectrum: SpectrumData): void {
+    const index = this.selectedSpectra.findIndex(s => s.id === spectrum.id);
+    
+    if (index > -1) {
+      // Deseleccionar
+      this.selectedSpectra.splice(index, 1);
+      console.log(`❌ Espectro deseleccionado: ${spectrum.filename}`);
+    } else {
+      // Seleccionar
+      this.selectedSpectra.push(spectrum);
+      console.log(`✅ Espectro seleccionado: ${spectrum.filename}`);
+    }
+    
+    // Redibujar gráfica
+    this.updateGraph();
+  }
+
+  /**
+   * Seleccionar espectro por ID (desde parámetros de ruta)
+   */
+  selectSpectrumById(id: number): void {
+    const spectrum = this.spectra.find(s => s.id === id);
+    
+    if (spectrum && !this.selectedSpectra.find(s => s.id === id)) {
+      this.selectedSpectra = [spectrum];
+      console.log(`✅ Espectro seleccionado por ID: ${spectrum.filename}`);
+      this.updateGraph();
     }
   }
 
   /**
-   * Cargar librería Plotly desde CDN
+   * Verificar si un espectro está seleccionado
    */
-  private loadPlotly() {
-    if (typeof Plotly === 'undefined') {
-      const script = document.createElement('script');
-      script.src = 'https://cdn.plot.ly/plotly-latest.min.js';
-      document.head.appendChild(script);
-      script.onload = () => {
-        console.log('✅ Plotly cargado');
-      };
-    }
+  isSelected(spectrum: SpectrumData): boolean {
+    return this.selectedSpectra.some(s => s.id === spectrum.id);
   }
 
   /**
-   * Cargar espectros disponibles
+   * Limpiar selección
    */
-  private loadSpectra() {
-    this.spectra = this.espectroLoader.getAllSpectra();
-    this.selectedSpectra = this.spectra.map((s: Spectrum, i: number) => ({
-      id: s.id,
-      name: s.filename,
-      selected: false,
-      color: this.colors[i % this.colors.length]
-    }));
-    this.updateSelectedCount();
+  clearSelection(): void {
+    console.log('🧹 Limpiando selección');
+    this.selectedSpectra = [];
+    this.updateGraph();
   }
 
   /**
-   * Actualizar contador de espectros seleccionados
+   * Seleccionar todos los espectros filtrados
    */
-  private updateSelectedCount() {
-    this.selectedCount = this.selectedSpectra.filter(s => s.selected).length;
+  selectAll(): void {
+    console.log('✅ Seleccionando todos los espectros');
+    this.selectedSpectra = [...this.filteredSpectra];
+    this.updateGraph();
   }
 
   /**
-   * Alternar selección de espectro
+   * Actualizar gráfica con espectros seleccionados
    */
-  onSpectrumToggle(id: string) {
-    const selection = this.selectedSpectra.find(s => s.id === id);
-    if (selection) {
-      selection.selected = !selection.selected;
-      this.updateSelectedCount();
-      this.updateChart();
-    }
-  }
-
-  /**
-   * Verificar si espectro está seleccionado
-   */
-  isSelected(id: string): boolean {
-    return this.selectedSpectra.some(s => s.id === id && s.selected);
-  }
-
-  /**
-   * Seleccionar todos los espectros
-   */
-  selectAll() {
-    this.selectedSpectra.forEach(s => s.selected = true);
-    this.updateSelectedCount();
-    this.updateChart();
-  }
-
-  /**
-   * Deseleccionar todos
-   */
-  clearAll() {
-    this.selectedSpectra.forEach(s => s.selected = false);
-    this.updateSelectedCount();
-    this.updateChart();
-  }
-
-  /**
-   * Actualizar gráfica
-   */
-  updateChart() {
-    if (!this.chartContainer) return;
-
-    const selectedIds = this.selectedSpectra
-      .filter(s => s.selected)
-      .map(s => s.id);
-
-    if (selectedIds.length === 0) {
-      Plotly.purge(this.chartContainer.nativeElement);
-      this.hasData = false;
+  updateGraph(): void {
+    console.log(`📈 Actualizando gráfica con ${this.selectedSpectra.length} espectros`);
+    
+    if (this.selectedSpectra.length === 0) {
+      this.clearGraph();
       return;
     }
 
+    // Preparar datos para Plotly
     const traces: any[] = [];
+    const colors = [
+      '#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd',
+      '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf'
+    ];
 
-    selectedIds.forEach((id: string, index: number) => {
-      const spectrum = this.espectroLoader.getSpectrumById(id);
-      if (spectrum) {
-        const selection = this.selectedSpectra.find(s => s.id === id);
-        const color = selection?.color || this.colors[index % this.colors.length];
-
-        // Preparar datos
-        let xData = spectrum.wavenumbers;
-        let yData = spectrum.data;
-
-        if (this.invertX) {
-          xData = [...xData].reverse();
-          yData = [...yData].reverse();
-        }
-
-        // Crear trace de Plotly
-        traces.push({
-          x: xData,
-          y: yData,
-          name: spectrum.filename,
-          type: 'scatter',
-          mode: 'lines',
-          line: {
-            color: color,
-            width: this.lineWidth,
-            shape: this.smoothing > 0 ? 'spline' : 'linear'
-          },
-          hovertemplate: '<b>%{fullData.name}</b><br>' +
-                         'Wavenumber: %{x:.2f} cm⁻¹<br>' +
-                         'Absorbance: %{y:.5f}<br>' +
-                         '<extra></extra>'
-        });
+    this.selectedSpectra.forEach((spectrum, index) => {
+      if (!spectrum.wavenumbers || !spectrum.absorbance) {
+        console.warn(`⚠️  Espectro ${spectrum.filename} sin datos`);
+        return;
       }
+
+      let wavenumbers = [...spectrum.wavenumbers];
+      let absorbance = [...spectrum.absorbance];
+
+      // ✅ Invertir eje X si está habilitado
+      if (this.invertirX) {
+        wavenumbers = wavenumbers.reverse();
+        absorbance = absorbance.reverse();
+      }
+
+      // ✅ Suavizado (media móvil simple)
+      if (this.suavizado > 0) {
+        absorbance = this.smoothData(absorbance, this.suavizado);
+      }
+
+      const trace = {
+        x: wavenumbers,
+        y: absorbance,
+        name: spectrum.filename,
+        mode: 'lines',
+        line: {
+          color: colors[index % colors.length],
+          width: this.grosorLinea,
+          shape: 'linear'
+        },
+        hovertemplate: `<b>${spectrum.filename}</b><br>Wavenumber: %{x:.2f} cm⁻¹<br>Absorbance: %{y:.5f} A.U.<extra></extra>`,
+        connectgaps: true
+      };
+
+      traces.push(trace);
+      console.log(`✅ Trace agregado: ${spectrum.filename}`);
     });
 
-    // Configuración de la gráfica
+    // Configuración de layout - MEJORADA
     const layout = {
       title: {
-        text: this.title,
-        font: { size: 18, color: '#0f172a' }
+        text: `<b>Espectros FTIR</b> (${this.selectedSpectra.length} seleccionado${this.selectedSpectra.length > 1 ? 's' : ''})`,
+        font: { size: 20, family: 'Inter, sans-serif', color: '#333' },
+        x: 0.5,
+        xanchor: 'center'
       },
       xaxis: {
-        title: 'Número de onda (cm⁻¹)',
-        showgrid: this.showGrid,
+        title: {
+          text: '<b>Wavenumber (cm⁻¹)</b>',
+          font: { size: 14, color: '#333' }
+        },
         zeroline: false,
-        gridcolor: '#e5e7eb',
+        showgrid: this.mostrarCuadricula,
+        gridwidth: 1,
+        gridcolor: '#f0f0f0',
         showline: true,
         linewidth: 2,
-        linecolor: '#0f172a',
-        font: { size: 12 }
+        linecolor: '#333',
+        mirror: true
       },
       yaxis: {
-        title: 'Absorbancia / Transmitancia',
-        showgrid: this.showGrid,
+        title: {
+          text: '<b>Absorbance (A.U.)</b>',
+          font: { size: 14, color: '#333' }
+        },
         zeroline: false,
-        gridcolor: '#e5e7eb',
+        showgrid: this.mostrarCuadricula,
+        gridwidth: 1,
+        gridcolor: '#f0f0f0',
         showline: true,
         linewidth: 2,
-        linecolor: '#0f172a',
-        font: { size: 12 }
-      },
-      plot_bgcolor: '#ffffff',
-      paper_bgcolor: '#f8fafc',
-      margin: { l: 80, r: 40, t: 60, b: 80 },
-      legend: {
-        visible: this.showLegend,
-        bgcolor: 'rgba(255, 255, 255, 0.8)',
-        bordercolor: '#e5e7eb',
-        borderwidth: 1,
-        font: { size: 11 },
-        yanchor: 'top',
-        y: 0.99,
-        xanchor: 'right',
-        x: 0.99
+        linecolor: '#333',
+        mirror: true
       },
       hovermode: 'x unified',
-      showlegend: this.showLegend
+      legend: {
+        visible: this.mostrarLeyenda,
+        x: 1.02,
+        y: 1,
+        xanchor: 'left',
+        yanchor: 'top',
+        bgcolor: 'rgba(255, 255, 255, 0.8)',
+        bordercolor: '#ddd',
+        borderwidth: 1,
+        font: { size: 12 }
+      },
+      margin: { l: 80, r: 250, t: 100, b: 80 },
+      plot_bgcolor: '#fafafa',
+      paper_bgcolor: '#ffffff',
+      font: { family: 'Inter, sans-serif', size: 12, color: '#333' },
+      showlegend: this.mostrarLeyenda,
+      autosize: true,
+      height: 600
     };
 
-    // Configuración interactiva
+    // Configuración de opciones
     const config = {
       responsive: true,
       displayModeBar: true,
@@ -237,87 +304,142 @@ export class GraficaEspectro implements OnInit, OnDestroy {
       modeBarButtonsToRemove: ['lasso2d', 'select2d'],
       toImageButtonOptions: {
         format: 'png',
-        filename: `espectro_${new Date().toISOString().split('T')[0]}`,
-        height: 600,
-        width: 1200,
+        filename: `espectro_FTIR_${Date.now()}.png`,
+        height: 800,
+        width: 1400,
         scale: 2
       }
     };
 
-    // Renderizar gráfica
-    Plotly.newPlot(
-      this.chartContainer.nativeElement,
-      traces,
-      layout,
-      config
-    );
-
-    this.hasData = true;
+    // Redibujar
+    try {
+      Plotly.newPlot('grafico', traces, layout, config);
+      console.log('✅ Gráfica actualizada');
+      this.error = null;
+    } catch (error) {
+      console.error('❌ Error en Plotly:', error);
+      this.error = 'Error al graficar espectros';
+    }
   }
 
   /**
-   * Obtener información del espectro
+   * Limpiar gráfica
    */
-  getSpectrumInfo(id: string): string {
-    const spectrum = this.espectroLoader.getSpectrumById(id);
-    if (!spectrum) return '';
-    return `${spectrum.wavenumbers.length} pts`;
-  }
-
-  /**
-   * Descargar gráfica como imagen
-   */
-  downloadChart() {
-    if (this.chartContainer) {
-      Plotly.downloadImage(this.chartContainer.nativeElement, {
-        format: 'png',
-        width: 1200,
-        height: 600,
-        filename: `espectro_${new Date().toISOString().split('T')[0]}`
-      });
+  clearGraph(): void {
+    console.log('🧹 Limpiando gráfica');
+    try {
+      Plotly.purge('grafico');
+      const element = document.getElementById('grafico');
+      if (element) {
+        element.innerHTML = '<p style="text-align: center; padding: 50px;">Selecciona uno o más espectros para visualizar</p>';
+      }
+    } catch (error) {
+      console.error('❌ Error limpiando gráfica:', error);
     }
   }
 
   /**
    * Resetear zoom
    */
-  resetZoom() {
-    if (this.chartContainer) {
-      Plotly.relayout(this.chartContainer.nativeElement, {
+  resetZoom(): void {
+    console.log('🔍 Reseteando zoom');
+    try {
+      Plotly.relayout('grafico', {
         'xaxis.autorange': true,
         'yaxis.autorange': true
       });
+    } catch (error) {
+      console.error('❌ Error reseteando zoom:', error);
     }
   }
 
   /**
-   * Cambiar escala del eje X
+   * Descargar gráfica como PNG
    */
-  toggleInvertX() {
-    this.invertX = !this.invertX;
-    this.updateChart();
+  downloadPNG(): void {
+    console.log('📥 Descargando gráfica como PNG');
+    try {
+      Plotly.downloadImage('grafico', {
+        format: 'png',
+        width: 1000,
+        height: 600,
+        filename: `espectro_${Date.now()}.png`
+      });
+    } catch (error) {
+      console.error('❌ Error descargando PNG:', error);
+      this.error = 'Error descargando imagen';
+    }
   }
 
   /**
-   * Cambiar visibilidad de leyenda
+   * Suavizar datos usando media móvil simple
    */
-  toggleLegend() {
-    this.showLegend = !this.showLegend;
-    this.updateChart();
+  private smoothData(data: number[], windowSize: number): number[] {
+    if (windowSize <= 1 || windowSize >= data.length) return data;
+
+    const smoothed: number[] = [];
+    const half = Math.floor(windowSize / 2);
+
+    for (let i = 0; i < data.length; i++) {
+      let sum = 0;
+      let count = 0;
+
+      for (let j = -half; j <= half; j++) {
+        const idx = i + j;
+        if (idx >= 0 && idx < data.length) {
+          sum += data[idx];
+          count++;
+        }
+      }
+
+      smoothed.push(sum / count);
+    }
+
+    return smoothed;
   }
 
   /**
-   * Cambiar visibilidad de cuadrícula
+   * Cambiar página
    */
-  toggleGrid() {
-    this.showGrid = !this.showGrid;
-    this.updateChart();
+  changePage(newPage: number): void {
+    if (newPage < 1 || newPage > this.total_pages) {
+      return;
+    }
+    this.page = newPage;
+    this.skip = (newPage - 1) * this.limit;
+    this.loadSpectra();
   }
 
   /**
-   * Evento cuando cambian opciones
+   * Obtener icono de formato
    */
-  onOptionChange() {
-    this.updateChart();
+  getFormatIcon(filename: string): string {
+    const ext = filename.substring(filename.lastIndexOf('.')).toLowerCase();
+    const icons: { [key: string]: string } = {
+      '.csv': '📊',
+      '.txt': '📄',
+      '.dpt': '🔬',
+      '.json': '{}',
+      '.xlsx': '📈'
+    };
+    return icons[ext] || '📁';
+  }
+
+  /**
+   * Obtener timestamp legible
+   */
+  getFormattedDate(dateString: string): string {
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('es-MX', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch {
+      return dateString;
+    }
   }
 }

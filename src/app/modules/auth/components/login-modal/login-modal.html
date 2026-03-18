@@ -18,7 +18,7 @@
 
     <!-- Error Message -->
     <div *ngIf="errorMessage" class="error-message">
-      <span class="error-icon">⚠️</span>
+      <span class="error-icon"></span>
       {{ errorMessage }}
     </div>
 
@@ -76,7 +76,7 @@
       >
         <span *ngIf="!loading">Iniciar Sesión</span>
         <span *ngIf="loading" class="loading-spinner">
-          ⏳ Iniciando...
+           Iniciando...
         </span>
       </button>
 

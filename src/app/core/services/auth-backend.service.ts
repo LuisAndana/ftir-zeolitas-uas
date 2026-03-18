@@ -4,7 +4,8 @@ import { BehaviorSubject, Observable } from 'rxjs';
 import { tap, catchError } from 'rxjs/operators';
 import { throwError } from 'rxjs';
 
-const API_URL = 'http://localhost:8000';
+// ✅ CORRECCIÓN: Agregar /api al URL base
+const API_URL = 'http://localhost:8000/api';
 
 export interface User {
   id: number;
@@ -30,6 +31,7 @@ export interface AuthResponse {
   providedIn: 'root'
 })
 export class AuthBackendService {
+  // ✅ CORRECCIÓN: Usar /api/auth en lugar de solo /auth
   private apiUrl = `${API_URL}/auth`;
   private currentUserSubject = new BehaviorSubject<User | null>(this.getUserFromStorage());
   public currentUser$ = this.currentUserSubject.asObservable();
@@ -43,6 +45,8 @@ export class AuthBackendService {
    */
   register(name: string, email: string, password: string): Observable<AuthResponse> {
     console.log('📝 Registrando usuario:', { name, email });
+    console.log('📍 URL: POST', `${this.apiUrl}/register`);
+    
     return this.http.post<AuthResponse>(`${this.apiUrl}/register`, {
       name,
       email,
@@ -75,6 +79,8 @@ export class AuthBackendService {
    */
   login(email: string, password: string): Observable<AuthResponse> {
     console.log('🔐 Iniciando sesión:', email);
+    console.log('📍 URL: POST', `${this.apiUrl}/login`);
+    
     return this.http.post<AuthResponse>(`${this.apiUrl}/login`, {
       email,
       password

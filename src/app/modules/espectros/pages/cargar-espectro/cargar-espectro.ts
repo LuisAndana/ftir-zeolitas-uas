@@ -1,8 +1,12 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { EspectroLoaderService, Spectrum } from '../../../../core/services/espectro-loader.service';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
+
+// Importar el servicio de backend
+import { SpectraBackendService, SpectrumData } from '../../../../core/services/spectra-backend.service';
 
 @Component({
   selector: 'app-cargar-espectro',
@@ -11,10 +15,10 @@ import { EspectroLoaderService, Spectrum } from '../../../../core/services/espec
   templateUrl: './cargar-espectro.html',
   styleUrl: './cargar-espectro.css'
 })
-export class CargarEspectro implements OnInit {
+export class CargarEspectro implements OnInit, OnDestroy {
 
   // Estado
-  spectra: Spectrum[] = [];
+  spectra: SpectrumData[] = [];
   loading = false;
   successMessage = '';
   errorMessage = '';
@@ -28,27 +32,61 @@ export class CargarEspectro implements OnInit {
   fileInfo: any = null;
 
   // Opciones de carga
-  material = 'Desconocido';
+  material = '';
   technique = 'ATR';
   hydrationState = 'As-synthesized';
   temperature = '25°C';
   description = '';
 
-  // Filtros
+  // Filtros y paginación
   filterMaterial = '';
   filterTechnique = '';
+  skip = 0;
+  limit = 20;
+  total = 0;
+  page = 1;
+  total_pages = 1;
 
-  constructor(private espectroLoader: EspectroLoaderService) {}
+  private destroy$ = new Subject<void>();
+
+  constructor(private spectraBackendService: SpectraBackendService) {}
 
   ngOnInit() {
-    this.loadSpectra();
+    console.log('✅ CargarEspectro inicializado');
+    // ✅ Cargar espectros del backend
+    this.loadSpectraFromBackend();
+  }
+
+  ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   /**
-   * Cargar lista de espectros
+   * Cargar lista de espectros del backend
    */
-  private loadSpectra() {
-    this.spectra = this.espectroLoader.getAllSpectra();
+  private loadSpectraFromBackend() {
+    console.log('📊 Cargando espectros del backend...');
+    this.loading = true;
+    this.errorMessage = '';
+
+    this.spectraBackendService.getSpectra(this.skip, this.limit)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (response) => {
+          console.log('✅ Espectros cargados del backend:', response.data);
+          this.spectra = response.data;
+          this.total = response.total;
+          this.page = response.page;
+          this.total_pages = response.total_pages;
+          this.loading = false;
+        },
+        error: (error) => {
+          console.error('❌ Error cargando espectros:', error);
+          this.errorMessage = `❌ Error: ${error.message || 'No se pudo cargar los espectros'}`;
+          this.loading = false;
+        }
+      });
   }
 
   /**
@@ -96,9 +134,14 @@ export class CargarEspectro implements OnInit {
   }
 
   /**
-   * Subir archivo
+   * Subir archivo AL BACKEND
    */
-  async uploadFile(file: File) {
+  async uploadFile(file: File | null) {
+    if (!file) {
+      this.errorMessage = '❌ No hay archivo seleccionado';
+      return;
+    }
+
     this.uploadedFile = file;
     this.loading = true;
     this.successMessage = '';
@@ -109,37 +152,51 @@ export class CargarEspectro implements OnInit {
       // Validar archivo
       this.validateFile(file);
 
-      // Cargar espectro
-      const spectrum = await this.espectroLoader.loadSpectrumFile(file);
+      console.log('📤 Cargando archivo al backend:', file.name);
 
-      // Actualizar metadata
-      spectrum.metadata = {
-        material: this.material,
-        technique: this.technique,
-        hydrationState: this.hydrationState,
-        temperature: this.temperature
-      };
+      // ✅ Llamar al backend para cargar el espectro
+      this.spectraBackendService.uploadSpectrum(
+        file,
+        this.material || undefined,
+        this.technique,
+        this.hydrationState,
+        this.temperature
+      )
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: (response) => {
+            console.log('✅ Espectro cargado al backend:', response.data.spectrum);
+            
+            const spectrum = response.data.spectrum;
+            
+            // Mostrar información
+            this.fileInfo = {
+              filename: spectrum.filename,
+              points: spectrum.point_count,
+              wavenumberMin: spectrum.spectral_range_min?.toFixed(2),
+              wavenumberMax: spectrum.spectral_range_max?.toFixed(2),
+              absorbanceMin: spectrum.min_absorbance?.toFixed(5),
+              absorbanceMax: spectrum.max_absorbance?.toFixed(5),
+              material: spectrum.material,
+              technique: spectrum.technique
+            };
 
-      // Mostrar información
-      this.fileInfo = {
-        filename: spectrum.filename,
-        points: spectrum.wavenumbers.length,
-        wavenumberMin: spectrum.wavenumbers[spectrum.wavenumbers.length - 1]?.toFixed(2),
-        wavenumberMax: spectrum.wavenumbers[0]?.toFixed(2),
-        absorbanceMin: Math.min(...spectrum.data).toFixed(5),
-        absorbanceMax: Math.max(...spectrum.data).toFixed(5),
-        material: spectrum.metadata.material,
-        technique: spectrum.metadata.technique
-      };
-
-      this.successMessage = `✅ Espectro "${file.name}" cargado exitosamente (${spectrum.wavenumbers.length} puntos)`;
-      this.loadSpectra();
-      this.resetForm();
+            this.successMessage = `✅ Espectro "${file.name}" cargado exitosamente (${spectrum.point_count} puntos)`;
+            
+            // Recargar lista desde backend
+            this.loadSpectraFromBackend();
+            this.resetForm();
+          },
+          error: (error) => {
+            console.error('❌ Error cargando espectro:', error);
+            this.errorMessage = `❌ Error: ${error.message || 'No se pudo cargar el espectro'}`;
+            this.loading = false;
+          }
+        });
 
     } catch (error) {
       this.errorMessage = `❌ Error: ${error instanceof Error ? error.message : String(error)}`;
       console.error('Error:', error);
-    } finally {
       this.loading = false;
     }
   }
@@ -162,13 +219,25 @@ export class CargarEspectro implements OnInit {
   }
 
   /**
-   * Eliminar espectro
+   * Eliminar espectro DEL BACKEND
    */
-  deleteSpectrum(id: string, filename: string) {
+  deleteSpectrum(id: number, filename: string) {
     if (confirm(`¿Eliminar espectro "${filename}"?`)) {
-      this.espectroLoader.deleteSpectrum(id);
-      this.loadSpectra();
-      this.successMessage = `✅ Espectro eliminado`;
+      console.log('🗑️  Eliminando espectro:', id);
+      
+      this.spectraBackendService.deleteSpectrum(id)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: () => {
+            console.log('✅ Espectro eliminado del backend');
+            this.successMessage = `✅ Espectro eliminado`;
+            this.loadSpectraFromBackend();
+          },
+          error: (error) => {
+            console.error('❌ Error eliminando espectro:', error);
+            this.errorMessage = `❌ Error: ${error.message}`;
+          }
+        });
     }
   }
 
@@ -177,7 +246,7 @@ export class CargarEspectro implements OnInit {
    */
   private resetForm() {
     this.uploadedFile = null;
-    this.material = 'Desconocido';
+    this.material = '';
     this.technique = 'ATR';
     this.hydrationState = 'As-synthesized';
     this.temperature = '25°C';
@@ -187,21 +256,14 @@ export class CargarEspectro implements OnInit {
   /**
    * Obtener espectros filtrados
    */
-  get filteredSpectra(): Spectrum[] {
+  get filteredSpectra(): SpectrumData[] {
     return this.spectra.filter(s => {
       const materialMatch = !this.filterMaterial || 
-        s.metadata.material.toLowerCase().includes(this.filterMaterial.toLowerCase());
+        (s.material || '').toLowerCase().includes(this.filterMaterial.toLowerCase());
       const techniqueMatch = !this.filterTechnique || 
-        s.metadata.technique.toLowerCase().includes(this.filterTechnique.toLowerCase());
+        (s.technique || '').toLowerCase().includes(this.filterTechnique.toLowerCase());
       return materialMatch && techniqueMatch;
     });
-  }
-
-  /**
-   * Información de formatos soportados
-   */
-  get formatInfo() {
-    return this.espectroLoader.getSupportedFormatsInfo();
   }
 
   /**
@@ -222,14 +284,16 @@ export class CargarEspectro implements OnInit {
   /**
    * Descargar espectro
    */
-  downloadSpectrum(id: string, filename: string) {
-    const spectrum = this.espectroLoader.getSpectrumById(id);
-    if (!spectrum) return;
+  downloadSpectrum(spectrum: SpectrumData, filename: string) {
+    if (!spectrum.wavenumbers || !spectrum.absorbance) {
+      this.errorMessage = '❌ No hay datos para descargar';
+      return;
+    }
 
     // Crear CSV
     let csv = 'wavenumber,absorbance\n';
     for (let i = 0; i < spectrum.wavenumbers.length; i++) {
-      csv += `${spectrum.wavenumbers[i]},${spectrum.data[i]}\n`;
+      csv += `${spectrum.wavenumbers[i]},${spectrum.absorbance[i]}\n`;
     }
 
     // Descargar
@@ -260,5 +324,17 @@ export class CargarEspectro implements OnInit {
     } catch {
       return dateString;
     }
+  }
+
+  /**
+   * Cambiar página
+   */
+  changePage(newPage: number) {
+    if (newPage < 1 || newPage > this.total_pages) {
+      return;
+    }
+    this.page = newPage;
+    this.skip = (newPage - 1) * this.limit;
+    this.loadSpectraFromBackend();
   }
 }

@@ -18,7 +18,7 @@
            (drop)="onDrop($event)">
         
         <div class="drop-content">
-          <span class="drop-icon">📂</span>
+          <span class="drop-icon"></span>
           <h3>Arrastra archivos aquí</h3>
           <p>o haz clic para seleccionar</p>
           <p class="drop-formats">Formatos: DPT • CSV • TXT • JSON • XLSX</p>
@@ -31,14 +31,14 @@
                style="display: none">
         
         <button class="btn-primary" (click)="fileInput.click()" type="button">
-          📁 Seleccionar Archivo
+           Seleccionar Archivo
         </button>
       </div>
 
       <!-- Información de archivo seleccionado -->
       <div class="file-info" *ngIf="uploadedFile">
-        <p><strong>📄 Archivo:</strong> {{ uploadedFile.name }}</p>
-        <p><strong>📊 Tamaño:</strong> {{ (uploadedFile.size / 1024).toFixed(2) }} KB</p>
+        <p><strong> Archivo:</strong> {{ uploadedFile.name }}</p>
+        <p><strong> Tamaño:</strong> {{ (uploadedFile.size / 1024).toFixed(2) }} KB</p>
       </div>
 
     </div>
@@ -106,13 +106,13 @@
 
     <!-- Información de carga -->
     <div class="alert alert-info" *ngIf="loading">
-      ⏳ Cargando espectro...
+       Cargando espectro...
     </div>
   </div>
 
   <!-- INFORMACIÓN DEL ESPECTRO CARGADO -->
   <div class="file-details" *ngIf="fileInfo">
-    <h3>📊 Detalles del Espectro Cargado</h3>
+    <h3> Detalles del Espectro Cargado</h3>
     <div class="details-grid">
       <div class="detail-item">
         <strong>Archivo:</strong>
@@ -144,7 +144,7 @@
   <!-- LISTA DE ESPECTROS -->
   <div class="spectra-list-section">
     <div class="section-header">
-      <h2>📚 Tus Espectros</h2>
+      <h2> Tus Espectros</h2>
       
       <!-- Filtros -->
       <div class="filters">
@@ -165,7 +165,7 @@
 
     <!-- Estado vacío -->
     <div class="empty-state" *ngIf="filteredSpectra.length === 0">
-      <span class="empty-icon">📭</span>
+      <span class="empty-icon"></span>
       <p>No hay espectros cargados</p>
       <p class="hint">Carga tu primer espectro usando la zona de arriba</p>
     </div>
@@ -189,20 +189,20 @@
               <span class="format-icon">{{ getFormatIcon(spectrum.filename) }}</span>
               <span class="filename" [title]="spectrum.filename">{{ spectrum.filename }}</span>
             </td>
-            <td>{{ spectrum.wavenumbers.length }}</td>
-            <td>{{ spectrum.metadata.material }}</td>
-            <td>{{ spectrum.metadata.technique }}</td>
-            <td class="date-cell">{{ getFormattedDate(spectrum.uploadedDate) }}</td>
+            <td>{{ spectrum.point_count || '-' }}</td>
+            <td>{{ spectrum.material || '-' }}</td>
+            <td>{{ spectrum.technique || '-' }}</td>
+            <td class="date-cell">{{ getFormattedDate(spectrum.created_at) }}</td>
             <td class="actions-cell">
               <button class="btn-icon" 
-                      (click)="downloadSpectrum(spectrum.id, spectrum.filename)"
+                      (click)="downloadSpectrum(spectrum, spectrum.filename)"
                       title="Descargar como CSV">
-                ⬇️
+                ⬇
               </button>
               <button class="btn-icon btn-danger" 
                       (click)="deleteSpectrum(spectrum.id, spectrum.filename)"
                       title="Eliminar">
-                🗑️
+                
               </button>
             </td>
           </tr>
@@ -213,12 +213,12 @@
 
   <!-- INFORMACIÓN DE FORMATOS -->
   <div class="info-section">
-    <h3>ℹ️ Información de Formatos</h3>
+    <h3> Información de Formatos</h3>
     
     <div class="format-cards">
       <!-- DPT -->
       <div class="format-card">
-        <h4>🔬 DPT (Perkin Elmer)</h4>
+        <h4> DPT (Perkin Elmer)</h4>
         <p>Formato nativo de espectrómetros Perkin Elmer</p>
         <code>índice   wavenumber   absorbance<br>1   3997.23779   0.99338</code>
         <p class="note">Soporta índice opcional en primera columna</p>
@@ -226,7 +226,7 @@
 
       <!-- CSV -->
       <div class="format-card">
-        <h4>📊 CSV</h4>
+        <h4> CSV</h4>
         <p>Formato universal de valores separados por comas</p>
         <code>wavenumber,absorbance<br>4000.0,0.5<br>3995.5,0.51</code>
         <p class="note">Con o sin encabezados</p>
@@ -234,7 +234,7 @@
 
       <!-- TXT -->
       <div class="format-card">
-        <h4>📄 TXT</h4>
+        <h4> TXT</h4>
         <p>Texto plano con números separados por espacios</p>
         <code>4000.0 0.5<br>3995.5 0.51<br>3991.0 0.52</code>
         <p class="note">Flexible y portable</p>
@@ -242,7 +242,7 @@
 
       <!-- JSON -->
       <div class="format-card">
-        <h4>🔶 JSON</h4>
+        <h4> JSON</h4>
         <p>Formato JavaScript Object Notation</p>
         <code>{{'{'}}wavenumbers: [...], absorbance: [...]{{'}'}}</code>
         <p class="note">O array de objetos con keys</p>
@@ -250,7 +250,7 @@
 
       <!-- XLSX -->
       <div class="format-card">
-        <h4>📈 XLSX</h4>
+        <h4> XLSX</h4>
         <p>Formato Excel (requiere npm install xlsx)</p>
         <code>Columnas: wavenumber, absorbance</code>
         <p class="note">Instala librería SheetJS para soporte</p>
@@ -261,7 +261,7 @@
   <!-- NAVEGACIÓN -->
   <div class="nav-footer">
     <a routerLink="/dashboard/graficar" class="btn-secondary">
-      📊 Ver Gráficas →
+       Ver Gráficas →
     </a>
   </div>
 
