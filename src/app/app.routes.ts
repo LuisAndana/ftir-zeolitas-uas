@@ -48,7 +48,7 @@ export const routes: Routes = [
         path: 'busqueda',
         loadComponent: () =>
           import('./modules/similitud/pages/busqueda/busqueda')
-            .then(m => m.Busqueda)
+            .then(m => m.BusquedaComponent)
       },
       {
         path: 'comparacion',
