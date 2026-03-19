@@ -24,7 +24,7 @@ export class Comparacion implements OnInit {
 
   // Resultados
   globalScore: number = 0;
-  method: string = 'cosine';
+  method: string = 'pearson';  // ✅ CAMBIADO A PEARSON (como el backend)
   tolerance: number = 4;
   windowScores: { window: string; score: number; range: string }[] = [];
   matchedPeaks: number[] = [];
@@ -41,32 +41,102 @@ export class Comparacion implements OnInit {
 
   ngOnInit() {
     this.spectra = this.espectroLoader.getAllSpectra();
+    console.log('✅ Espectros cargados:', this.spectra.length);
 
     this.route.queryParams.subscribe(params => {
+      console.log('🔍 Query params recibidos:', params);
+      
       if (params['query']) this.queryId = params['query'];
       if (params['ref']) this.refId = params['ref'];
+      
+      console.log(`📊 IDs recibidos: query=${this.queryId}, ref=${this.refId}`);
+      
       this.updateSelection();
     });
   }
 
   updateSelection() {
-    this.querySpectrum = this.spectra.find(s => s.id === this.queryId) || null;
-    this.refSpectrum = this.spectra.find(s => s.id === this.refId) || null;
+    console.log('🔄 Buscando espectros en lista local...');
+    console.log(`   Total de espectros: ${this.spectra.length}`);
+    
+    // ✅ SOLUCIÓN: Convertir IDs a número y buscar
+    const queryIdNum = parseInt(this.queryId, 10);
+    const refIdNum = parseInt(this.refId, 10);
+    
+    console.log(`   Buscando: query ID=${queryIdNum} (type: ${typeof queryIdNum}), ref ID=${refIdNum} (type: ${typeof refIdNum})`);
+
+    this.querySpectrum = this.spectra.find(s => {
+      // Asegurar que comparamos con el mismo tipo
+      const specId = typeof s.id === 'string' ? parseInt(s.id, 10) : s.id;
+      return specId === queryIdNum;
+    }) || null;
+
+    this.refSpectrum = this.spectra.find(s => {
+      const specId = typeof s.id === 'string' ? parseInt(s.id, 10) : s.id;
+      return specId === refIdNum;
+    }) || null;
+
+    if (this.querySpectrum) {
+      console.log(`✅ Query spectrum encontrado: ${this.querySpectrum.filename}`);
+    } else {
+      console.warn(`❌ Query spectrum NO encontrado para ID ${queryIdNum}`);
+    }
+
+    if (this.refSpectrum) {
+      console.log(`✅ Reference spectrum encontrado: ${this.refSpectrum.filename}`);
+    } else {
+      console.warn(`❌ Reference spectrum NO encontrado para ID ${refIdNum}`);
+    }
+
     this.compared = false;
   }
 
   onQueryChange() {
-    this.querySpectrum = this.spectra.find(s => s.id === this.queryId) || null;
+    console.log('🔄 Query espectro cambió a:', this.queryId);
+    const queryIdNum = parseInt(this.queryId, 10);
+    this.querySpectrum = this.spectra.find(s => {
+      const specId = typeof s.id === 'string' ? parseInt(s.id, 10) : s.id;
+      return specId === queryIdNum;
+    }) || null;
     this.compared = false;
   }
 
   onRefChange() {
-    this.refSpectrum = this.spectra.find(s => s.id === this.refId) || null;
+    console.log('🔄 Reference espectro cambió a:', this.refId);
+    const refIdNum = parseInt(this.refId, 10);
+    this.refSpectrum = this.spectra.find(s => {
+      const specId = typeof s.id === 'string' ? parseInt(s.id, 10) : s.id;
+      return specId === refIdNum;
+    }) || null;
     this.compared = false;
   }
 
   compare() {
-    if (!this.querySpectrum || !this.refSpectrum) return;
+    console.log('🔄 Iniciando comparación...');
+    
+    if (!this.querySpectrum) {
+      console.error('❌ Query spectrum no seleccionado');
+      return;
+    }
+    if (!this.refSpectrum) {
+      console.error('❌ Reference spectrum no seleccionado');
+      return;
+    }
+
+    console.log(`📊 Comparando:`);
+    console.log(`   Query: ${this.querySpectrum.filename} (${this.querySpectrum.data?.length || 0} puntos)`);
+    console.log(`   Reference: ${this.refSpectrum.filename} (${this.refSpectrum.data?.length || 0} puntos)`);
+    console.log(`   Método: ${this.method} | Tolerancia: ${this.tolerance} cm⁻¹`);
+
+    // ✅ VALIDAR DATOS
+    if (!this.querySpectrum.wavenumbers || !this.querySpectrum.data) {
+      console.error('❌ Query spectrum sin wavenumbers o data');
+      return;
+    }
+    if (!this.refSpectrum.wavenumbers || !this.refSpectrum.data) {
+      console.error('❌ Reference spectrum sin wavenumbers o data');
+      return;
+    }
 
     const config = {
       method: this.method as 'cosine' | 'pearson' | 'euclidean',
@@ -86,6 +156,8 @@ export class Comparacion implements OnInit {
       config
     );
 
+    console.log(`✅ Global score calculado: ${this.globalScore.toFixed(4)} (${(this.globalScore * 100).toFixed(2)}%)`);
+
     // Por ventanas
     this.windowScores = this.spectralWindows.map(w => {
       const wConfig = { ...config, rangeMin: w.min, rangeMax: w.max };
@@ -94,16 +166,22 @@ export class Comparacion implements OnInit {
         this.refSpectrum.wavenumbers, this.refSpectrum.data,
         wConfig
       );
+      console.log(`   Ventana ${w.name} (${w.min}-${w.max}): ${score.toFixed(4)}`);
       return { window: w.name, score, range: `${w.min}-${w.max}` };
     });
 
     // Match de picos
     const qPeaks = this.similarityService.detectPeaks(this.querySpectrum.wavenumbers, this.querySpectrum.data);
     const rPeaks = this.similarityService.detectPeaks(this.refSpectrum.wavenumbers, this.refSpectrum.data);
+    
+    console.log(`🎯 Picos detectados: Query=${qPeaks.length}, Reference=${rPeaks.length}`);
+    
     const match = this.similarityService.matchPeaksWithTolerance(qPeaks, rPeaks, this.tolerance);
     this.matchedPeaks = match.matched;
     this.unmatchedPeaks = match.unmatched;
     this.totalPeaks = match.total;
+
+    console.log(`   Coincidencias: ${this.matchedPeaks.length}/${this.totalPeaks}`);
 
     this.compared = true;
   }
