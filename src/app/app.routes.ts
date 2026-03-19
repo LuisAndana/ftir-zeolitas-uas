@@ -56,6 +56,12 @@ export const routes: Routes = [
           import('./modules/similitud/pages/comparacion/comparacion')
             .then(m => m.Comparacion)
       },
+{
+  path: 'comparacion-espectros/:referenceId/:comparisonId/:method',
+  loadComponent: () =>
+    import('./modules/analysis/pages/spectrum-comparison/spectrum-comparison.component')
+      .then(m => m.SpectrumComparisonComponent)
+},
       {
         path: 'biblioteca',
         loadComponent: () =>

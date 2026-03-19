@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SimilarityBackendService, SimilarityConfig } from '../../../../core/services/similarity-backend.service';
@@ -11,7 +12,6 @@ import { HttpClient, HttpClientModule } from '@angular/common/http';
   templateUrl: './busqueda.html',
   styleUrls: [
     './busqueda.css'
-    // Los estilos globales se cargan automáticamente desde styles.css del proyecto
   ]
 })
 export class BusquedaComponent implements OnInit {
@@ -73,7 +73,8 @@ export class BusquedaComponent implements OnInit {
 
   constructor(
     private similarityBackend: SimilarityBackendService,
-    private http: HttpClient
+    private http: HttpClient,
+    private router: Router
   ) {
     this.loadSpectra();
   }
@@ -83,7 +84,7 @@ export class BusquedaComponent implements OnInit {
   // ========================================
 
   ngOnInit() {
-    console.log(' Componente Búsqueda iniciado');
+    console.log('🚀 Componente Búsqueda iniciado');
   }
 
   // ========================================
@@ -94,7 +95,7 @@ export class BusquedaComponent implements OnInit {
     this.loadingSpectra = true;
     this.errorLoadingSpectra = '';
 
-    console.log(' Cargando espectros desde base de datos...');
+    console.log('📊 Cargando espectros desde base de datos...');
 
     // Obtener token si existe (para autenticación)
     const token = this.getAuthToken();
@@ -110,15 +111,14 @@ export class BusquedaComponent implements OnInit {
     this.http.get('http://localhost:8000/api/spectra', { headers })
       .subscribe({
         next: (response: any) => {
-          console.log(' Respuesta de espectros:', response);
+          console.log('✅ Respuesta de espectros:', response);
 
           if (response.success && response.data) {
             this.spectra = response.data;
-            console.log(` Cargados ${this.spectra.length} espectros desde BD`);
+            console.log(`✓ Cargados ${this.spectra.length} espectros desde BD`);
           } else if (Array.isArray(response)) {
-            // Si la respuesta es directamente un array
             this.spectra = response;
-            console.log(` Cargados ${this.spectra.length} espectros desde BD`);
+            console.log(`✓ Cargados ${this.spectra.length} espectros desde BD`);
           } else {
             console.warn('Formato de respuesta no esperado:', response);
             this.spectra = [];
@@ -128,9 +128,8 @@ export class BusquedaComponent implements OnInit {
           this.loadingSpectra = false;
         },
         error: (error: any) => {
-          console.error(' Error al cargar espectros:', error);
+          console.error('❌ Error al cargar espectros:', error);
 
-          // Mostrar error específico
           if (error.status === 403) {
             this.errorLoadingSpectra = 'Error 403: Acceso prohibido. Verifica autenticación.';
           } else if (error.status === 401) {
@@ -145,7 +144,6 @@ export class BusquedaComponent implements OnInit {
 
           console.error('Detalles del error:', error);
 
-          // Datos de prueba si falla (para desarrollo)
           this.spectra = [
             { id: 1, filename: 'zeolita_test_1.csv', family: 'Zeolita A' },
             { id: 2, filename: 'zeolita_test_2.csv', family: 'Zeolita X' }
@@ -161,14 +159,13 @@ export class BusquedaComponent implements OnInit {
   // ========================================
 
   private getAuthToken(): string | null {
-    // Buscar token en localStorage
     const token = localStorage.getItem('access_token');
     if (token) {
-      console.log(' Token de autenticación encontrado');
+      console.log('🔐 Token de autenticación encontrado');
       return token;
     }
 
-    console.warn(' No se encontró token de autenticación');
+    console.warn('⚠️ No se encontró token de autenticación');
     return null;
   }
 
@@ -181,7 +178,7 @@ export class BusquedaComponent implements OnInit {
     this.selectedSpectrum = this.spectra.find((s: any) => s.id === id);
     this.results = [];
     this.searchDone = false;
-    console.log('Espectro seleccionado:', this.selectedSpectrum);
+    console.log('✓ Espectro seleccionado:', this.selectedSpectrum);
   }
 
   // ========================================
@@ -197,15 +194,14 @@ export class BusquedaComponent implements OnInit {
     this.searching = true;
     const spectrumId = this.selectedSpectrumId.toString();
 
-    console.log(' Iniciando búsqueda:', {
+    console.log('🔍 Iniciando búsqueda:', {
       spectrum_id: spectrumId,
       config: this.config
     });
 
-    // Llamar al método CORRECTO: searchSimilarSpectra
     this.similarityBackend.searchSimilarSpectra(spectrumId, this.config).subscribe({
       next: (response: any) => {
-        console.log(' Respuesta recibida:', response);
+        console.log('✅ Respuesta recibida:', response);
 
         if (response.success && response.data) {
           this.results = response.data.results || [];
@@ -215,7 +211,7 @@ export class BusquedaComponent implements OnInit {
           this.executionTimeMs = response.data.execution_time_ms || 0;
 
           console.log(
-            ` Búsqueda completada: ${this.totalFound}/${this.totalSearched} en ${this.executionTimeMs}ms`
+            `✓ Búsqueda completada: ${this.totalFound}/${this.totalSearched} en ${this.executionTimeMs}ms`
           );
         } else {
           alert('Error en la búsqueda: ' + (response.message || 'Desconocido'));
@@ -226,7 +222,7 @@ export class BusquedaComponent implements OnInit {
       },
       error: (error: any) => {
         this.searching = false;
-        console.error(' Error al buscar:', error);
+        console.error('❌ Error al buscar:', error);
         const errorMsg = error.message || 'Error desconocido';
         alert(`Error: ${errorMsg}`);
       }
@@ -234,12 +230,35 @@ export class BusquedaComponent implements OnInit {
   }
 
   // ========================================
-  // VISUALIZAR RESULTADO
+  // VISUALIZAR RESULTADO - NAVEGAR A COMPARACIÓN
   // ========================================
 
   viewResult(spectrumId: number) {
-    console.log('Ver resultado:', spectrumId);
-    alert(`Ver espectro ${spectrumId}`);
+    console.log('👁️ Ver resultado:', spectrumId);
+    
+    // Validar que tenemos los IDs necesarios
+    if (!this.selectedSpectrumId) {
+      alert('Error: Espectro de referencia no seleccionado');
+      return;
+    }
+
+    const referenceId = this.selectedSpectrumId;
+    const comparisonId = spectrumId;
+    const method = this.config.method;
+
+    console.log('🔗 Navegando a comparación:', {
+      referenceId,
+      comparisonId,
+      method
+    });
+
+    // Navegar a la página de comparación
+    this.router.navigate([
+      '/dashboard/comparacion-espectros',
+      referenceId,
+      comparisonId,
+      method
+    ]);
   }
 
   // ========================================
@@ -247,7 +266,6 @@ export class BusquedaComponent implements OnInit {
   // ========================================
 
   toggleWindow(windowId: string) {
-    // Asegurar que selected_windows está definido
     if (!this.config.selected_windows) {
       this.config.selected_windows = [];
     }
@@ -258,7 +276,7 @@ export class BusquedaComponent implements OnInit {
     } else {
       this.config.selected_windows.push(windowId);
     }
-    console.log('Ventanas seleccionadas:', this.config.selected_windows);
+    console.log('✓ Ventanas seleccionadas:', this.config.selected_windows);
   }
 
   isWindowSelected(windowId: string): boolean {
@@ -280,7 +298,7 @@ export class BusquedaComponent implements OnInit {
     if (this.config.selected_windows) {
       this.config.selected_windows = [];
     }
-    console.log('Búsqueda reseteada');
+    console.log('🔄 Búsqueda reseteada');
   }
 
   // ========================================

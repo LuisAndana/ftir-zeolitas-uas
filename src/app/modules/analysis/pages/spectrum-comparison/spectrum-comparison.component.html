@@ -1,0 +1,83 @@
+<div class="spectrum-comparison-container">
+  <!-- Header -->
+  <div class="comparison-header">
+    <button class="btn-back" (click)="goBack()">
+      <span>← Volver</span>
+    </button>
+    <h1>Comparación de Espectros FTIR</h1>
+    <button class="btn-download" (click)="downloadComparison()" [disabled]="loading">
+      <span>⬇️ Descargar</span>
+    </button>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="loading" class="loading-state">
+    <div class="spinner"></div>
+    <p>Cargando espectros...</p>
+  </div>
+
+  <!-- Error State -->
+  <div *ngIf="error && !loading" class="error-state">
+    <p>{{ error }}</p>
+  </div>
+
+  <!-- Content -->
+  <div *ngIf="!loading && referenceSpectrum && comparisonSpectrum" class="comparison-content">
+    
+    <!-- Similarity Score -->
+    <div class="similarity-section">
+      <div class="similarity-card">
+        <h2>Puntuación de Similitud</h2>
+        <div class="score-display">
+          <div class="score-value">{{ (similarityScore * 100).toFixed(2) }}%</div>
+          <div class="score-method">Método: {{ method }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Spectrum Information -->
+    <div class="info-section">
+      <div class="info-card">
+        <h3>Espectro de Referencia</h3>
+        <div class="info-content">
+          <p><strong>Código:</strong> {{ referenceSpectrum.sample_code }}</p>
+          <p><strong>Zeolita:</strong> {{ referenceSpectrum.zeolite_name }}</p>
+          <p><strong>ID:</strong> {{ referenceSpectrum.id }}</p>
+          <p *ngIf="referenceSpectrum.equipment"><strong>Equipo:</strong> {{ referenceSpectrum.equipment }}</p>
+          <p *ngIf="referenceSpectrum.measurement_date"><strong>Fecha:</strong> {{ referenceSpectrum.measurement_date }}</p>
+        </div>
+      </div>
+
+      <div class="vs-badge">vs</div>
+
+      <div class="info-card">
+        <h3>Espectro Encontrado</h3>
+        <div class="info-content">
+          <p><strong>Código:</strong> {{ comparisonSpectrum.sample_code }}</p>
+          <p><strong>Zeolita:</strong> {{ comparisonSpectrum.zeolite_name }}</p>
+          <p><strong>ID:</strong> {{ comparisonSpectrum.id }}</p>
+          <p *ngIf="comparisonSpectrum.equipment"><strong>Equipo:</strong> {{ comparisonSpectrum.equipment }}</p>
+          <p *ngIf="comparisonSpectrum.measurement_date"><strong>Fecha:</strong> {{ comparisonSpectrum.measurement_date }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Charts -->
+    <div class="charts-section">
+      <div class="chart-container">
+        <canvas id="chartReference"></canvas>
+      </div>
+      <div class="chart-container">
+        <canvas id="chartComparison"></canvas>
+      </div>
+    </div>
+
+    <!-- Overlay Comparison -->
+    <div class="overlay-section">
+      <h2>Visualización Superpuesta</h2>
+      <div class="chart-container">
+        <canvas id="chartOverlay"></canvas>
+      </div>
+    </div>
+  </div>
+</div>

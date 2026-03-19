@@ -2,13 +2,13 @@
 
   <!-- ENCABEZADO -->
   <div class="header">
-    <h1> Búsqueda por Similitud Espectral</h1>
+    <h1>🔍 Búsqueda por Similitud Espectral</h1>
     <p>Encuentra espectros similares usando análisis de similitud FTIR</p>
   </div>
 
   <!-- SECCIÓN DE CONFIGURACIÓN -->
   <div class="config-section card">
-    <h2> Configuración</h2>
+    <h2>⚙️ Configuración</h2>
 
     <!-- Selección de Espectro -->
     <div class="form-group">
@@ -129,16 +129,16 @@
       (click)="search()" 
       [disabled]="searching || !selectedSpectrum"
       class="btn btn-primary btn-lg">
-      <span *ngIf="!searching"> Buscar Similitud</span>
+      <span *ngIf="!searching">🔍 Buscar Similitud</span>
       <span *ngIf="searching">
-         Buscando...
+        ⏳ Buscando...
       </span>
     </button>
     <button 
       (click)="resetSearch()"
       [disabled]="searching"
       class="btn btn-secondary">
-       Limpiar
+      🔄 Limpiar
     </button>
   </div>
 
@@ -147,7 +147,7 @@
 
     <!-- Estadísticas -->
     <div class="stats-card">
-      <h3> Resultados</h3>
+      <h3>📊 Resultados</h3>
       <div class="stats-grid">
         <div class="stat">
           <strong>Encontrados:</strong>
@@ -201,7 +201,7 @@
               <button 
                 (click)="viewResult(result.spectrum_id)"
                 class="btn btn-sm btn-view">
-                 Ver
+                👁️ Ver
               </button>
             </td>
           </tr>
@@ -211,13 +211,13 @@
 
     <!-- Sin resultados -->
     <div *ngIf="results.length === 0" class="no-results">
-      <p> No se encontraron espectros similares con los parámetros seleccionados</p>
+      <p>❌ No se encontraron espectros similares con los parámetros seleccionados</p>
     </div>
 
     <!-- Botón Export -->
     <div *ngIf="results.length > 0" class="export-section">
       <button (click)="exportResults()" class="btn btn-secondary">
-         Exportar a CSV
+        📥 Exportar a CSV
       </button>
     </div>
 
@@ -225,7 +225,7 @@
 
   <!-- SIN BÚSQUEDA AÚN -->
   <div *ngIf="!searchDone && !searching" class="empty-state">
-    <p> Selecciona un espectro y haz clic en "Buscar Similitud"</p>
+    <p>📋 Selecciona un espectro y haz clic en "Buscar Similitud"</p>
   </div>
 
 </div>
