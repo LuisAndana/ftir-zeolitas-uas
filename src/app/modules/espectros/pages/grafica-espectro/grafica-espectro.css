@@ -1,5 +1,5 @@
 ﻿/* ========================================
-   GRAFICA-ESPECTRO FINAL STYLES
+   GRAFICA-ESPECTRO - GRÁFICA FULL HEIGHT
    ======================================== */
 
 .grafica-espectro-container {
@@ -10,7 +10,7 @@
 
 /* HEADER */
 .header-section {
-  margin-bottom: 30px;
+  margin-bottom: 20px;
 }
 
 .title-area h1 {
@@ -26,38 +26,68 @@
   font-size: 0.95rem;
 }
 
-/* CONTENT WRAPPER - GRÁFICA GRANDE */
+/* CONTENT WRAPPER */
 .content-wrapper {
   display: grid;
-  grid-template-columns: 1fr 380px;
+  grid-template-columns: 1fr 340px;
   gap: 20px;
-  align-items: flex-start;
+  height: calc(100vh - 160px);
 }
 
 /* GRAPH SECTION LARGE */
 .graph-section-large {
   background: white;
   border-radius: 8px;
-  padding: 20px;
+  padding: 0;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   display: flex;
   flex-direction: column;
-  gap: 15px;
+  gap: 0;
+  overflow: hidden;
+  height: 100%;
 }
 
+/* ALERTS - DENTRO DEL CONTAINER */
+.alert {
+  padding: 10px 12px;
+  border-radius: 0;
+  border-left: 4px solid;
+  margin: 0;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+
+.alert-info {
+  background: #e3f2fd;
+  border-color: #2196f3;
+  color: #1565c0;
+}
+
+.alert-danger {
+  background: #ffebee;
+  border-color: #f44336;
+  color: #c62828;
+}
+
+/* GRAPH CONTAINER - LLENA TODO EL ESPACIO */
 .graph-container-large {
   width: 100%;
-  height: 800px;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  overflow: hidden;
+  flex: 1;
+  border: none;
+  border-radius: 0;
+  overflow: visible;
   background: #ffffff;
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05);
+  box-shadow: none;
+  display: flex;
+  flex-direction: column;
+  position: relative;
 }
 
 #grafico {
   width: 100%;
-  height: 100%;
+  flex: 1;
+  position: relative;
+  background: white;
 }
 
 .graph-placeholder {
@@ -70,13 +100,105 @@
   font-size: 0.95rem;
 }
 
-/* CONTROL PANEL SIDE */
+/* ========================================
+   ESTILOS PLOTLY - TOOLBAR ARRIBA
+   ======================================== */
+
+/* Toolbar de Plotly */
+.graph-container-large .modebar {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  background-color: white !important;
+  margin: 0 !important;
+  padding: 6px 8px !important;
+  display: flex !important;
+  gap: 2px !important;
+  border-bottom: 1px solid #e0e0e0 !important;
+  justify-content: flex-start !important;
+  flex-wrap: wrap !important;
+  z-index: 100 !important;
+  height: auto !important;
+}
+
+/* Botones de Plotly */
+.graph-container-large .modebar-btn {
+  width: 32px !important;
+  height: 32px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 4px !important;
+  background-color: #f5f5f5 !important;
+  border: 1px solid #d0d0d0 !important;
+  cursor: pointer !important;
+  transition: all 0.2s !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  flex-shrink: 0 !important;
+  line-height: 1 !important;
+}
+
+.graph-container-large .modebar-btn:hover {
+  background-color: #e3f2fd !important;
+  border-color: #2E75B6 !important;
+  color: #2E75B6 !important;
+}
+
+.graph-container-large .modebar-btn.active {
+  background-color: #e3f2fd !important;
+  border-color: #2E75B6 !important;
+  color: #2E75B6 !important;
+}
+
+/* Iconos SVG */
+.graph-container-large .modebar-btn svg {
+  width: 16px !important;
+  height: 16px !important;
+  stroke: currentColor !important;
+  stroke-width: 1.5px !important;
+  fill: none !important;
+}
+
+/* Ocultar separadores */
+.graph-container-large .modebar-separator {
+  display: none !important;
+}
+
+/* Ajustar espacios para que no se solape */
+.graph-container-large .plotly-graph-div {
+  padding-top: 50px !important;
+}
+
+/* ========================================
+   CONTROL PANEL SIDE
+   ======================================== */
+
 .control-panel-side {
   display: flex;
   flex-direction: column;
   gap: 15px;
-  max-height: 800px;
+  max-height: calc(100vh - 160px);
   overflow-y: auto;
+  padding-right: 5px;
+}
+
+.control-panel-side::-webkit-scrollbar {
+  width: 6px;
+}
+
+.control-panel-side::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.control-panel-side::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 3px;
+}
+
+.control-panel-side::-webkit-scrollbar-thumb:hover {
+  background: #999;
 }
 
 .panel-card {
@@ -84,22 +206,25 @@
   border-radius: 8px;
   padding: 15px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  flex-shrink: 0;
 }
 
 .panel-card h2 {
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   margin: 0 0 12px 0;
   color: #333;
+  font-weight: 700;
 }
 
 .panel-card h3 {
-  font-size: 1rem;
+  font-size: 0.95rem;
   margin: 0 0 12px 0;
   color: #444;
+  font-weight: 700;
 }
 
 .panel-card h4 {
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   margin: 0 0 10px 0;
   color: #666;
   text-transform: uppercase;
@@ -107,7 +232,7 @@
   font-weight: 600;
 }
 
-/* SELECTION BUTTONS */
+/* ===== SELECTION BUTTONS ===== */
 .selection-buttons {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -115,7 +240,7 @@
   margin-bottom: 12px;
 }
 
-/* FILTERS SECTION */
+/* ===== FILTERS SECTION ===== */
 .filters-section {
   background: #f9f9f9;
   padding: 10px;
@@ -157,7 +282,7 @@
   box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
 }
 
-/* EMPTY STATE */
+/* ===== EMPTY STATE ===== */
 .empty-state {
   text-align: center;
   padding: 20px 10px;
@@ -174,13 +299,23 @@
   text-decoration: underline;
 }
 
-/* SPECTRA LIST */
+/* ===== SPECTRA LIST ===== */
 .spectra-list {
-  max-height: 300px;
+  max-height: 280px;
   overflow-y: auto;
   border: 1px solid #eee;
   border-radius: 4px;
   margin-bottom: 12px;
+  background: #fafafa;
+}
+
+.spectra-list::-webkit-scrollbar {
+  width: 4px;
+}
+
+.spectra-list::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 2px;
 }
 
 .spectrum-item {
@@ -196,7 +331,7 @@
 }
 
 .spectrum-item:hover {
-  background: #f9f9f9;
+  background: #fff;
 }
 
 .spectrum-item.selected {
@@ -220,6 +355,7 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
+  min-width: 0;
 }
 
 .spectrum-name {
@@ -229,10 +365,14 @@
   display: flex;
   align-items: center;
   gap: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .format-icon {
   font-size: 0.9rem;
+  flex-shrink: 0;
 }
 
 .spectrum-details {
@@ -249,13 +389,15 @@
   border-radius: 2px;
 }
 
-/* PAGINATION SMALL */
+/* ===== PAGINATION SMALL ===== */
 .pagination-small {
   display: flex;
   justify-content: center;
   align-items: center;
   gap: 8px;
   font-size: 0.8rem;
+  padding-top: 10px;
+  border-top: 1px solid #eee;
 }
 
 .pagination-small .btn {
@@ -263,41 +405,80 @@
   font-size: 0.75rem;
 }
 
-/* OPTIONS CARD */
+/* ===== OPTIONS CARD ===== */
 .options-card {
-  max-height: 350px;
-  overflow-y: auto;
+  max-height: none;
+  overflow-y: visible;
 }
 
 .option-group {
   margin-bottom: 10px;
 }
 
+.option-group:last-child {
+  margin-bottom: 0;
+}
+
 .option-group label {
-  display: block;
-  font-size: 0.8rem;
-  color: #555;
-  margin-bottom: 4px;
-  font-weight: 500;
-  cursor: pointer;
   display: flex;
   align-items: center;
   gap: 6px;
-}
-
-.option-group input[type="text"],
-.option-group input[type="range"] {
-  width: 100%;
-  padding: 4px 8px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 0.8rem;
+  font-size: 0.85rem;
+  color: #555;
+  margin-bottom: 0;
+  font-weight: 500;
+  cursor: pointer;
+  user-select: none;
 }
 
 .option-group input[type="checkbox"] {
   cursor: pointer;
   width: 14px;
   height: 14px;
+  flex-shrink: 0;
+}
+
+.option-group input[type="range"] {
+  width: 100%;
+  padding: 4px 0;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  height: 6px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: #ddd;
+  outline: none;
+  cursor: pointer;
+  margin-top: 4px;
+}
+
+.option-group input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  background: #0066cc;
+  cursor: pointer;
+  border-radius: 50%;
+}
+
+.option-group input[type="range"]::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  background: #0066cc;
+  cursor: pointer;
+  border-radius: 50%;
+  border: none;
+}
+
+.option-group input[type="text"] {
+  width: 100%;
+  padding: 4px 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  margin-top: 4px;
 }
 
 .option-group small {
@@ -307,36 +488,7 @@
   margin-top: 3px;
 }
 
-.slider {
-  padding: 0;
-  height: 5px;
-  -webkit-appearance: none;
-  appearance: none;
-  background: #ddd;
-  outline: none;
-  border-radius: 3px;
-}
-
-.slider::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 14px;
-  height: 14px;
-  background: #0066cc;
-  cursor: pointer;
-  border-radius: 50%;
-}
-
-.slider::-moz-range-thumb {
-  width: 14px;
-  height: 14px;
-  background: #0066cc;
-  cursor: pointer;
-  border-radius: 50%;
-  border: none;
-}
-
-/* TOOLS CARD */
+/* ===== TOOLS CARD ===== */
 .tools-card {
   display: flex;
   flex-direction: column;
@@ -348,28 +500,7 @@
   text-align: center;
 }
 
-/* ALERTS */
-.alert {
-  padding: 10px 12px;
-  border-radius: 4px;
-  border-left: 4px solid;
-  margin: 0;
-  font-size: 0.9rem;
-}
-
-.alert-info {
-  background: #e3f2fd;
-  border-color: #2196f3;
-  color: #1565c0;
-}
-
-.alert-danger {
-  background: #ffebee;
-  border-color: #f44336;
-  color: #c62828;
-}
-
-/* BUTTONS */
+/* ===== BUTTONS ===== */
 .btn {
   padding: 6px 10px;
   border: none;
@@ -410,8 +541,8 @@
 }
 
 .btn-sm {
-  padding: 4px 8px;
-  font-size: 0.75rem;
+  padding: 5px 10px;
+  font-size: 0.8rem;
 }
 
 .btn:disabled {
@@ -419,20 +550,19 @@
   cursor: not-allowed;
 }
 
-/* RESPONSIVE */
+/* ===== RESPONSIVE ===== */
 @media (max-width: 1400px) {
   .content-wrapper {
-    grid-template-columns: 1fr 360px;
-  }
-
-  .graph-container-large {
-    height: 700px;
+    grid-template-columns: 1fr 320px;
+    height: calc(100vh - 160px);
   }
 }
 
 @media (max-width: 1024px) {
   .content-wrapper {
     grid-template-columns: 1fr;
+    height: auto;
+    gap: 15px;
   }
 
   .control-panel-side {
@@ -443,25 +573,41 @@
     overflow-y: visible;
   }
 
-  .graph-container-large {
-    height: 600px;
+  .graph-section-large {
+    min-height: 500px;
+  }
+
+  .graph-container-large .modebar {
+    flex-wrap: wrap !important;
   }
 }
 
 @media (max-width: 768px) {
+  .grafica-espectro-container {
+    padding: 10px;
+  }
+
   .content-wrapper {
     grid-template-columns: 1fr;
+    gap: 12px;
+    height: auto;
   }
 
   .control-panel-side {
     display: flex;
     flex-direction: column;
-    gap: 15px;
-    max-height: 400px;
+    gap: 12px;
+    max-height: none;
+    overflow-y: visible;
   }
 
-  .graph-container-large {
-    height: 400px;
+  .graph-section-large {
+    min-height: 400px;
+  }
+
+  .graph-container-large .modebar-btn {
+    width: 28px !important;
+    height: 28px !important;
   }
 
   .panel-card {
@@ -470,5 +616,48 @@
 
   .title-area h1 {
     font-size: 1.5rem;
+  }
+
+  .panel-card h2 {
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .grafica-espectro-container {
+    padding: 8px;
+  }
+
+  .header-section {
+    margin-bottom: 10px;
+  }
+
+  .title-area h1 {
+    font-size: 1.25rem;
+  }
+
+  .title-area p {
+    font-size: 0.8rem;
+  }
+
+  .content-wrapper {
+    gap: 10px;
+  }
+
+  .graph-section-large {
+    min-height: 300px;
+  }
+
+  .graph-container-large .modebar-btn {
+    width: 24px !important;
+    height: 24px !important;
+  }
+
+  .panel-card {
+    padding: 10px;
+  }
+
+  .spectra-list {
+    max-height: 150px;
   }
 }
