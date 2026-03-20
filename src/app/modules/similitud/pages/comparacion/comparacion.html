@@ -6,158 +6,251 @@
     <p>Compara dos espectros en detalle y analiza sus diferencias por ventanas espectrales</p>
   </div>
 
-  <!-- SELECCIÓN DE ESPECTROS -->
-  <div class="compare-selectors">
-    <div class="selector-card query-card">
-      <h4 class="selector-label">
-        <span class="label-dot query-dot"></span>
-        Espectro de Consulta
-      </h4>
-      <select [(ngModel)]="queryId" (change)="onQueryChange()" class="form-select">
-        <option value="">-- Seleccionar --</option>
-        <option *ngFor="let s of spectra" [value]="s.id">{{ s.filename }}</option>
-      </select>
-      <div class="selector-info" *ngIf="querySpectrum">
-        <span>{{ querySpectrum.data.length }} puntos</span>
-        <span>{{ querySpectrum.metadata?.technique || 'N/D' }}</span>
-      </div>
-    </div>
-
-    <button class="swap-btn" (click)="swapSpectra()" title="Intercambiar espectros">⇄</button>
-
-    <div class="selector-card ref-card">
-      <h4 class="selector-label">
-        <span class="label-dot ref-dot"></span>
-        Espectro de Referencia
-      </h4>
-      <select [(ngModel)]="refId" (change)="onRefChange()" class="form-select">
-        <option value="">-- Seleccionar --</option>
-        <option *ngFor="let s of spectra" [value]="s.id">{{ s.filename }}</option>
-      </select>
-      <div class="selector-info" *ngIf="refSpectrum">
-        <span>{{ refSpectrum.data.length }} puntos</span>
-        <span>{{ refSpectrum.metadata?.technique || 'N/D' }}</span>
-      </div>
-    </div>
+  <!-- LOADING INICIAL DE ESPECTROS -->
+  <div *ngIf="isLoadingSpectra" class="loading-state">
+    <div class="spinner"></div>
+    <p> Cargando espectros del servidor...</p>
   </div>
 
-  <!-- CONFIGURACIÓN -->
-  <div class="compare-config">
-    <div class="config-item">
-      <label>Método</label>
-      <select [(ngModel)]="method" class="form-select small">
-        <option value="cosine">Coseno</option>
-        <option value="pearson">Pearson</option>
-        <option value="euclidean">Euclidiana</option>
-      </select>
-    </div>
-    <div class="config-item">
-      <label>Tolerancia ±{{ tolerance }} cm⁻¹</label>
-      <input type="range" [(ngModel)]="tolerance" min="1" max="20" step="1" class="slider">
-    </div>
-    <button class="btn-compare" (click)="compare()" [disabled]="!querySpectrum || !refSpectrum">
-      Comparar Espectros
-    </button>
+  <!-- ALERTS -->
+  <div *ngIf="errorMessage && !isLoadingSpectra" class="alert alert-error">
+    <span class="alert-icon"></span>
+    <span class="alert-text">{{ errorMessage }}</span>
+    <button class="alert-close" (click)="errorMessage = ''">✕</button>
   </div>
 
-  <!-- RESULTADOS DE COMPARACIÓN -->
-  <div class="compare-results" *ngIf="compared">
+  <div *ngIf="successMessage && !isComparingWithBackend" class="alert alert-success">
+    <span class="alert-icon"></span>
+    <span class="alert-text">{{ successMessage }}</span>
+    <button class="alert-close" (click)="successMessage = ''">✕</button>
+  </div>
 
-    <!-- Score Global -->
-    <div class="global-score-card" [class]="getScoreClass(globalScore)">
-      <div class="big-score">
-        <span class="big-number">{{ getScorePercent(globalScore) }}</span>
-        <span class="big-unit">%</span>
+  <!-- CONTENIDO PRINCIPAL (Solo si hay espectros) -->
+  <div *ngIf="!isLoadingSpectra && spectra.length > 0">
+
+    <!-- SELECCIÓN DE ESPECTROS -->
+    <div class="compare-selectors">
+      <div class="selector-card query-card">
+        <h4 class="selector-label">
+          <span class="label-dot query-dot"></span>
+          Espectro de Consulta
+        </h4>
+        <select [(ngModel)]="queryId" (change)="onQueryChange()" class="form-select">
+          <option value="">-- Seleccionar --</option>
+          <option *ngFor="let s of spectra" [value]="s.id">{{ s.filename }}</option>
+        </select>
+        <div class="selector-info" *ngIf="querySpectrum">
+          <span> {{ querySpectrum.data?.length || 0 }} puntos</span>
+          <span> {{ querySpectrum.metadata?.technique || 'N/D' }}</span>
+        </div>
       </div>
-      <div class="score-meta">
-        <span class="score-title">Similitud Global</span>
-        <span class="score-desc">
-          {{ globalScore >= 0.9 ? 'Match excelente — los espectros son muy similares' :
-             globalScore >= 0.7 ? 'Match bueno — los espectros comparten la mayoría de características' :
-             globalScore >= 0.5 ? 'Match moderado — hay similitudes parciales' :
-             'Match bajo — los espectros difieren significativamente' }}
-        </span>
+
+      <button 
+        class="swap-btn" 
+        (click)="swapSpectra()" 
+        title="Intercambiar espectros" 
+        [disabled]="!querySpectrum || !refSpectrum">
+        ⇄
+      </button>
+
+      <div class="selector-card ref-card">
+        <h4 class="selector-label">
+          <span class="label-dot ref-dot"></span>
+          Espectro de Referencia
+        </h4>
+        <select [(ngModel)]="refId" (change)="onRefChange()" class="form-select">
+          <option value="">-- Seleccionar --</option>
+          <option *ngFor="let s of spectra" [value]="s.id">{{ s.filename }}</option>
+        </select>
+        <div class="selector-info" *ngIf="refSpectrum">
+          <span> {{ refSpectrum.data?.length || 0 }} puntos</span>
+          <span> {{ refSpectrum.metadata?.technique || 'N/D' }}</span>
+        </div>
       </div>
     </div>
 
-    <!-- Resumen lado a lado -->
-    <div class="side-by-side">
-      <div class="side-card">
-        <h4>{{ querySpectrum.filename }}</h4>
-        <div class="side-stats">
-          <div class="stat"><span class="stat-num">{{ querySpectrum.data.length }}</span><span class="stat-label">Puntos</span></div>
-          <div class="stat"><span class="stat-num">{{ totalPeaks }}</span><span class="stat-label">Picos detectados</span></div>
-          <div class="stat"><span class="stat-num">{{ querySpectrum.metadata?.technique || 'N/D' }}</span><span class="stat-label">Técnica</span></div>
-        </div>
+    <!-- CONFIGURACIÓN -->
+    <div class="compare-config">
+      <div class="config-item">
+        <label>Método de Similitud</label>
+        <select [(ngModel)]="method" class="form-select small">
+          <option value="pearson"> Pearson (Recomendado)</option>
+          <option value="cosine"> Coseno</option>
+          <option value="euclidean"> Euclidiana</option>
+        </select>
       </div>
-      <div class="vs-badge">VS</div>
-      <div class="side-card">
-        <h4>{{ refSpectrum.filename }}</h4>
-        <div class="side-stats">
-          <div class="stat"><span class="stat-num">{{ refSpectrum.data.length }}</span><span class="stat-label">Puntos</span></div>
-          <div class="stat">
-            <span class="stat-num">{{ matchedPeaks.length + unmatchedPeaks.length }}</span>
-            <span class="stat-label">Picos detectados</span>
+
+      <div class="config-item">
+        <label>Tolerancia: <strong>±{{ tolerance }} cm⁻¹</strong></label>
+        <input type="range" [(ngModel)]="tolerance" min="1" max="20" step="1" class="slider">
+      </div>
+
+      <button 
+        class="btn-compare" 
+        (click)="compare()" 
+        [disabled]="!querySpectrum || !refSpectrum || isComparingWithBackend"
+      >
+        <span *ngIf="!isComparingWithBackend"> Comparar Espectros</span>
+        <span *ngIf="isComparingWithBackend"> Comparando...</span>
+      </button>
+
+      <button class="btn-clear" (click)="clearComparison()" *ngIf="compared">
+         Limpiar
+      </button>
+    </div>
+
+    <!-- ESTADO DE CARGA DURANTE COMPARACIÓN -->
+    <div class="loading-state" *ngIf="isComparingWithBackend">
+      <div class="spinner"></div>
+      <p> Analizando espectros...</p>
+    </div>
+
+    <!-- RESULTADOS DE COMPARACIÓN -->
+    <div class="compare-results" *ngIf="compared && !isComparingWithBackend">
+
+      <!-- Score Global -->
+      <div class="global-score-card" [class]="getScoreClass(globalScore)">
+        <div class="score-content">
+          <div class="big-score">
+            <span class="big-number">{{ getScorePercent(globalScore) }}</span>
+            <span class="big-unit">%</span>
           </div>
-          <div class="stat"><span class="stat-num">{{ refSpectrum.metadata?.technique || 'N/D' }}</span><span class="stat-label">Técnica</span></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Picos Matching -->
-    <div class="peaks-section">
-      <h4>Análisis de Picos (±{{ tolerance }} cm⁻¹)</h4>
-      <div class="peaks-summary">
-        <div class="peak-stat matched">
-          <span class="peak-num">{{ matchedPeaks.length }}</span>
-          <span class="peak-label">Picos coincidentes</span>
-        </div>
-        <div class="peak-stat unmatched">
-          <span class="peak-num">{{ unmatchedPeaks.length }}</span>
-          <span class="peak-label">Picos sin match</span>
-        </div>
-        <div class="peak-stat total">
-          <span class="peak-num">{{ totalPeaks }}</span>
-          <span class="peak-label">Total de picos</span>
-        </div>
-      </div>
-
-      <div class="peaks-list" *ngIf="matchedPeaks.length > 0">
-        <h5>Picos coincidentes (cm⁻¹):</h5>
-        <div class="peak-tags">
-          <span class="peak-tag matched" *ngFor="let p of matchedPeaks">{{ p | number:'1.0-0' }}</span>
-        </div>
-      </div>
-      <div class="peaks-list" *ngIf="unmatchedPeaks.length > 0">
-        <h5>Picos sin coincidencia (cm⁻¹):</h5>
-        <div class="peak-tags">
-          <span class="peak-tag unmatched" *ngFor="let p of unmatchedPeaks">{{ p | number:'1.0-0' }}</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Ventanas Espectrales -->
-    <div class="windows-section">
-      <h4>Similitud por Ventanas Espectrales</h4>
-      <div class="window-bars">
-        <div *ngFor="let ws of windowScores" class="window-bar-row">
-          <div class="wb-info">
-            <span class="wb-name">{{ ws.window }}</span>
-            <span class="wb-range">{{ ws.range }} cm⁻¹</span>
+          <div class="score-meta">
+            <span class="score-title">Similitud Global</span>
+            <span class="score-desc">
+              {{ globalScore >= 0.9 ? ' Match excelente — los espectros son muy similares' :
+                 globalScore >= 0.7 ? ' Match bueno — los espectros comparten la mayoría de características' :
+                 globalScore >= 0.5 ? ' Match moderado — hay similitudes parciales' :
+                 ' Match bajo — los espectros difieren significativamente' }}
+            </span>
           </div>
-          <div class="wb-bar-bg">
-            <div class="wb-bar-fill" [class]="getScoreClass(ws.score)"
-                 [style.width]="getScorePercent(ws.score) + '%'"></div>
+        </div>
+
+        <!-- TODOS LOS SCORES (SI EXISTEN) -->
+        <div class="all-scores" *ngIf="allScores">
+          <div class="score-method">
+            <span class="method-label">Pearson</span>
+            <span class="method-value" [class]="getScoreClass(allScores.pearson)">
+              {{ (allScores.pearson * 100).toFixed(1) }}%
+            </span>
           </div>
-          <span class="wb-value" [class]="getScoreClass(ws.score)">{{ getScorePercent(ws.score) }}%</span>
+          <div class="score-method">
+            <span class="method-label">Coseno</span>
+            <span class="method-value" [class]="getScoreClass(allScores.cosine)">
+              {{ (allScores.cosine * 100).toFixed(1) }}%
+            </span>
+          </div>
+          <div class="score-method">
+            <span class="method-label">Euclidiana</span>
+            <span class="method-value" [class]="getScoreClass(allScores.euclidean)">
+              {{ (allScores.euclidean * 100).toFixed(1) }}%
+            </span>
+          </div>
         </div>
       </div>
-    </div>
 
-    <!-- Navegación -->
-    <div class="compare-nav">
-      <a routerLink="/dashboard/busqueda" class="nav-link">← Volver a Búsqueda</a>
-    </div>
+      <!-- Resumen lado a lado -->
+      <div class="side-by-side">
+        <div class="side-card query">
+          <h4>{{ querySpectrum.filename }}</h4>
+          <div class="side-stats">
+            <div class="stat">
+              <span class="stat-num">{{ querySpectrum.data?.length || 0 }}</span>
+              <span class="stat-label">Puntos</span>
+            </div>
+            <div class="stat">
+              <span class="stat-num">{{ matchedPeaks.length }}</span>
+              <span class="stat-label">Picos coincidentes</span>
+            </div>
+            <div class="stat">
+              <span class="stat-num">{{ querySpectrum.metadata?.technique || 'N/D' }}</span>
+              <span class="stat-label">Técnica</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="vs-badge">VS</div>
+
+        <div class="side-card reference">
+          <h4>{{ refSpectrum.filename }}</h4>
+          <div class="side-stats">
+            <div class="stat">
+              <span class="stat-num">{{ refSpectrum.data?.length || 0 }}</span>
+              <span class="stat-label">Puntos</span>
+            </div>
+            <div class="stat">
+              <span class="stat-num">{{ unmatchedPeaks.length }}</span>
+              <span class="stat-label">Picos sin match</span>
+            </div>
+            <div class="stat">
+              <span class="stat-num">{{ refSpectrum.metadata?.technique || 'N/D' }}</span>
+              <span class="stat-label">Técnica</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Análisis de Picos -->
+      <div class="peaks-section">
+        <h4> Análisis de Picos (±{{ tolerance }} cm⁻¹)</h4>
+        <div class="peaks-summary">
+          <div class="peak-stat matched">
+            <span class="peak-num">{{ matchedPeaks.length }}</span>
+            <span class="peak-label">Coincidentes</span>
+          </div>
+          <div class="peak-stat unmatched">
+            <span class="peak-num">{{ unmatchedPeaks.length }}</span>
+            <span class="peak-label">Sin match</span>
+          </div>
+          <div class="peak-stat total">
+            <span class="peak-num">{{ totalPeaks }}</span>
+            <span class="peak-label">Total</span>
+          </div>
+          <div class="peak-stat percentage" *ngIf="totalPeaks > 0">
+            <span class="peak-num">{{ ((matchedPeaks.length / totalPeaks) * 100).toFixed(0) }}%</span>
+            <span class="peak-label">Éxito</span>
+          </div>
+        </div>
+
+        <div class="peaks-list" *ngIf="matchedPeaks.length > 0">
+          <h5> Picos coincidentes (cm⁻¹):</h5>
+          <div class="peak-tags">
+            <span class="peak-tag matched" *ngFor="let p of matchedPeaks">{{ p | number:'1.0-0' }}</span>
+          </div>
+        </div>
+
+        <div class="peaks-list" *ngIf="unmatchedPeaks.length > 0">
+          <h5> Picos sin coincidencia (cm⁻¹):</h5>
+          <div class="peak-tags">
+            <span class="peak-tag unmatched" *ngFor="let p of unmatchedPeaks">{{ p | number:'1.0-0' }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ventanas Espectrales -->
+      <div class="windows-section" *ngIf="windowScores && windowScores.length > 0">
+        <h4> Similitud por Ventanas Espectrales</h4>
+        <div class="window-bars">
+          <div *ngFor="let ws of windowScores" class="window-bar-row">
+            <div class="wb-info">
+              <span class="wb-name">{{ ws.window }}</span>
+              <span class="wb-range">{{ ws.range }} cm⁻¹</span>
+            </div>
+            <div class="wb-bar-bg">
+              <div class="wb-bar-fill" [class]="getScoreClass(ws.score)"
+                   [style.width]="getScorePercent(ws.score) + '%'"></div>
+            </div>
+            <span class="wb-value" [class]="getScoreClass(ws.score)">{{ getScorePercent(ws.score) }}%</span>
+          </div>
+        </div>
+      </div>
+
+
+  <!-- MENSAJE SI NO HAY ESPECTROS -->
+  <div *ngIf="!isLoadingSpectra && spectra.length === 0" class="no-data">
+    <div class="no-data-icon"></div>
+    <h3>No hay espectros disponibles</h3>
+    <p>Ve a <strong>Cargar Espectro</strong> para subir archivos espectrales</p>
   </div>
 
 </div>
