@@ -8,193 +8,144 @@
     </div>
   </div>
 
-  <!-- MAIN CONTENT - GRÁFICA GRANDE A LA IZQUIERDA -->
-  <div class="content-wrapper">
+  <!-- PANEL DE CONTROL -->
+  <div class="control-panel-top">
 
-    <!-- GRÁFICA (IZQUIERDA - GRANDE) -->
-    <div class="graph-section-large">
-      
-      <!-- Mensajes de error/carga -->
-      <div *ngIf="error" class="alert alert-danger">
-        {{ error }}
-      </div>
-
-      <div *ngIf="loading" class="alert alert-info">
-         Cargando espectros...
-      </div>
-
-      <!-- Área de la gráfica -->
-      <div class="graph-container-large">
-        <div id="grafico" class="graph-placeholder">
-          <p style="text-align: center; padding: 50px; color: #999;">
-            Selecciona uno o más espectros para visualizar
-          </p>
-        </div>
-      </div>
-
-    </div>
-
-    <!-- PANEL DE CONTROL (DERECHA) -->
-    <div class="control-panel-side">
-      
-      <!-- ESPECTROS -->
-      <div class="panel-card">
-        
-        <h2> Espectros ({{ filteredSpectra.length }})</h2>
-
-        <!-- Botones de selección -->
+    <!-- ESPECTROS -->
+    <div class="panel-card panel-espectros">
+      <div class="espectros-header">
+        <h2>Espectros <span class="count-badge">{{ filteredSpectra.length }}</span></h2>
         <div class="selection-buttons">
           <button class="btn btn-sm btn-info" (click)="selectAll()" [disabled]="filteredSpectra.length === 0">
-             Todos
+            Todos
           </button>
           <button class="btn btn-sm btn-secondary" (click)="clearSelection()">
-             Limpiar
+            Limpiar
           </button>
         </div>
-
-        <!-- FILTROS -->
-        <div class="filters-section">
-          <h4> Filtros</h4>
-          
-          <div class="filter-group">
-            <label>Material</label>
-            <input type="text" 
-                   placeholder="Ej: Zeolita Y" 
-                   [(ngModel)]="filterMaterial"
-                   (ngModelChange)="onFilterChange()"
-                   class="filter-input">
-          </div>
-
-          <div class="filter-group">
-            <label>Técnica</label>
-            <select [(ngModel)]="filterTechnique"
-                    (ngModelChange)="onFilterChange()"
-                    class="filter-select">
-              <option value="">Todas las técnicas</option>
-              <option value="ATR">ATR</option>
-              <option value="Transmisión">Transmisión</option>
-              <option value="Reflexión">Reflexión</option>
-              <option value="DRS">DRS</option>
-            </select>
-          </div>
-        </div>
-
-        <!-- Mensaje si no hay espectros -->
-        <div *ngIf="filteredSpectra.length === 0" class="empty-state">
-          <p>No hay espectros que coincidan con los filtros.</p>
-          <small *ngIf="spectra.length === 0">Ve a <a routerLink="/espectros/cargar-espectro">Cargar Espectro</a></small>
-        </div>
-
-        <!-- Lista de espectros seleccionables -->
-        <div *ngIf="filteredSpectra.length > 0" class="spectra-list">
-          <div *ngFor="let spectrum of filteredSpectra" 
-               class="spectrum-item" 
-               [class.selected]="isSelected(spectrum)"
-               (click)="toggleSpectrum(spectrum)">
-            
-            <!-- Checkbox visual -->
-            <div class="checkbox">
-              <input type="checkbox" 
-                     [checked]="isSelected(spectrum)" 
-                     (click)="$event.stopPropagation()">
-            </div>
-
-            <!-- Información del espectro -->
-            <div class="spectrum-info">
-              <div class="spectrum-name">
-                <span class="format-icon">{{ getFormatIcon(spectrum.filename) }}</span>
-                {{ spectrum.filename }}
-              </div>
-              <div class="spectrum-details">
-                <span class="detail">{{ spectrum.material || '?' }}</span>
-                <span class="detail">{{ spectrum.technique || '?' }}</span>
-                <span class="detail">{{ spectrum.point_count || '?' }} pts</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Paginación -->
-        <div *ngIf="total_pages > 1" class="pagination-small">
-          <button class="btn btn-sm" 
-                  (click)="changePage(page - 1)" 
-                  [disabled]="page === 1">
-            ←
-          </button>
-          <span>{{ page }}/{{ total_pages }}</span>
-          <button class="btn btn-sm" 
-                  (click)="changePage(page + 1)" 
-                  [disabled]="page === total_pages">
-            →
-          </button>
-        </div>
-
       </div>
 
-      <!-- OPCIONES -->
-      <div class="panel-card options-card">
-        <h3> Opciones</h3>
+      <!-- FILTROS -->
+      <div class="filters-section">
+        <h4>FILTROS</h4>
+        <div class="filter-group">
+          <label>Material</label>
+          <input type="text"
+                 placeholder="Ej: Zeolita Y"
+                 [(ngModel)]="filterMaterial"
+                 (ngModelChange)="onFilterChange()"
+                 class="filter-input">
+        </div>
+        <div class="filter-group">
+          <label>Técnica</label>
+          <select [(ngModel)]="filterTechnique"
+                  (ngModelChange)="onFilterChange()"
+                  class="filter-select">
+            <option value="">Todas las técnicas</option>
+            <option value="ATR">ATR</option>
+            <option value="Transmisión">Transmisión</option>
+            <option value="Reflexión">Reflexión</option>
+            <option value="DRS">DRS</option>
+          </select>
+        </div>
+      </div>
 
-        <div class="option-group">
+      <!-- Mensaje vacío -->
+      <div *ngIf="filteredSpectra.length === 0" class="empty-state">
+        <p>No hay espectros que coincidan con los filtros.</p>
+        <small *ngIf="spectra.length === 0">Ve a <a routerLink="/espectros/cargar-espectro">Cargar Espectro</a></small>
+      </div>
+
+      <!-- ✅ Lista de espectros rediseñada -->
+      <div *ngIf="filteredSpectra.length > 0" class="spectra-chips">
+        <div *ngFor="let spectrum of filteredSpectra; let i = index"
+             class="spectrum-chip"
+             [class.selected]="isSelected(spectrum)"
+             [style.--chip-color]="getSpectrumColor(i)"
+             (click)="toggleSpectrum(spectrum)"
+             [title]="spectrum.filename">
+
+          <!-- Dot de color -->
+          <span class="chip-dot"></span>
+
+          <!-- Nombre del archivo sin extensión -->
+          <span class="chip-name">{{ getShortName(spectrum.filename) }}</span>
+
+          <!-- Extensión como badge -->
+          <span class="chip-ext">{{ getExt(spectrum.filename) }}</span>
+
+          <!-- Check cuando está seleccionado -->
+          <span class="chip-check" *ngIf="isSelected(spectrum)">✓</span>
+        </div>
+      </div>
+
+      <!-- Paginación -->
+      <div *ngIf="total_pages > 1" class="pagination-horizontal">
+        <button class="btn btn-sm" (click)="changePage(page - 1)" [disabled]="page === 1">←</button>
+        <span>{{ page }}/{{ total_pages }}</span>
+        <button class="btn btn-sm" (click)="changePage(page + 1)" [disabled]="page === total_pages">→</button>
+      </div>
+    </div>
+
+    <!-- OPCIONES Y HERRAMIENTAS -->
+    <div class="panel-controls-right">
+
+      <div class="panel-card panel-options-compact">
+        <h3>Opciones</h3>
+
+        <div class="option-group-compact">
           <label>
-            <input type="checkbox" [(ngModel)]="invertirX" (change)="updateGraph()">
-            Invertir X (4000→400)
+            <input type="checkbox" [(ngModel)]="invertirX" (change)="toggleInvertirX()">
+            Invertir X
           </label>
         </div>
-
-        <div class="option-group">
+        <div class="option-group-compact">
           <label>
             <input type="checkbox" [(ngModel)]="mostrarCuadricula" (change)="updateGraph()">
-            Mostrar cuadrícula
+            Cuadrícula
           </label>
         </div>
-
-        <div class="option-group">
+        <div class="option-group-compact">
           <label>
             <input type="checkbox" [(ngModel)]="mostrarLeyenda" (change)="updateGraph()">
-            Mostrar leyenda
+            Leyenda
           </label>
         </div>
-
-        <div class="option-group">
-          <label for="lineWidth">Grosor: {{ grosorLinea }}px</label>
-          <input type="range" id="lineWidth" 
-                 min="1" max="5" 
-                 [(ngModel)]="grosorLinea" 
-                 (change)="updateGraph()"
-                 class="slider">
+        <div class="option-group-compact">
+          <label for="lineWidth">Grosor</label>
+          <input type="range" id="lineWidth" min="1" max="5"
+                 [(ngModel)]="grosorLinea" (change)="updateGraph()" class="slider-compact">
+          <span class="value-label">{{ grosorLinea }}px</span>
         </div>
-
-        <div class="option-group">
-          <label for="smoothing">Suavizado: {{ suavizado }}</label>
-          <input type="range" id="smoothing" 
-                 min="0" max="10" 
-                 [(ngModel)]="suavizado" 
-                 (change)="updateGraph()"
-                 class="slider">
+        <div class="option-group-compact">
+          <label for="smoothing">Suavizado</label>
+          <input type="range" id="smoothing" min="0" max="10"
+                 [(ngModel)]="suavizado" (change)="updateGraph()" class="slider-compact">
+          <span class="value-label">{{ suavizado }}</span>
         </div>
-
       </div>
 
-      <!-- HERRAMIENTAS -->
-      <div class="panel-card tools-card">
-        <h3> Herramientas</h3>
-
-        <button class="btn btn-primary btn-block" 
-                (click)="resetZoom()"
-                [disabled]="selectedSpectra.length === 0">
-           Resetear Zoom
-        </button>
-
-        <button class="btn btn-secondary btn-block" 
-                (click)="downloadPNG()"
-                [disabled]="selectedSpectra.length === 0">
-           Descargar PNG
-        </button>
+      <div class="panel-card panel-tools-compact">
+        <button class="btn btn-primary btn-compact" (click)="resetZoom()" [disabled]="selectedSpectra.length === 0">Zoom</button>
+        <button class="btn btn-secondary btn-compact" (click)="downloadPNG()" [disabled]="selectedSpectra.length === 0">PNG</button>
       </div>
 
     </div>
 
+  </div>
+
+  <!-- GRÁFICA -->
+  <div class="content-wrapper-main">
+    <div class="graph-section-main">
+      <div *ngIf="error" class="alert alert-danger">{{ error }}</div>
+      <div *ngIf="loading" class="alert alert-info">Cargando espectros...</div>
+      <div class="graph-container-main">
+        <div class="graph-placeholder" *ngIf="selectedSpectra.length === 0 && !loading">
+          <p>Selecciona uno o más espectros para visualizar</p>
+        </div>
+        <div id="grafico"></div>
+      </div>
+    </div>
   </div>
 
 </div>

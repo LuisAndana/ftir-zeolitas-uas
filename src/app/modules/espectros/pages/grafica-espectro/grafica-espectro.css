@@ -1,277 +1,142 @@
 ﻿/* ========================================
-   GRAFICA-ESPECTRO - GRÁFICA FULL HEIGHT
+   GRAFICA-ESPECTRO - FULL WIDTH
    ======================================== */
 
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
 .grafica-espectro-container {
-  padding: 20px;
+  padding: 8px;
   background: #f5f5f5;
-  min-height: 100vh;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 /* HEADER */
 .header-section {
-  margin-bottom: 20px;
+  margin-bottom: 6px;
+  flex-shrink: 0;
+  padding: 0 8px;
 }
 
 .title-area h1 {
-  font-size: 2rem;
+  font-size: 1.6rem;
   font-weight: 600;
-  margin: 0 0 10px 0;
+  margin: 0 0 3px 0;
   color: #333;
 }
 
 .title-area p {
   color: #666;
   margin: 0;
-  font-size: 0.95rem;
+  font-size: 0.85rem;
 }
 
-/* CONTENT WRAPPER */
-.content-wrapper {
+/* ========================================
+   CONTROL PANEL TOP
+   ======================================== */
+
+.control-panel-top {
   display: grid;
-  grid-template-columns: 1fr 340px;
-  gap: 20px;
-  height: calc(100vh - 160px);
-}
-
-/* GRAPH SECTION LARGE */
-.graph-section-large {
-  background: white;
-  border-radius: 8px;
-  padding: 0;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  overflow: hidden;
-  height: 100%;
-}
-
-/* ALERTS - DENTRO DEL CONTAINER */
-.alert {
-  padding: 10px 12px;
-  border-radius: 0;
-  border-left: 4px solid;
-  margin: 0;
-  font-size: 0.9rem;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  margin: 0 0 8px 0;
   flex-shrink: 0;
+  background: white;
+  padding: 8px;
+  border-radius: 6px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-.alert-info {
-  background: #e3f2fd;
-  border-color: #2196f3;
-  color: #1565c0;
-}
-
-.alert-danger {
-  background: #ffebee;
-  border-color: #f44336;
-  color: #c62828;
-}
-
-/* GRAPH CONTAINER - LLENA TODO EL ESPACIO */
-.graph-container-large {
-  width: 100%;
-  flex: 1;
-  border: none;
-  border-radius: 0;
-  overflow: visible;
-  background: #ffffff;
-  box-shadow: none;
+.panel-espectros {
   display: flex;
   flex-direction: column;
-  position: relative;
+  gap: 6px;
 }
 
-#grafico {
-  width: 100%;
-  flex: 1;
-  position: relative;
-  background: white;
-}
-
-.graph-placeholder {
+.espectros-header {
   display: flex;
   align-items: center;
-  justify-content: center;
-  background: #fafafa;
-  height: 100%;
-  color: #999;
-  font-size: 0.95rem;
+  justify-content: space-between;
+  gap: 8px;
 }
 
-/* ========================================
-   ESTILOS PLOTLY - TOOLBAR ARRIBA
-   ======================================== */
-
-/* Toolbar de Plotly */
-.graph-container-large .modebar {
-  position: absolute !important;
-  top: 0 !important;
-  left: 0 !important;
-  right: 0 !important;
-  background-color: white !important;
-  margin: 0 !important;
-  padding: 6px 8px !important;
-  display: flex !important;
-  gap: 2px !important;
-  border-bottom: 1px solid #e0e0e0 !important;
-  justify-content: flex-start !important;
-  flex-wrap: wrap !important;
-  z-index: 100 !important;
-  height: auto !important;
-}
-
-/* Botones de Plotly */
-.graph-container-large .modebar-btn {
-  width: 32px !important;
-  height: 32px !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  border-radius: 4px !important;
-  background-color: #f5f5f5 !important;
-  border: 1px solid #d0d0d0 !important;
-  cursor: pointer !important;
-  transition: all 0.2s !important;
-  padding: 0 !important;
-  margin: 0 !important;
-  flex-shrink: 0 !important;
-  line-height: 1 !important;
-}
-
-.graph-container-large .modebar-btn:hover {
-  background-color: #e3f2fd !important;
-  border-color: #2E75B6 !important;
-  color: #2E75B6 !important;
-}
-
-.graph-container-large .modebar-btn.active {
-  background-color: #e3f2fd !important;
-  border-color: #2E75B6 !important;
-  color: #2E75B6 !important;
-}
-
-/* Iconos SVG */
-.graph-container-large .modebar-btn svg {
-  width: 16px !important;
-  height: 16px !important;
-  stroke: currentColor !important;
-  stroke-width: 1.5px !important;
-  fill: none !important;
-}
-
-/* Ocultar separadores */
-.graph-container-large .modebar-separator {
-  display: none !important;
-}
-
-/* Ajustar espacios para que no se solape */
-.graph-container-large .plotly-graph-div {
-  padding-top: 50px !important;
-}
-
-/* ========================================
-   CONTROL PANEL SIDE
-   ======================================== */
-
-.control-panel-side {
+.espectros-header h2 {
+  font-size: 0.85rem;
+  margin: 0;
+  color: #333;
+  font-weight: 700;
   display: flex;
-  flex-direction: column;
-  gap: 15px;
-  max-height: calc(100vh - 160px);
-  overflow-y: auto;
-  padding-right: 5px;
+  align-items: center;
+  gap: 6px;
 }
 
-.control-panel-side::-webkit-scrollbar {
-  width: 6px;
+.count-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #e8f0fe;
+  color: #1a56db;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 10px;
+  min-width: 20px;
 }
 
-.control-panel-side::-webkit-scrollbar-track {
-  background: transparent;
+.selection-buttons {
+  display: flex;
+  gap: 4px;
 }
 
-.control-panel-side::-webkit-scrollbar-thumb {
-  background: #ccc;
-  border-radius: 3px;
-}
-
-.control-panel-side::-webkit-scrollbar-thumb:hover {
-  background: #999;
-}
-
-.panel-card {
-  background: white;
-  border-radius: 8px;
-  padding: 15px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+/* FILTROS */
+.filters-section {
+  background: #f9f9f9;
+  padding: 6px;
+  border-radius: 4px;
+  border: 1px solid #f0f0f0;
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
   flex-shrink: 0;
 }
 
-.panel-card h2 {
-  font-size: 1.1rem;
-  margin: 0 0 12px 0;
-  color: #333;
-  font-weight: 700;
-}
-
-.panel-card h3 {
-  font-size: 0.95rem;
-  margin: 0 0 12px 0;
-  color: #444;
-  font-weight: 700;
-}
-
-.panel-card h4 {
-  font-size: 0.85rem;
-  margin: 0 0 10px 0;
-  color: #666;
+.filters-section h4 {
+  font-size: 0.6rem;
+  margin: 0 0 auto 0;
+  color: #999;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  font-weight: 600;
-}
-
-/* ===== SELECTION BUTTONS ===== */
-.selection-buttons {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  margin-bottom: 12px;
-}
-
-/* ===== FILTERS SECTION ===== */
-.filters-section {
-  background: #f9f9f9;
-  padding: 10px;
-  border-radius: 6px;
-  margin-bottom: 12px;
-  border: 1px solid #f0f0f0;
+  font-weight: 700;
+  white-space: nowrap;
+  padding-top: 2px;
 }
 
 .filter-group {
-  margin-bottom: 10px;
-}
-
-.filter-group:last-child {
-  margin-bottom: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 140px;
 }
 
 .filter-group label {
-  display: block;
-  font-size: 0.8rem;
+  font-size: 0.65rem;
   color: #666;
-  margin-bottom: 4px;
   font-weight: 600;
 }
 
 .filter-input,
 .filter-select {
   width: 100%;
-  padding: 6px 10px;
+  padding: 3px 5px;
   border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 0.85rem;
+  border-radius: 3px;
+  font-size: 0.7rem;
   font-family: inherit;
 }
 
@@ -279,385 +144,383 @@
 .filter-select:focus {
   outline: none;
   border-color: #0066cc;
-  box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+  box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.1);
 }
 
-/* ===== EMPTY STATE ===== */
-.empty-state {
-  text-align: center;
-  padding: 20px 10px;
-  color: #999;
-  font-size: 0.9rem;
-}
+/* ========================================
+   SPECTRUM CHIPS — NUEVO DISEÑO
+   ======================================== */
 
-.empty-state a {
-  color: #0066cc;
-  text-decoration: none;
-}
-
-.empty-state a:hover {
-  text-decoration: underline;
-}
-
-/* ===== SPECTRA LIST ===== */
-.spectra-list {
-  max-height: 280px;
+.spectra-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
   overflow-y: auto;
-  border: 1px solid #eee;
-  border-radius: 4px;
-  margin-bottom: 12px;
-  background: #fafafa;
+  max-height: 80px;
+  padding: 2px 0;
 }
 
-.spectra-list::-webkit-scrollbar {
-  width: 4px;
-}
+.spectra-chips::-webkit-scrollbar { height: 3px; width: 3px; }
+.spectra-chips::-webkit-scrollbar-thumb { background: #ddd; border-radius: 2px; }
 
-.spectra-list::-webkit-scrollbar-thumb {
-  background: #ccc;
-  border-radius: 2px;
-}
-
-.spectrum-item {
-  display: grid;
-  grid-template-columns: 30px 1fr;
+.spectrum-chip {
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px;
-  border-bottom: 1px solid #eee;
+  gap: 5px;
+  padding: 4px 8px 4px 6px;
+  background: #f8f8f8;
+  border: 1.5px solid #e2e2e2;
+  border-radius: 20px;         /* pill shape */
   cursor: pointer;
-  transition: background 0.2s;
-  font-size: 0.85rem;
-}
-
-.spectrum-item:hover {
-  background: #fff;
-}
-
-.spectrum-item.selected {
-  background: #e3f2fd;
-  border-left: 3px solid #0066cc;
-  padding-left: 5px;
-}
-
-.spectrum-item .checkbox {
-  display: flex;
-  justify-content: center;
-}
-
-.spectrum-item input[type="checkbox"] {
-  cursor: pointer;
-  width: 16px;
-  height: 16px;
-}
-
-.spectrum-info {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-}
-
-.spectrum-name {
+  font-size: 0.72rem;
+  color: #555;
   font-weight: 500;
-  color: #333;
-  font-size: 0.85rem;
-  display: flex;
-  align-items: center;
-  gap: 4px;
+  transition: all 0.18s ease;
+  user-select: none;
   white-space: nowrap;
+  position: relative;
+  max-width: 180px;
+}
+
+.spectrum-chip:hover {
+  background: #fff;
+  border-color: var(--chip-color, #0066cc);
+  color: #333;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+}
+
+/* ✅ Cuando está seleccionado: fondo sutil del color de la línea */
+.spectrum-chip.selected {
+  background: color-mix(in srgb, var(--chip-color, #0066cc) 12%, white);
+  border-color: var(--chip-color, #0066cc);
+  color: #222;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+}
+
+/* Dot de color — indica el color de la línea en la gráfica */
+.chip-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--chip-color, #999);
+  flex-shrink: 0;
+  transition: transform 0.18s ease;
+}
+
+.spectrum-chip.selected .chip-dot {
+  transform: scale(1.25);
+}
+
+/* Nombre principal */
+.chip-name {
   overflow: hidden;
   text-overflow: ellipsis;
+  max-width: 110px;
+  flex: 1;
 }
 
-.format-icon {
-  font-size: 0.9rem;
+/* Extensión como badge pequeño */
+.chip-ext {
+  font-size: 0.58rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #999;
+  background: #eee;
+  padding: 1px 4px;
+  border-radius: 3px;
+  letter-spacing: 0.3px;
   flex-shrink: 0;
 }
 
-.spectrum-details {
-  display: flex;
-  gap: 4px;
-  font-size: 0.7rem;
-  color: #999;
-  flex-wrap: wrap;
+.spectrum-chip.selected .chip-ext {
+  background: color-mix(in srgb, var(--chip-color, #0066cc) 20%, white);
+  color: color-mix(in srgb, var(--chip-color, #0066cc) 80%, black);
 }
 
-.detail {
-  background: #f5f5f5;
-  padding: 1px 4px;
-  border-radius: 2px;
+/* Check cuando está seleccionado */
+.chip-check {
+  font-size: 0.65rem;
+  color: var(--chip-color, #0066cc);
+  font-weight: 900;
+  flex-shrink: 0;
+  line-height: 1;
 }
 
-/* ===== PAGINATION SMALL ===== */
-.pagination-small {
+/* ========================================
+   PAGINATION
+   ======================================== */
+
+.pagination-horizontal {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 8px;
-  font-size: 0.8rem;
-  padding-top: 10px;
+  gap: 4px;
+  font-size: 0.65rem;
+  padding-top: 4px;
   border-top: 1px solid #eee;
 }
 
-.pagination-small .btn {
-  padding: 4px 8px;
+.pagination-horizontal .btn { padding: 2px 4px; font-size: 0.6rem; }
+
+.empty-state {
+  text-align: center;
+  padding: 6px;
+  color: #999;
   font-size: 0.75rem;
 }
 
-/* ===== OPTIONS CARD ===== */
-.options-card {
-  max-height: none;
-  overflow-y: visible;
+.empty-state a { color: #0066cc; text-decoration: none; }
+
+/* PANEL CONTROLS RIGHT */
+.panel-controls-right {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
 }
 
-.option-group {
-  margin-bottom: 10px;
+.panel-options-compact,
+.panel-tools-compact {
+  padding: 8px;
+  background: white;
+  border-radius: 6px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-.option-group:last-child {
-  margin-bottom: 0;
+.panel-options-compact h3,
+.panel-tools-compact h3 {
+  font-size: 0.8rem;
+  margin: 0 0 6px 0;
+  color: #333;
+  font-weight: 700;
 }
 
-.option-group label {
+.option-group-compact {
+  margin-bottom: 4px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px;
+  align-items: center;
+}
+
+.option-group-compact:last-child { margin-bottom: 0; }
+
+.option-group-compact label {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 0.85rem;
+  gap: 3px;
+  font-size: 0.7rem;
   color: #555;
-  margin-bottom: 0;
+  margin: 0;
   font-weight: 500;
   cursor: pointer;
   user-select: none;
 }
 
-.option-group input[type="checkbox"] {
-  cursor: pointer;
-  width: 14px;
-  height: 14px;
-  flex-shrink: 0;
-}
+.option-group-compact input[type="checkbox"] { cursor: pointer; width: 11px; height: 11px; flex-shrink: 0; }
 
-.option-group input[type="range"] {
-  width: 100%;
-  padding: 4px 0;
-  border: none;
-  border-radius: 4px;
-  font-size: 0.8rem;
-  height: 6px;
+.slider-compact {
+  width: 70px;
+  height: 3px;
   -webkit-appearance: none;
   appearance: none;
   background: #ddd;
+  border-radius: 3px;
   outline: none;
   cursor: pointer;
-  margin-top: 4px;
 }
 
-.option-group input[type="range"]::-webkit-slider-thumb {
+.slider-compact::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 14px;
-  height: 14px;
+  width: 9px; height: 9px;
   background: #0066cc;
   cursor: pointer;
   border-radius: 50%;
 }
 
-.option-group input[type="range"]::-moz-range-thumb {
-  width: 14px;
-  height: 14px;
+.slider-compact::-moz-range-thumb {
+  width: 9px; height: 9px;
   background: #0066cc;
   cursor: pointer;
   border-radius: 50%;
   border: none;
 }
 
-.option-group input[type="text"] {
-  width: 100%;
-  padding: 4px 8px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 0.8rem;
-  margin-top: 4px;
+.value-label { font-size: 0.6rem; color: #666; min-width: 25px; text-align: right; }
+
+.panel-tools-compact { display: flex; flex-direction: column; gap: 4px; }
+.btn-compact { padding: 5px 8px; font-size: 0.65rem; width: 100%; }
+
+.panel-card {
+  background: white;
+  border-radius: 6px;
+  padding: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-.option-group small {
-  display: block;
-  color: #999;
-  font-size: 0.75rem;
-  margin-top: 3px;
+/* ========================================
+   MAIN CONTENT — GRÁFICA
+   ======================================== */
+
+.content-wrapper-main {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  overflow: hidden;
 }
 
-/* ===== TOOLS CARD ===== */
-.tools-card {
+.graph-section-main {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  overflow: hidden;
+  background: white;
 }
 
-.btn-block {
+.alert {
+  padding: 8px 10px;
+  border-left: 3px solid;
+  margin: 0;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+.alert-info  { background: #e3f2fd; border-color: #2196f3; color: #1565c0; }
+.alert-danger { background: #ffebee; border-color: #f44336; color: #c62828; }
+
+.graph-container-main {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  position: relative;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+#grafico {
+  position: absolute;
+  inset: 0;
   width: 100%;
-  text-align: center;
+  height: 100%;
+  background: white;
 }
 
-/* ===== BUTTONS ===== */
+#grafico .js-plotly-plot,
+#grafico .plotly,
+#grafico .plot-container,
+#grafico .svg-container {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.graph-placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fafafa;
+  color: #999;
+  font-size: 0.95rem;
+}
+
+/* ========================================
+   PLOTLY MODEBAR
+   ======================================== */
+
+.graph-container-main .modebar {
+  position: absolute !important;
+  top: 0 !important; left: 0 !important; right: 0 !important;
+  background-color: #f5f5f5 !important;
+  margin: 0 !important;
+  padding: 3px 4px !important;
+  display: flex !important;
+  gap: 1px !important;
+  border-bottom: 1px solid #e0e0e0 !important;
+  justify-content: flex-start !important;
+  flex-wrap: wrap !important;
+  z-index: 100 !important;
+  height: auto !important;
+}
+
+.graph-container-main .modebar-btn {
+  width: 24px !important; height: 24px !important;
+  display: flex !important; align-items: center !important; justify-content: center !important;
+  border-radius: 2px !important;
+  background-color: #ffffff !important;
+  border: 1px solid #ddd !important;
+  cursor: pointer !important;
+  transition: all 0.2s !important;
+  padding: 0 !important; margin: 0 !important;
+  flex-shrink: 0 !important; font-size: 11px !important;
+}
+
+.graph-container-main .modebar-btn:hover,
+.graph-container-main .modebar-btn.active {
+  background-color: #e3f2fd !important;
+  border-color: #0066cc !important;
+  color: #0066cc !important;
+}
+
+.graph-container-main .modebar-btn svg {
+  width: 13px !important; height: 13px !important;
+  stroke: currentColor !important; stroke-width: 1.5px !important; fill: none !important;
+}
+
+.graph-container-main .modebar-separator { display: none !important; }
+.graph-container-main .plotly-graph-div { padding-top: 32px !important; }
+
+/* ========================================
+   BOTONES
+   ======================================== */
+
 .btn {
-  padding: 6px 10px;
+  padding: 5px 8px;
   border: none;
-  border-radius: 4px;
-  font-size: 0.8rem;
+  border-radius: 3px;
+  font-size: 0.7rem;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
   font-family: inherit;
 }
 
-.btn-primary {
-  background: #0066cc;
-  color: white;
-}
+.btn-primary { background: #0066cc; color: white; }
+.btn-primary:hover:not(:disabled) { background: #0052a3; }
+.btn-secondary { background: #f0f0f0; color: #333; border: 1px solid #ddd; }
+.btn-secondary:hover:not(:disabled) { background: #e8e8e8; }
+.btn-info { background: #17a2b8; color: white; }
+.btn-info:hover:not(:disabled) { background: #138496; }
+.btn-sm { padding: 3px 6px; font-size: 0.6rem; }
+.btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
-.btn-primary:hover:not(:disabled) {
-  background: #0052a3;
-}
+/* ========================================
+   RESPONSIVE
+   ======================================== */
 
-.btn-secondary {
-  background: #f0f0f0;
-  color: #333;
-  border: 1px solid #ddd;
-}
-
-.btn-secondary:hover:not(:disabled) {
-  background: #e8e8e8;
-}
-
-.btn-info {
-  background: #17a2b8;
-  color: white;
-}
-
-.btn-info:hover:not(:disabled) {
-  background: #138496;
-}
-
-.btn-sm {
-  padding: 5px 10px;
-  font-size: 0.8rem;
-}
-
-.btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-/* ===== RESPONSIVE ===== */
 @media (max-width: 1400px) {
-  .content-wrapper {
-    grid-template-columns: 1fr 320px;
-    height: calc(100vh - 160px);
-  }
-}
-
-@media (max-width: 1024px) {
-  .content-wrapper {
-    grid-template-columns: 1fr;
-    height: auto;
-    gap: 15px;
-  }
-
-  .control-panel-side {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 15px;
-    max-height: none;
-    overflow-y: visible;
-  }
-
-  .graph-section-large {
-    min-height: 500px;
-  }
-
-  .graph-container-large .modebar {
-    flex-wrap: wrap !important;
-  }
+  .control-panel-top  { grid-template-columns: 1fr; }
+  .panel-controls-right { grid-template-columns: 1fr 1fr; }
 }
 
 @media (max-width: 768px) {
-  .grafica-espectro-container {
-    padding: 10px;
-  }
+  .grafica-espectro-container { padding: 6px; }
+  .title-area h1 { font-size: 1.3rem; }
+  .panel-card { padding: 6px; }
+  .filters-section { flex-direction: column; gap: 6px; }
+}
 
-  .content-wrapper {
-    grid-template-columns: 1fr;
-    gap: 12px;
-    height: auto;
-  }
-
-  .control-panel-side {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    max-height: none;
-    overflow-y: visible;
-  }
-
-  .graph-section-large {
-    min-height: 400px;
-  }
-
-  .graph-container-large .modebar-btn {
-    width: 28px !important;
-    height: 28px !important;
-  }
-
-  .panel-card {
-    padding: 12px;
-  }
-
-  .title-area h1 {
-    font-size: 1.5rem;
-  }
-
-  .panel-card h2 {
-    font-size: 1rem;
-  }
+@media (max-width: 600px) {
+  .panel-controls-right { grid-template-columns: 1fr; gap: 6px; }
 }
 
 @media (max-width: 480px) {
-  .grafica-espectro-container {
-    padding: 8px;
-  }
-
-  .header-section {
-    margin-bottom: 10px;
-  }
-
-  .title-area h1 {
-    font-size: 1.25rem;
-  }
-
-  .title-area p {
-    font-size: 0.8rem;
-  }
-
-  .content-wrapper {
-    gap: 10px;
-  }
-
-  .graph-section-large {
-    min-height: 300px;
-  }
-
-  .graph-container-large .modebar-btn {
-    width: 24px !important;
-    height: 24px !important;
-  }
-
-  .panel-card {
-    padding: 10px;
-  }
-
-  .spectra-list {
-    max-height: 150px;
-  }
+  .grafica-espectro-container { padding: 4px; }
+  .title-area h1 { font-size: 1.1rem; }
+  .title-area p { font-size: 0.7rem; }
+  .panel-card { padding: 4px; }
+  .spectra-chips { max-height: 70px; }
 }

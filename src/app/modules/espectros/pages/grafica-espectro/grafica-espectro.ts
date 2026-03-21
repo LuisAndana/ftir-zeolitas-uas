@@ -1,445 +1,350 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, RouterLink } from '@angular/router';
-import { Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
+  import { Component, OnInit, OnDestroy } from '@angular/core';
+  import { CommonModule } from '@angular/common';
+  import { FormsModule } from '@angular/forms';
+  import { ActivatedRoute, RouterLink } from '@angular/router';
+  import { Subject } from 'rxjs';
+  import { takeUntil } from 'rxjs/operators';
 
-// Importar servicios
-import { SpectraBackendService, SpectrumData } from '../../../../core/services/spectra-backend.service';
+  import { SpectraBackendService, SpectrumData } from '../../../../core/services/spectra-backend.service';
 
-declare var Plotly: any;
+  declare var Plotly: any;
 
-@Component({
-  selector: 'app-grafica-espectro',
-  standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
-  templateUrl: './grafica-espectro.html',
-  styleUrl: './grafica-espectro.css'
-})
-export class GraficaEspectro implements OnInit, OnDestroy {
-  
-  // Estado
-  spectra: SpectrumData[] = [];
-  selectedSpectra: SpectrumData[] = [];
-  loading = false;
-  error: string | null = null;
-  
-  // Opciones de gráfica
-  invertirX = true;
-  mostrarCuadricula = true;
-  mostrarLeyenda = true;
-  grosorLinea = 2;
-  suavizado = 0;
-  
-  // Filtros
-  filterMaterial = '';
-  filterTechnique = '';
-  
-  // Paginación
-  skip = 0;
-  limit = 100;
-  total = 0;
-  page = 1;
-  total_pages = 1;
-  
-  private destroy$ = new Subject<void>();
+  @Component({
+    selector: 'app-grafica-espectro',
+    standalone: true,
+    imports: [CommonModule, FormsModule, RouterLink],
+    templateUrl: './grafica-espectro.html',
+    styleUrl: './grafica-espectro.css'
+  })
+  export class GraficaEspectro implements OnInit, OnDestroy {
 
-  constructor(
-    private spectraService: SpectraBackendService,
-    private route: ActivatedRoute
-  ) {}
+    spectra: SpectrumData[] = [];
+    selectedSpectra: SpectrumData[] = [];
+    loading = false;
+    error: string | null = null;
 
-  ngOnInit(): void {
-    console.log('✅ GraficaEspectro inicializado');
-    
-    // Cargar espectros del backend
-    this.loadSpectra();
-    
-    // Si viene un ID en la ruta, seleccionar ese espectro
-    this.route.params
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(params => {
-        if (params['id']) {
-          console.log(`📍 Parámetro ID detectado: ${params['id']}`);
-          this.selectSpectrumById(parseInt(params['id']));
-        }
-      });
-  }
+    invertirX = true;
+    mostrarCuadricula = true;
+    mostrarLeyenda = true;
+    grosorLinea = 2;
+    suavizado = 0;
 
-  ngOnDestroy(): void {
-    this.destroy$.next();
-    this.destroy$.complete();
-  }
+    filterMaterial = '';
+    filterTechnique = '';
 
-  /**
-   * Cargar lista de espectros del backend
-   */
-  loadSpectra(): void {
-    console.log('📊 Cargando espectros del backend...');
-    this.loading = true;
-    this.error = null;
+    skip = 0;
+    limit = 100;
+    total = 0;
+    page = 1;
+    total_pages = 1;
 
-    this.spectraService.getSpectra(this.skip, this.limit)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (response) => {
-          console.log('✅ Espectros cargados:', response.data);
-          this.spectra = response.data;
-          this.total = response.total;
-          this.page = response.page;
-          this.total_pages = response.total_pages;
-          this.loading = false;
-        },
-        error: (error) => {
-          console.error('❌ Error cargando espectros:', error);
-          this.error = error.message || 'Error al cargar espectros';
-          this.loading = false;
-        }
-      });
-  }
+    private destroy$ = new Subject<void>();
+    private resizeObserver: ResizeObserver | null = null;
 
-  /**
-   * Cuando cambian los filtros, actualizar gráfica
-   */
-  onFilterChange(): void {
-    console.log(`🔍 Filtros cambiados: material="${this.filterMaterial}", technique="${this.filterTechnique}"`);
-    console.log(`📊 Espectros filtrados: ${this.filteredSpectra.length}`);
-    // La gráfica se actualiza automáticamente gracias a *ngFor
-  }
-
-  /**
-   * Obtener espectros filtrados
-   */
-  get filteredSpectra(): SpectrumData[] {
-    return this.spectra.filter(s => {
-      // Filtro por material (búsqueda parcial, sin importar mayúsculas)
-      const materialMatch = !this.filterMaterial || 
-        (s.material || '').toLowerCase().includes(this.filterMaterial.toLowerCase());
-      
-      // Filtro por técnica (coincidencia exacta)
-      const techniqueMatch = !this.filterTechnique || 
-        (s.technique || '').toLowerCase() === this.filterTechnique.toLowerCase();
-      
-      return materialMatch && techniqueMatch;
-    });
-  }
-
-  /**
-   * Seleccionar/deseleccionar espectro
-   */
-  toggleSpectrum(spectrum: SpectrumData): void {
-    const index = this.selectedSpectra.findIndex(s => s.id === spectrum.id);
-    
-    if (index > -1) {
-      // Deseleccionar
-      this.selectedSpectra.splice(index, 1);
-      console.log(`❌ Espectro deseleccionado: ${spectrum.filename}`);
-    } else {
-      // Seleccionar
-      this.selectedSpectra.push(spectrum);
-      console.log(`✅ Espectro seleccionado: ${spectrum.filename}`);
-    }
-    
-    // Redibujar gráfica
-    this.updateGraph();
-  }
-
-  /**
-   * Seleccionar espectro por ID (desde parámetros de ruta)
-   */
-  selectSpectrumById(id: number): void {
-    const spectrum = this.spectra.find(s => s.id === id);
-    
-    if (spectrum && !this.selectedSpectra.find(s => s.id === id)) {
-      this.selectedSpectra = [spectrum];
-      console.log(`✅ Espectro seleccionado por ID: ${spectrum.filename}`);
-      this.updateGraph();
-    }
-  }
-
-  /**
-   * Verificar si un espectro está seleccionado
-   */
-  isSelected(spectrum: SpectrumData): boolean {
-    return this.selectedSpectra.some(s => s.id === spectrum.id);
-  }
-
-  /**
-   * Limpiar selección
-   */
-  clearSelection(): void {
-    console.log('🧹 Limpiando selección');
-    this.selectedSpectra = [];
-    this.updateGraph();
-  }
-
-  /**
-   * Seleccionar todos los espectros filtrados
-   */
-  selectAll(): void {
-    console.log('✅ Seleccionando todos los espectros');
-    this.selectedSpectra = [...this.filteredSpectra];
-    this.updateGraph();
-  }
-
-  /**
-   * Actualizar gráfica con espectros seleccionados
-   */
-  updateGraph(): void {
-    console.log(`📈 Actualizando gráfica con ${this.selectedSpectra.length} espectros`);
-    
-    if (this.selectedSpectra.length === 0) {
-      this.clearGraph();
-      return;
-    }
-
-    // Preparar datos para Plotly
-    const traces: any[] = [];
-    const colors = [
+    readonly colors = [
       '#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd',
       '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf'
     ];
 
-    this.selectedSpectra.forEach((spectrum, index) => {
-      if (!spectrum.wavenumbers || !spectrum.absorbance) {
-        console.warn(`⚠️  Espectro ${spectrum.filename} sin datos`);
+    constructor(
+      private spectraService: SpectraBackendService,
+      private route: ActivatedRoute
+    ) {}
+
+    ngOnInit(): void {
+      this.loadSpectra();
+      this.route.params.pipe(takeUntil(this.destroy$)).subscribe(params => {
+        if (params['id']) this.selectSpectrumById(parseInt(params['id']));
+      });
+      this.setupResizeObserver();
+    }
+
+    ngOnDestroy(): void {
+      this.destroy$.next();
+      this.destroy$.complete();
+      if (this.resizeObserver) this.resizeObserver.disconnect();
+    }
+
+    private setupResizeObserver(): void {
+      if (typeof ResizeObserver === 'undefined') return;
+      const container = document.querySelector('.graph-container-main');
+      if (!container) return;
+      this.resizeObserver = new ResizeObserver(() => this.resizePlotly());
+      this.resizeObserver.observe(container);
+    }
+
+    private resizePlotly(): void {
+      try {
+        const el = document.getElementById('grafico');
+        if (!el || !el.querySelector('.js-plotly-plot')) return;
+        Plotly.Plots.resize(el);
+      } catch (e) {}
+    }
+
+    private hexToRgba(hex: string, alpha: number): string {
+      const r = parseInt(hex.slice(1, 3), 16);
+      const g = parseInt(hex.slice(3, 5), 16);
+      const b = parseInt(hex.slice(5, 7), 16);
+      return `rgba(${r},${g},${b},${alpha})`;
+    }
+
+    // ─── Helpers para los chips ───────────────────────────────────────────────
+
+    /**
+     * Devuelve el color asignado a un espectro según su posición
+     * en la lista filtrada. El chip y la línea de la gráfica usan el mismo color.
+     */
+    getSpectrumColor(indexEnFiltrados: number): string {
+      return this.colors[indexEnFiltrados % this.colors.length];
+    }
+
+    /** Nombre sin extensión, truncado */
+    getShortName(filename: string): string {
+      const dot = filename.lastIndexOf('.');
+      return dot > -1 ? filename.slice(0, dot) : filename;
+    }
+
+    /** Solo la extensión (sin el punto) */
+    getExt(filename: string): string {
+      const dot = filename.lastIndexOf('.');
+      return dot > -1 ? filename.slice(dot + 1).toLowerCase() : '';
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+
+    loadSpectra(): void {
+      this.loading = true;
+      this.error = null;
+      this.spectraService.getSpectra(this.skip, this.limit)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: (response) => {
+            this.spectra = response.data;
+            this.total = response.total;
+            this.page = response.page;
+            this.total_pages = response.total_pages;
+            this.loading = false;
+          },
+          error: (error) => {
+            this.error = error.message || 'Error al cargar espectros';
+            this.loading = false;
+          }
+        });
+    }
+
+    onFilterChange(): void {}
+
+    get filteredSpectra(): SpectrumData[] {
+      return this.spectra.filter(s => {
+        const materialMatch = !this.filterMaterial ||
+          (s.material || '').toLowerCase().includes(this.filterMaterial.toLowerCase());
+        const techniqueMatch = !this.filterTechnique ||
+          (s.technique || '').toLowerCase() === this.filterTechnique.toLowerCase();
+        return materialMatch && techniqueMatch;
+      });
+    }
+
+    toggleSpectrum(spectrum: SpectrumData): void {
+      const index = this.selectedSpectra.findIndex(s => s.id === spectrum.id);
+      if (index > -1) this.selectedSpectra.splice(index, 1);
+      else this.selectedSpectra.push(spectrum);
+      this.updateGraph();
+    }
+
+    selectSpectrumById(id: number): void {
+      const spectrum = this.spectra.find(s => s.id === id);
+      if (spectrum && !this.selectedSpectra.find(s => s.id === id)) {
+        this.selectedSpectra = [spectrum];
+        this.updateGraph();
+      }
+    }
+
+    isSelected(spectrum: SpectrumData): boolean {
+      return this.selectedSpectra.some(s => s.id === spectrum.id);
+    }
+
+    clearSelection(): void {
+      this.selectedSpectra = [];
+      this.updateGraph();
+    }
+
+    selectAll(): void {
+      this.selectedSpectra = [...this.filteredSpectra];
+      this.updateGraph();
+    }
+
+    toggleInvertirX(): void {
+      const el = document.getElementById('grafico');
+      if (!el || !el.querySelector('.js-plotly-plot')) return;
+      try {
+        Plotly.relayout('grafico', {
+          'xaxis.autorange': this.invertirX ? 'reversed' : true
+        });
+      } catch (e) {}
+    }
+
+    updateGraph(): void {
+      if (this.selectedSpectra.length === 0) {
+        this.clearGraph();
         return;
       }
 
-      let wavenumbers = [...spectrum.wavenumbers];
-      let absorbance = [...spectrum.absorbance];
+      const traces: any[] = this.selectedSpectra
+        .filter(s => s.wavenumbers && s.absorbance)
+        .map((spectrum, index) => {
+          const wavenumbers = [...spectrum.wavenumbers!];
+          let absorbance = [...spectrum.absorbance!];
 
-      // ✅ Invertir eje X si está habilitado
-      if (this.invertirX) {
-        wavenumbers = wavenumbers.reverse();
-        absorbance = absorbance.reverse();
-      }
+          if (this.suavizado > 0) {
+            absorbance = this.smoothData(absorbance, this.suavizado);
+          }
 
-      // ✅ Suavizado (media móvil simple)
-      if (this.suavizado > 0) {
-        absorbance = this.smoothData(absorbance, this.suavizado);
-      }
+          const color = this.colors[index % this.colors.length];
 
-      const trace = {
-        x: wavenumbers,
-        y: absorbance,
-        name: spectrum.filename,
-        mode: 'lines',
-        line: {
-          color: colors[index % colors.length],
-          width: this.grosorLinea,
-          shape: 'linear'
+          return {
+            x: wavenumbers,
+            y: absorbance,
+            name: spectrum.filename,
+            mode: 'lines',
+            line: { color, width: this.grosorLinea, shape: 'linear' },
+            hoverlabel: {
+              bgcolor: this.hexToRgba(color, 0.15),
+              bordercolor: this.hexToRgba(color, 0.55),
+              font: { color: '#222', size: 11, family: 'Inter, sans-serif' },
+              align: 'left'
+            },
+            hovertemplate:
+              `<b>%{data.name}</b><br>` +
+              `%{x:.1f} cm⁻¹<br>` +
+              `%{y:.4f} A.U.<extra></extra>`,
+            connectgaps: true
+          };
+        });
+
+      const container = document.querySelector('.graph-container-main') as HTMLElement;
+      const w = container ? container.clientWidth : 800;
+      const h = container ? container.clientHeight : 500;
+
+      const marginBottom = this.mostrarLeyenda ? 80 : 55;
+
+      const layout: any = {
+        title: {
+          text: `<b>Espectros FTIR</b> — ${this.selectedSpectra.length} serie${this.selectedSpectra.length > 1 ? 's' : ''}`,
+          font: { size: 14, family: 'Inter, sans-serif', color: '#333' },
+          x: 0.5, xanchor: 'center', y: 0.99, yanchor: 'top'
         },
-        hovertemplate: `<b>${spectrum.filename}</b><br>Wavenumber: %{x:.2f} cm⁻¹<br>Absorbance: %{y:.5f} A.U.<extra></extra>`,
-        connectgaps: true
+        xaxis: {
+          title: { text: '<b>Wavenumber (cm⁻¹)</b>', font: { size: 12, color: '#333', family: 'Inter, sans-serif' } },
+          tickfont: { size: 10, color: '#555', family: 'Inter, sans-serif' },
+          zeroline: false,
+          showgrid: this.mostrarCuadricula, gridwidth: 1, gridcolor: '#e8e8e8',
+          showline: true, linewidth: 1.5, linecolor: '#333', mirror: true,
+          automargin: true,
+          autorange: this.invertirX ? 'reversed' : true
+        },
+        yaxis: {
+          title: { text: '<b>Absorbance (A.U.)</b>', font: { size: 12, color: '#333', family: 'Inter, sans-serif' }, standoff: 8 },
+          tickfont: { size: 10, color: '#555', family: 'Inter, sans-serif' },
+          zeroline: false,
+          showgrid: this.mostrarCuadricula, gridwidth: 1, gridcolor: '#e8e8e8',
+          showline: true, linewidth: 1.5, linecolor: '#333', mirror: true,
+          automargin: true
+        },
+        hovermode: 'closest',
+        legend: {
+          visible: this.mostrarLeyenda,
+          orientation: 'h',
+          x: 0.5, y: -0.18,
+          xanchor: 'center', yanchor: 'top',
+          bgcolor: 'rgba(255,255,255,0)',
+          bordercolor: 'rgba(0,0,0,0)',
+          borderwidth: 0,
+          font: { size: 10, family: 'Inter, sans-serif', color: '#444' }
+        },
+        margin: { l: 65, r: 20, t: 38, b: marginBottom },
+        plot_bgcolor: '#fafafa',
+        paper_bgcolor: '#ffffff',
+        font: { family: 'Inter, sans-serif', size: 10, color: '#333' },
+        showlegend: this.mostrarLeyenda,
+        width: w,
+        height: h,
+        autosize: false
       };
 
-      traces.push(trace);
-      console.log(`✅ Trace agregado: ${spectrum.filename}`);
-    });
-
-    // Configuración de layout - MEJORADA
-    const layout = {
-      title: {
-        text: `<b>Espectros FTIR</b> (${this.selectedSpectra.length} seleccionado${this.selectedSpectra.length > 1 ? 's' : ''})`,
-        font: { size: 20, family: 'Inter, sans-serif', color: '#333' },
-        x: 0.5,
-        xanchor: 'center'
-      },
-      xaxis: {
-        title: {
-          text: '<b>Wavenumber (cm⁻¹)</b>',
-          font: { size: 14, color: '#333' }
-        },
-        zeroline: false,
-        showgrid: this.mostrarCuadricula,
-        gridwidth: 1,
-        gridcolor: '#f0f0f0',
-        showline: true,
-        linewidth: 2,
-        linecolor: '#333',
-        mirror: true
-      },
-      yaxis: {
-        title: {
-          text: '<b>Absorbance (A.U.)</b>',
-          font: { size: 14, color: '#333' }
-        },
-        zeroline: false,
-        showgrid: this.mostrarCuadricula,
-        gridwidth: 1,
-        gridcolor: '#f0f0f0',
-        showline: true,
-        linewidth: 2,
-        linecolor: '#333',
-        mirror: true
-      },
-      hovermode: 'x unified',
-      legend: {
-        visible: this.mostrarLeyenda,
-        x: 1.02,
-        y: 1,
-        xanchor: 'left',
-        yanchor: 'top',
-        bgcolor: 'rgba(255, 255, 255, 0.8)',
-        bordercolor: '#ddd',
-        borderwidth: 1,
-        font: { size: 12 }
-      },
-      margin: { l: 80, r: 250, t: 100, b: 80 },
-      plot_bgcolor: '#fafafa',
-      paper_bgcolor: '#ffffff',
-      font: { family: 'Inter, sans-serif', size: 12, color: '#333' },
-      showlegend: this.mostrarLeyenda,
-      autosize: true,
-      height: 600
-    };
-
-    // Configuración de opciones
-    const config = {
-      responsive: true,
-      displayModeBar: true,
-      displaylogo: false,
-      modeBarButtonsToRemove: ['lasso2d', 'select2d'],
-      toImageButtonOptions: {
-        format: 'png',
-        filename: `espectro_FTIR_${Date.now()}.png`,
-        height: 800,
-        width: 1400,
-        scale: 2
-      }
-    };
-
-    // Redibujar
-    try {
-      Plotly.newPlot('grafico', traces, layout, config);
-      console.log('✅ Gráfica actualizada');
-      this.error = null;
-    } catch (error) {
-      console.error('❌ Error en Plotly:', error);
-      this.error = 'Error al graficar espectros';
-    }
-  }
-
-  /**
-   * Limpiar gráfica
-   */
-  clearGraph(): void {
-    console.log('🧹 Limpiando gráfica');
-    try {
-      Plotly.purge('grafico');
-      const element = document.getElementById('grafico');
-      if (element) {
-        element.innerHTML = '<p style="text-align: center; padding: 50px;">Selecciona uno o más espectros para visualizar</p>';
-      }
-    } catch (error) {
-      console.error('❌ Error limpiando gráfica:', error);
-    }
-  }
-
-  /**
-   * Resetear zoom
-   */
-  resetZoom(): void {
-    console.log('🔍 Reseteando zoom');
-    try {
-      Plotly.relayout('grafico', {
-        'xaxis.autorange': true,
-        'yaxis.autorange': true
-      });
-    } catch (error) {
-      console.error('❌ Error reseteando zoom:', error);
-    }
-  }
-
-  /**
-   * Descargar gráfica como PNG
-   */
-  downloadPNG(): void {
-    console.log('📥 Descargando gráfica como PNG');
-    try {
-      Plotly.downloadImage('grafico', {
-        format: 'png',
-        width: 1000,
-        height: 600,
-        filename: `espectro_${Date.now()}.png`
-      });
-    } catch (error) {
-      console.error('❌ Error descargando PNG:', error);
-      this.error = 'Error descargando imagen';
-    }
-  }
-
-  /**
-   * Suavizar datos usando media móvil simple
-   */
-  private smoothData(data: number[], windowSize: number): number[] {
-    if (windowSize <= 1 || windowSize >= data.length) return data;
-
-    const smoothed: number[] = [];
-    const half = Math.floor(windowSize / 2);
-
-    for (let i = 0; i < data.length; i++) {
-      let sum = 0;
-      let count = 0;
-
-      for (let j = -half; j <= half; j++) {
-        const idx = i + j;
-        if (idx >= 0 && idx < data.length) {
-          sum += data[idx];
-          count++;
+      const config = {
+        responsive: true,
+        displayModeBar: true,
+        displaylogo: false,
+        modeBarButtonsToRemove: ['lasso2d', 'select2d'],
+        toImageButtonOptions: {
+          format: 'png',
+          filename: `espectro_FTIR_${Date.now()}.png`,
+          height: 900, width: 1600, scale: 2
         }
+      };
+
+      try {
+        Plotly.newPlot('grafico', traces, layout, config);
+        this.error = null;
+        requestAnimationFrame(() => this.resizePlotly());
+      } catch (err) {
+        console.error('❌ Error en Plotly:', err);
+        this.error = 'Error al graficar espectros';
       }
-
-      smoothed.push(sum / count);
     }
 
-    return smoothed;
-  }
-
-  /**
-   * Cambiar página
-   */
-  changePage(newPage: number): void {
-    if (newPage < 1 || newPage > this.total_pages) {
-      return;
+    clearGraph(): void {
+      try { Plotly.purge('grafico'); } catch (e) {}
     }
-    this.page = newPage;
-    this.skip = (newPage - 1) * this.limit;
-    this.loadSpectra();
-  }
 
-  /**
-   * Obtener icono de formato
-   */
-  getFormatIcon(filename: string): string {
-    const ext = filename.substring(filename.lastIndexOf('.')).toLowerCase();
-    const icons: { [key: string]: string } = {
-      '.csv': '📊',
-      '.txt': '📄',
-      '.dpt': '🔬',
-      '.json': '{}',
-      '.xlsx': '📈'
-    };
-    return icons[ext] || '📁';
-  }
+    resetZoom(): void {
+      try {
+        Plotly.relayout('grafico', {
+          'xaxis.autorange': this.invertirX ? 'reversed' : true,
+          'yaxis.autorange': true
+        });
+      } catch (e) {}
+    }
 
-  /**
-   * Obtener timestamp legible
-   */
-  getFormattedDate(dateString: string): string {
-    try {
-      const date = new Date(dateString);
-      return date.toLocaleDateString('es-MX', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
+    downloadPNG(): void {
+      try {
+        Plotly.downloadImage('grafico', {
+          format: 'png', width: 1600, height: 900,
+          filename: `espectro_FTIR_${Date.now()}.png`
+        });
+      } catch (e) { this.error = 'Error descargando imagen'; }
+    }
+
+    private smoothData(data: number[], windowSize: number): number[] {
+      if (windowSize <= 1 || windowSize >= data.length) return data;
+      const half = Math.floor(windowSize / 2);
+      return data.map((_, i) => {
+        let sum = 0, count = 0;
+        for (let j = -half; j <= half; j++) {
+          const idx = i + j;
+          if (idx >= 0 && idx < data.length) { sum += data[idx]; count++; }
+        }
+        return sum / count;
       });
-    } catch {
-      return dateString;
+    }
+
+    changePage(newPage: number): void {
+      if (newPage < 1 || newPage > this.total_pages) return;
+      this.page = newPage;
+      this.skip = (newPage - 1) * this.limit;
+      this.loadSpectra();
+    }
+
+    getFormatIcon(filename: string): string {
+      const ext = filename.substring(filename.lastIndexOf('.')).toLowerCase();
+      return ({ '.csv': '📊', '.txt': '📄', '.dpt': '🔬', '.json': '{}', '.xlsx': '📈' } as any)[ext] || '📁';
+    }
+
+    getFormattedDate(dateString: string): string {
+      try {
+        return new Date(dateString).toLocaleDateString('es-MX', {
+          year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+        });
+      } catch { return dateString; }
     }
   }
-}
