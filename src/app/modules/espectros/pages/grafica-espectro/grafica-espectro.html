@@ -56,7 +56,7 @@
         <small *ngIf="spectra.length === 0">Ve a <a routerLink="/espectros/cargar-espectro">Cargar Espectro</a></small>
       </div>
 
-      <!-- ✅ Lista de espectros rediseñada -->
+      <!-- Lista de espectros -->
       <div *ngIf="filteredSpectra.length > 0" class="spectra-chips">
         <div *ngFor="let spectrum of filteredSpectra; let i = index"
              class="spectrum-chip"
@@ -65,16 +65,9 @@
              (click)="toggleSpectrum(spectrum)"
              [title]="spectrum.filename">
 
-          <!-- Dot de color -->
           <span class="chip-dot"></span>
-
-          <!-- Nombre del archivo sin extensión -->
           <span class="chip-name">{{ getShortName(spectrum.filename) }}</span>
-
-          <!-- Extensión como badge -->
           <span class="chip-ext">{{ getExt(spectrum.filename) }}</span>
-
-          <!-- Check cuando está seleccionado -->
           <span class="chip-check" *ngIf="isSelected(spectrum)">✓</span>
         </div>
       </div>

@@ -95,7 +95,17 @@
       </button>
 
       <button class="btn-clear" (click)="clearComparison()" *ngIf="compared">
-         Limpiar
+         Limpiar Resultados
+      </button>
+
+      <!-- ✅ NUEVO: BOTÓN PARA LIMPIAR TODO -->
+      <button 
+        class="btn-clear-all" 
+        (click)="clearAllData()"
+        title="Limpiar todos los espectros guardados"
+        *ngIf="querySpectrum || refSpectrum"
+      >
+         Limpiar Espectros
       </button>
     </div>
 
@@ -244,7 +254,9 @@
           </div>
         </div>
       </div>
+    </div>
 
+  </div>
 
   <!-- MENSAJE SI NO HAY ESPECTROS -->
   <div *ngIf="!isLoadingSpectra && spectra.length === 0" class="no-data">

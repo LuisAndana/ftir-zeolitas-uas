@@ -292,8 +292,10 @@
   color: #991b1b;
 }
 
+/* ===== BUTTONS ===== */
 .btn-compare,
-.btn-clear {
+.btn-clear,
+.btn-clear-all {
   padding: 0.75rem 2rem;
   border: none;
   border-radius: 0.5rem;
@@ -329,6 +331,30 @@
 
 .btn-clear:hover {
   background: var(--gray-300);
+}
+
+/* ✅ NUEVO: BOTÓN LIMPIAR ESPECTROS */
+.btn-clear-all {
+  background: linear-gradient(135deg, #fca5a5, #f87171);
+  color: white;
+  border: 2px solid transparent;
+  font-weight: 600;
+}
+
+.btn-clear-all:hover {
+  background: linear-gradient(135deg, #f87171, #ef4444);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(239, 68, 68, 0.3);
+}
+
+.btn-clear-all:active {
+  transform: translateY(0);
+}
+
+.btn-clear-all:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
 }
 
 /* ===== RESULTS ===== */
@@ -819,6 +845,34 @@
   font-weight: 500;
 }
 
+/* ===== NO DATA ===== */
+.no-data {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 4rem 2rem;
+  text-align: center;
+  color: var(--gray-600);
+}
+
+.no-data-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.no-data h3 {
+  color: var(--gray-800);
+  margin: 0 0 0.5rem;
+  font-size: 1.25rem;
+}
+
+.no-data p {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
 /* ===== RESPONSIVE ===== */
 @media (max-width: 768px) {
   .comparacion-container {
@@ -853,7 +907,8 @@
   }
 
   .btn-compare,
-  .btn-clear {
+  .btn-clear,
+  .btn-clear-all {
     width: 100%;
     margin-left: 0;
   }
@@ -931,6 +986,13 @@
   .peak-tag {
     padding: 0.25rem 0.5rem;
     font-size: 0.75rem;
+  }
+
+  .btn-compare,
+  .btn-clear,
+  .btn-clear-all {
+    font-size: 0.8rem;
+    padding: 0.65rem 1.5rem;
   }
 }
 
