@@ -1,108 +1,214 @@
 <div class="spectrum-comparison-container">
-  <!-- Header -->
-  <div class="comparison-header">
-    <button class="btn-back" (click)="goBack()">
-      <span>← Volver</span>
-    </button>
-    <h1>Comparación de Espectros FTIR</h1>
-    <button class="btn-download" (click)="downloadComparison()" [disabled]="loading">
-      <span>⬇ Descargar</span>
-    </button>
-  </div>
 
-  <!-- Loading State -->
-  <div *ngIf="loading" class="loading-state">
-    <div class="spinner"></div>
-    <p>Cargando espectros...</p>
-  </div>
-
-  <!-- Error State -->
-  <div *ngIf="error && !loading" class="error-state">
-    <p>{{ error }}</p>
-  </div>
-
-  <!-- Content -->
-  <div *ngIf="!loading && referenceSpectrum && comparisonSpectrum" class="comparison-content">
-    
-    <!-- Similarity Score -->
-    <div class="similarity-section">
-      <div class="similarity-card">
-        <h2>Puntuación de Similitud</h2>
-        <div class="score-display">
-          <div class="score-value">{{ (similarityScore * 100).toFixed(2) }}%</div>
-          <div class="score-method">Método: {{ method }}</div>
-        </div>
-      </div>
+  <!-- ENCABEZADO -->
+  <div class="header-section">
+    <div class="title-area">
+      <h1>Comparación de Espectros</h1>
+      <p>Análisis detallado y visualización superpuesta de espectros FTIR</p>
     </div>
+    <div class="header-buttons">
+      <button (click)="downloadComparison()" class="btn btn-success" [disabled]="loading" title="Descargar comparación en JSON">
+        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="7 10 12 15 17 10"></polyline>
+          <line x1="12" y1="15" x2="12" y2="3"></line>
+        </svg>
+        Descargar
+      </button>
+      <button (click)="goBack()" class="btn btn-secondary" title="Volver atrás">
+        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="19" y1="12" x2="5" y2="12"></line>
+          <polyline points="12 19 5 12 12 5"></polyline>
+        </svg>
+        Volver
+      </button>
+    </div>
+  </div>
 
-    <!-- Spectrum Information -->
+  <!-- MENSAJES -->
+  <div *ngIf="error"          class="alert alert-danger"> {{ error }}</div>
+  <div *ngIf="successMessage" class="alert alert-success"> {{ successMessage }}</div>
+  <div *ngIf="loading"        class="alert alert-info"> Cargando espectros...</div>
+
+  <div *ngIf="!loading && referenceSpectrum && comparisonSpectrum">
+
+    <!-- INFORMACIÓN DE ESPECTROS -->
     <div class="info-section">
-      <div class="info-card">
-        <h3> Espectro de Referencia</h3>
-        <div class="info-content">
-          <p><strong>Código:</strong> {{ referenceSpectrum.sample_code }}</p>
-          <p><strong>Zeolita:</strong> {{ referenceSpectrum.zeolite_name }}</p>
-          <p><strong>ID:</strong> {{ referenceSpectrum.id }}</p>
-          <p *ngIf="referenceSpectrum.equipment"><strong>Equipo:</strong> {{ referenceSpectrum.equipment }}</p>
-          <p *ngIf="referenceSpectrum.measurement_date"><strong>Fecha:</strong> {{ referenceSpectrum.measurement_date }}</p>
-        </div>
-      </div>
-
-      <div class="vs-badge">vs</div>
-
-      <div class="info-card">
-        <h3> Espectro Encontrado</h3>
-        <div class="info-content">
-          <p><strong>Código:</strong> {{ comparisonSpectrum.sample_code }}</p>
-          <p><strong>Zeolita:</strong> {{ comparisonSpectrum.zeolite_name }}</p>
-          <p><strong>ID:</strong> {{ comparisonSpectrum.id }}</p>
-          <p *ngIf="comparisonSpectrum.equipment"><strong>Equipo:</strong> {{ comparisonSpectrum.equipment }}</p>
-          <p *ngIf="comparisonSpectrum.measurement_date"><strong>Fecha:</strong> {{ comparisonSpectrum.measurement_date }}</p>
-        </div>
-      </div>
-    </div>
-
-    <!-- ✅ VISUALIZACIÓN SEPARADA CON SCROLL SINCRONIZADO -->
-    <div class="separated-view">
-      <h2> Comparación Visual (Espectros Separados)</h2>
-      
-      <!-- ESPECTRO 1 - CON SCROLL -->
-      <div class="spectrum-container">
-        <h3> Espectro de Referencia</h3>
-        <div 
-          id="scrollReference"
-          class="chart-scroll-wrapper"
-          (scroll)="syncScroll($event)">
-          <div class="chart-container-separated">
-            <canvas id="chartReference"></canvas>
+      <div class="spectrum-info">
+        <div class="info-card">
+          <h3>Espectro de Referencia</h3>
+          <div class="info-content">
+            <p><strong>Archivo:</strong> {{ referenceSpectrum.filename }}</p>
+            <p><strong>Fuente:</strong>  {{ referenceSpectrum.source || 'N/A' }}</p>
+            <p><strong>Familia:</strong> {{ referenceSpectrum.family || 'N/A' }}</p>
           </div>
         </div>
-      </div>
-
-      <!-- ESPECTRO 2 - CON SCROLL SINCRONIZADO -->
-      <div class="spectrum-container">
-        <h3> Espectro Encontrado</h3>
-        <div 
-          id="scrollComparison"
-          class="chart-scroll-wrapper"
-          (scroll)="syncScroll($event)">
-          <div class="chart-container-separated">
-            <canvas id="chartComparison"></canvas>
+        <div class="vs-badge">VS</div>
+        <div class="info-card">
+          <h3>Espectro Encontrado</h3>
+          <div class="info-content">
+            <p><strong>Archivo:</strong> {{ comparisonSpectrum.filename }}</p>
+            <p><strong>Fuente:</strong>  {{ comparisonSpectrum.source || 'N/A' }}</p>
+            <p><strong>Familia:</strong> {{ comparisonSpectrum.family || 'N/A' }}</p>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- ✅ VISUALIZACIÓN SUPERPUESTA SIMPLIFICADA -->
+    <!-- PANEL DE CONTROLES -->
+    <div class="controls-panel">
+      <div class="controls-group">
+        <h3> Opciones de Visualización</h3>
+        <div class="options-grid">
+
+          <div class="options-group">
+            <label class="checkbox-label">
+              <input type="checkbox" [(ngModel)]="invertirX" (change)="onInvertirXChange()">
+              Invertir eje X
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" [(ngModel)]="mostrarCuadricula" (change)="updateOverlayChart()">
+              Mostrar cuadrícula
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" [(ngModel)]="mostrarLeyenda" (change)="updateOverlayChart()">
+              Mostrar leyenda
+            </label>
+          </div>
+
+          <div class="slider-group">
+            <div>
+              <label for="line-width">Grosor de línea: {{ grosorLinea }}</label>
+              <input id="line-width" type="range" min="1" max="5" step="0.5"
+                [(ngModel)]="grosorLinea" (input)="updateOverlayChart()" class="slider">
+            </div>
+            <div>
+              <label for="smoothing">Suavizado: {{ suavizado }}</label>
+              <input id="smoothing" type="range" min="0" max="10"
+                [(ngModel)]="suavizado" (input)="updateOverlayChart()" class="slider">
+            </div>
+          </div>
+
+          <div class="tools-group">
+            <button (click)="zoomIn()" class="btn btn-tool" title="Ampliar (Zoom In)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path>
+                <line x1="11" y1="8" x2="11" y2="14"></line><line x1="8" y1="11" x2="14" y2="11"></line>
+              </svg>
+            </button>
+
+            <button (click)="zoomReset()" class="btn btn-tool" [class.active]="isZoomed" title="Resetear Zoom">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+                <path d="M3 3v5h5"></path>
+              </svg>
+            </button>
+
+            <button (click)="zoomOut()" class="btn btn-tool" title="Reducir (Zoom Out)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path>
+                <line x1="8" y1="11" x2="14" y2="11"></line>
+              </svg>
+            </button>
+
+            <div class="tool-separator"></div>
+
+            <button
+              (click)="toggleModoSeleccion()"
+              class="btn btn-tool btn-tool-select"
+              [class.active]="modoSeleccion"
+              title="Zoom por selección de zona (arrastra para seleccionar área)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="7" height="7" rx="1" stroke-dasharray="2 1.5"></rect>
+                <path d="M14 10l6 6"></path>
+                <path d="M20 10h-6v6"></path>
+              </svg>
+            </button>
+
+            <div class="tool-separator"></div>
+
+            <button (click)="downloadPNG()" class="btn btn-tool" title="Descargar como PNG">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                <polyline points="21 15 16 10 5 21"></polyline>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- VISUALIZACIÓN SUPERPUESTA -->
     <div class="overlay-section">
       <div class="overlay-header">
-        <h2> Visualización Superpuesta</h2>
+        <h2>Visualización Superpuesta</h2>
+        <p class="zoom-info" *ngIf="modoSeleccion">
+           Modo selección activo · Arrastra para definir la zona de zoom · Suelta para aplicar
+        </p>
+        <p class="zoom-info zoom-info-active" *ngIf="isZoomed && !modoSeleccion">
+           Zoom activo · Rueda para ampliar/reducir · Arrastra para desplazar · Doble clic para resetear
+        </p>
       </div>
-
-      <!-- ✅ CONTENEDOR SIN SCROLL -->
       <div class="overlay-chart-container">
         <canvas id="chartOverlay"></canvas>
       </div>
     </div>
+
+    <!-- RESULTADOS DE SIMILITUD -->
+    <div class="similarity-results">
+      <div class="result-card">
+        <h3>Puntuación de Similitud</h3>
+        <div class="score-display">
+          <span class="score-value">{{ (similarityScore * 100).toFixed(2) }}%</span>
+          <div class="score-bar">
+            <div class="score-fill" [style.width.%]="similarityScore * 100"></div>
+          </div>
+        </div>
+      </div>
+      <div class="result-card">
+        <h3>Picos Coincidentes</h3>
+        <div class="peaks-info">
+          <p><strong>Coincidentes:</strong> {{ matchedPeaks.length }}</p>
+          <p><strong>Total:</strong> {{ totalPeaks }}</p>
+          <p><strong>Coincidencia:</strong> {{ totalPeaks > 0 ? ((matchedPeaks.length / totalPeaks) * 100).toFixed(1) : 0 }}%</p>
+        </div>
+      </div>
+      <div class="result-card">
+        <h3> Configuración</h3>
+        <div class="config-info">
+          <p><strong>Método:</strong> {{ method }}</p>
+          <p><strong>Tolerancia:</strong> ±{{ tolerance }} cm⁻¹</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- VISUALIZACIÓN SEPARADA -->
+    <div class="separated-view">
+      <h2>Comparación Visual (Espectros Separados)</h2>
+
+      <!-- ESPECTRO REFERENCIA -->
+      <div class="spectrum-container">
+        <h3>Espectro de Referencia</h3>
+        <!--
+          chart-wrapper-separated: width 100%, height fija, sin overflow.
+          El canvas se escala al 100% del wrapper gracias a
+          responsive:true + maintainAspectRatio:false en el TS.
+        -->
+        <div class="chart-wrapper-separated">
+          <canvas id="chartReference"></canvas>
+        </div>
+      </div>
+
+      <!-- ESPECTRO ENCONTRADO -->
+      <div class="spectrum-container">
+        <h3>Espectro Encontrado</h3>
+        <div class="chart-wrapper-separated">
+          <canvas id="chartComparison"></canvas>
+        </div>
+      </div>
+
+    </div>
+
   </div>
 </div>
