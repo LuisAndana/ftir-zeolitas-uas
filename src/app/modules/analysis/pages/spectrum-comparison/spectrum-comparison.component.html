@@ -38,7 +38,7 @@
     <!-- Spectrum Information -->
     <div class="info-section">
       <div class="info-card">
-        <h3>Espectro de Referencia</h3>
+        <h3> Espectro de Referencia</h3>
         <div class="info-content">
           <p><strong>Código:</strong> {{ referenceSpectrum.sample_code }}</p>
           <p><strong>Zeolita:</strong> {{ referenceSpectrum.zeolite_name }}</p>
@@ -51,7 +51,7 @@
       <div class="vs-badge">vs</div>
 
       <div class="info-card">
-        <h3>Espectro Encontrado</h3>
+        <h3> Espectro Encontrado</h3>
         <div class="info-content">
           <p><strong>Código:</strong> {{ comparisonSpectrum.sample_code }}</p>
           <p><strong>Zeolita:</strong> {{ comparisonSpectrum.zeolite_name }}</p>
@@ -62,20 +62,45 @@
       </div>
     </div>
 
-    <!-- Charts -->
-    <div class="charts-section">
-      <div class="chart-container">
-        <canvas id="chartReference"></canvas>
+    <!-- ✅ VISUALIZACIÓN SEPARADA CON SCROLL SINCRONIZADO -->
+    <div class="separated-view">
+      <h2> Comparación Visual (Espectros Separados)</h2>
+      
+      <!-- ESPECTRO 1 - CON SCROLL -->
+      <div class="spectrum-container">
+        <h3> Espectro de Referencia</h3>
+        <div 
+          id="scrollReference"
+          class="chart-scroll-wrapper"
+          (scroll)="syncScroll($event)">
+          <div class="chart-container-separated">
+            <canvas id="chartReference"></canvas>
+          </div>
+        </div>
       </div>
-      <div class="chart-container">
-        <canvas id="chartComparison"></canvas>
+
+      <!-- ESPECTRO 2 - CON SCROLL SINCRONIZADO -->
+      <div class="spectrum-container">
+        <h3> Espectro Encontrado</h3>
+        <div 
+          id="scrollComparison"
+          class="chart-scroll-wrapper"
+          (scroll)="syncScroll($event)">
+          <div class="chart-container-separated">
+            <canvas id="chartComparison"></canvas>
+          </div>
+        </div>
       </div>
     </div>
 
-    <!-- Overlay Comparison -->
+    <!-- ✅ VISUALIZACIÓN SUPERPUESTA SIMPLIFICADA -->
     <div class="overlay-section">
-      <h2>Visualización Superpuesta</h2>
-      <div class="chart-container">
+      <div class="overlay-header">
+        <h2> Visualización Superpuesta</h2>
+      </div>
+
+      <!-- ✅ CONTENEDOR SIN SCROLL -->
+      <div class="overlay-chart-container">
         <canvas id="chartOverlay"></canvas>
       </div>
     </div>

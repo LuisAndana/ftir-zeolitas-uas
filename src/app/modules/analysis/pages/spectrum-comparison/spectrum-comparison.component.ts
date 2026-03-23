@@ -1,6 +1,5 @@
 /**
- * ✅ SOLUCIÓN FINAL: Gráfico superpuesto SIN INTERPOLACIÓN
- * Deja que Chart.js maneje los diferentes grids automáticamente
+ * ✅ VISUALIZACIÓN SUPERPUESTA SIMPLIFICADA - Sin scroll, zoom ni reducir
  */
 
 import { Component, OnInit, OnDestroy } from '@angular/core';
@@ -42,6 +41,13 @@ export class SpectrumComparisonComponent implements OnInit, OnDestroy {
   chartReference: Chart | null = null;
   chartComparison: Chart | null = null;
   chartOverlay: Chart | null = null;
+
+  // ✅ PROPIEDADES PARA SCROLL SINCRONIZADO (SEPARADO)
+  scrollContainerReference: any;
+  scrollContainerComparison: any;
+
+  // ✅ PROPIEDADES PARA OFFSET DE SEPARACIÓN
+  spectralOffsetAmount: number = 0.15; // Separación entre espectros
 
   constructor(
     private route: ActivatedRoute,
@@ -103,7 +109,7 @@ export class SpectrumComparisonComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * ✅ PROCESAR ESPECTRO - SIMPLE Y DIRECTO
+   * ✅ PROCESAR ESPECTRO
    */
   private processSpectrum(spectrum: any): any {
     if (!spectrum.spectrum_data) {
@@ -115,7 +121,6 @@ export class SpectrumComparisonComponent implements OnInit, OnDestroy {
     let intensities: number[] = data.intensities || data.absorbance || [];
     let wavenumbers: number[] = data.wavenumbers || [];
 
-    // Generar wavenumbers si no existen
     if (!wavenumbers || wavenumbers.length === 0) {
       wavenumbers = [];
       const step = (400 - 4000) / (intensities.length - 1);
@@ -124,7 +129,6 @@ export class SpectrumComparisonComponent implements OnInit, OnDestroy {
       }
     }
 
-    // Asegurar longitudes iguales
     const minLen = Math.min(wavenumbers.length, intensities.length);
     if (minLen < wavenumbers.length || minLen < intensities.length) {
       wavenumbers = wavenumbers.slice(0, minLen);
@@ -141,6 +145,12 @@ export class SpectrumComparisonComponent implements OnInit, OnDestroy {
   }
 
   renderCharts(): void {
+    setTimeout(() => {
+      this.scrollContainerReference = document.getElementById('scrollReference');
+      this.scrollContainerComparison = document.getElementById('scrollComparison');
+      console.log('✅ Referencias asignadas');
+    }, 100);
+
     if (this.referenceSpectrum?.spectrum_data) {
       this.createChart('chartReference', this.referenceSpectrum, 'Espectro de Referencia', '#2196F3');
     }
@@ -149,9 +159,25 @@ export class SpectrumComparisonComponent implements OnInit, OnDestroy {
       this.createChart('chartComparison', this.comparisonSpectrum, 'Espectro Encontrado', '#FF6B6B');
     }
 
-    // ✅ GRÁFICO SUPERPUESTO SIN INTERPOLACIÓN
     if (this.referenceSpectrum?.spectrum_data && this.comparisonSpectrum?.spectrum_data) {
       this.createOverlayChart();
+    }
+  }
+
+  /**
+   * ✅ SINCRONIZAR SCROLL HORIZONTAL (SEPARADO)
+   */
+  syncScroll(event: any): void {
+    const sourceContainer = event.target;
+    
+    if (!this.scrollContainerReference || !this.scrollContainerComparison) {
+      return;
+    }
+
+    if (sourceContainer === this.scrollContainerReference) {
+      this.scrollContainerComparison.scrollLeft = sourceContainer.scrollLeft;
+    } else {
+      this.scrollContainerReference.scrollLeft = sourceContainer.scrollLeft;
     }
   }
 
@@ -222,8 +248,7 @@ export class SpectrumComparisonComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * ✅ CREAR GRÁFICO SUPERPUESTO - VERSION SIMPLE
-   * NO interpola, deja que Chart.js maneje ambos grids
+   * ✅ CREAR GRÁFICO SUPERPUESTO - CON OFFSET VERTICAL PARA SEPARACIÓN
    */
   private createOverlayChart(): void {
     setTimeout(() => {
@@ -241,16 +266,24 @@ export class SpectrumComparisonComponent implements OnInit, OnDestroy {
 
         if (refWn.length === 0 || compWn.length === 0) return;
 
-        console.log(` Creando overlay:`);
-        console.log(`   Ref: ${refWn.length} pts (${Math.min(...refWn).toFixed(0)}-${Math.max(...refWn).toFixed(0)})`);
-        console.log(`   Comp: ${compWn.length} pts (${Math.min(...compWn).toFixed(0)}-${Math.max(...compWn).toFixed(0)})`);
-        console.log(`   Ref intensity: ${Math.min(...refInt).toFixed(4)}-${Math.max(...refInt).toFixed(4)}`);
-        console.log(`   Comp intensity: ${Math.min(...compInt).toFixed(4)}-${Math.max(...compInt).toFixed(4)}`);
+        // Calcular los valores mín/máx para el rango Y
+        const allIntensities = [...refInt, ...compInt];
+        const minIntensity = Math.min(...allIntensities);
+        const maxIntensity = Math.max(...allIntensities);
 
-        // ✅ CREAR DOS DATASETS INDEPENDIENTES
-        // Cada uno con su propio grid de wavenumbers
+        // ✅ APLICAR OFFSET AL ESPECTRO ENCONTRADO PARA SEPARACIÓN VISUAL
+        const compIntWithOffset = compInt.map(val => val + this.spectralOffsetAmount);
+
+        // Recalcular valores min/max con el offset
+        const minYValue = minIntensity - 0.05;
+        const maxYValue = Math.max(...compIntWithOffset) + 0.05;
+
+        console.log(` Creando overlay con offset visual`);
+        console.log(`   Y Range: ${minYValue.toFixed(2)} - ${maxYValue.toFixed(2)}`);
+        console.log(`   Offset Aplicado: ${this.spectralOffsetAmount.toFixed(2)}`);
+
         const config: any = {
-          type: 'scatter',  // ✅ USAR SCATTER EN VEZ DE LINE
+          type: 'scatter',
           data: {
             datasets: [
               {
@@ -260,10 +293,10 @@ export class SpectrumComparisonComponent implements OnInit, OnDestroy {
                   y: refInt[idx]
                 })),
                 borderColor: '#2196F3',
-                backgroundColor: 'rgba(33, 150, 243, 0.2)',
+                backgroundColor: 'rgba(33, 150, 243, 0.3)',
                 borderWidth: 2.5,
                 pointRadius: 0,
-                fill: false,
+                fill: true,
                 showLine: true,
                 tension: 0.3
               },
@@ -271,13 +304,13 @@ export class SpectrumComparisonComponent implements OnInit, OnDestroy {
                 label: ' Espectro Encontrado',
                 data: compWn.map((wn: number, idx: number) => ({
                   x: wn,
-                  y: compInt[idx]
+                  y: compIntWithOffset[idx]
                 })),
                 borderColor: '#FF6B6B',
-                backgroundColor: 'rgba(255, 107, 107, 0.2)',
+                backgroundColor: 'rgba(255, 107, 107, 0.3)',
                 borderWidth: 2.5,
                 pointRadius: 0,
-                fill: false,
+                fill: true,
                 showLine: true,
                 tension: 0.3
               }
@@ -286,6 +319,7 @@ export class SpectrumComparisonComponent implements OnInit, OnDestroy {
           options: {
             responsive: true,
             maintainAspectRatio: true,
+            animation: false,
             interaction: { mode: 'index' as const, intersect: false },
             plugins: {
               legend: {
@@ -295,7 +329,7 @@ export class SpectrumComparisonComponent implements OnInit, OnDestroy {
               },
               title: {
                 display: true,
-                text: ' Comparación Superpuesta de Espectros FTIR',
+                text: ` Comparación Superpuesta de Espectros FTIR`,
                 font: { size: 16, weight: 'bold' as const }
               },
               tooltip: {
@@ -319,10 +353,11 @@ export class SpectrumComparisonComponent implements OnInit, OnDestroy {
               y: {
                 title: {
                   display: true,
-                  text: 'Absorbance',
+                  text: 'Absorbance (con offset visual)',
                   font: { size: 12, weight: 'bold' as const }
                 },
-                beginAtZero: true,
+                min: minYValue,
+                max: maxYValue,
                 grid: { color: 'rgba(200,200,200,0.15)' }
               }
             }
@@ -331,7 +366,7 @@ export class SpectrumComparisonComponent implements OnInit, OnDestroy {
 
         if (this.chartOverlay) this.chartOverlay.destroy();
         this.chartOverlay = new Chart(ctx, config);
-        console.log(' Overlay creado correctamente');
+        console.log(' ✅ Overlay creado con separación visual clara');
 
       } catch (error) {
         console.error('Error:', error);

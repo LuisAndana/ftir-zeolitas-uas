@@ -295,23 +295,34 @@ export class BusquedaComponent implements OnInit, OnDestroy {
   // NAVEGAR A COMPARACIÓN
   // ========================================
 
-  viewResult(spectrumId: number) {
-    console.log('👁️ Ver resultado:', spectrumId);
+viewResult(spectrumId: number) {
+  console.log('👁️ Ver resultado:', spectrumId);
+  
+  const querySpectrum = this.selectedSpectrum;
+  const refSpectrum = this.spectra.find((s: any) => s.id === spectrumId);
+
+  if (refSpectrum && querySpectrum) {
+    // ✅ GUARDAR ESPECTROS EN ESTADO GLOBAL ANTES DE NAVEGAR
+    this.spectrumStateService.setQuerySpectrum(querySpectrum);
+    this.spectrumStateService.setRefSpectrum(refSpectrum);
     
-    const querySpectrum = this.selectedSpectrum;
-    const refSpectrum = this.spectra.find((s: any) => s.id === spectrumId);
-
-    if (refSpectrum) {
-      // ✅ GUARDAR ESPECTROS EN ESTADO GLOBAL ANTES DE NAVEGAR
-      this.spectrumStateService.setQuerySpectrum(querySpectrum);
-      this.spectrumStateService.setRefSpectrum(refSpectrum);
-      
-      console.log('Espectros guardados, navegando a comparación...');
-    }
-
-    this.router.navigate(['/dashboard/similitud/comparacion']);
+    console.log('Espectros guardados, navegando a spectrum-comparison...');
+    
+    // ✅ NAVEGAR A SPECTRUM-COMPARISON CON LOS PARÁMETROS CORRECTOS
+    const referenceId = querySpectrum.id;
+    const comparisonId = spectrumId;
+    const method = this.config.method;
+    
+    this.router.navigate([
+      '/dashboard/comparacion-espectros',
+      referenceId,
+      comparisonId,
+      method
+    ]);
+  } else {
+    console.error('❌ No se encontraron los espectros');
   }
-
+}
   // ========================================
   // TOGGLE VENTANAS ESPECTRALES
   // ========================================
