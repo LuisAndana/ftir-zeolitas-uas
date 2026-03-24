@@ -5,7 +5,7 @@
 
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Location } from '@angular/common';
@@ -182,6 +182,21 @@ export class SpectrumComparisonComponent implements OnInit, OnDestroy {
   }
 
   // ========================================
+  // AUTENTICACIÓN
+  // ========================================
+
+  private getAuthHeaders(): HttpHeaders {
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+      console.warn('⚠️ No hay token de autenticación en localStorage');
+    }
+    return new HttpHeaders({
+      'Authorization': `Bearer ${token || ''}`,
+      'Content-Type': 'application/json'
+    });
+  }
+
+  // ========================================
   // CARGA DE DATOS DESDE BACKEND
   // ========================================
 
@@ -193,8 +208,10 @@ export class SpectrumComparisonComponent implements OnInit, OnDestroy {
     console.log('  Reference ID:', this.referenceId);
     console.log('  Comparison ID:', this.comparisonId);
 
+    const headers = this.getAuthHeaders();
+
     // ✅ USAR NUEVO ENDPOINT QUE BUSCA EN AMBAS BDs
-    this.http.get(`http://localhost:8000/api/similarity/spectrum-for-comparison/${this.referenceId}`)
+    this.http.get(`http://localhost:8000/api/similarity/spectrum-for-comparison/${this.referenceId}`, { headers })
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (response: any) => {
@@ -205,7 +222,7 @@ export class SpectrumComparisonComponent implements OnInit, OnDestroy {
             console.log('✓ Espectro de referencia procesado:', this.referenceSpectrum);
 
             // ✅ CARGAR ESPECTRO DE COMPARACIÓN CON NUEVO ENDPOINT
-            this.http.get(`http://localhost:8000/api/similarity/spectrum-for-comparison/${this.comparisonId}`)
+            this.http.get(`http://localhost:8000/api/similarity/spectrum-for-comparison/${this.comparisonId}`, { headers })
               .pipe(takeUntil(this.destroy$))
               .subscribe({
                 next: (compResponse: any) => {

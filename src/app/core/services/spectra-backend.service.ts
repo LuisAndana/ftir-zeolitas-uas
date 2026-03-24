@@ -263,7 +263,7 @@ export class SpectraBackendService {
     console.log(`📡 GET ${url}`);
     console.log(`   Buscando espectro ID: ${spectrum_id}`);
     
-    return this.http.get<SpectrumComparisonResponse>(url).pipe(
+    return this.http.get<SpectrumComparisonResponse>(url, { headers: this.getHeaders() }).pipe(
       tap(response => {
         console.log(`✅ Espectro cargado exitosamente`);
         console.log(`   Nombre: ${response.spectrum.filename}`);
