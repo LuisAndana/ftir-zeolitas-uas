@@ -56,17 +56,18 @@ export const routes: Routes = [
           import('./modules/similitud/pages/comparacion/comparacion')
             .then(m => m.Comparacion)
       },
-{
-  path: 'comparacion-espectros/:referenceId/:comparisonId/:method',
-  loadComponent: () =>
-    import('./modules/analysis/pages/spectrum-comparison/spectrum-comparison.component')
-      .then(m => m.SpectrumComparisonComponent)
-},
       {
-        path: 'biblioteca',
+        path: 'comparacion-espectros/:referenceId/:comparisonId/:method',
         loadComponent: () =>
-          import('./modules/biblioteca/pages/listado/listado')
-            .then(m => m.Listado)
+          import('./modules/analysis/pages/spectrum-comparison/spectrum-comparison.component')
+            .then(m => m.SpectrumComparisonComponent)
+      },
+      // ✅ NUEVA RUTA: Biblioteca Dataset
+      {
+        path: 'biblioteca-dataset',
+        loadComponent: () =>
+          import('./modules/similitud/pages/biblioteca-dataset/biblioteca-dataset.component')
+            .then(m => m.BibliotecaDatasetComponent)
       },
       {
         path: '',

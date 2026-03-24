@@ -109,14 +109,12 @@ export class BusquedaComponent implements OnInit, OnDestroy {
       .getSpectrumState()
       .pipe(takeUntil(this.destroy$))
       .subscribe(state => {
-        // Restaurar espectro seleccionado
         if (state.querySpectrum) {
           this.selectedSpectrum = state.querySpectrum;
           this.selectedSpectrumId = this.selectedSpectrum.id;
           console.log(`✓ Espectro restaurado: ${this.selectedSpectrum.filename}`);
         }
 
-        // ✅ RESTAURAR RESULTADOS EN CACHÉ
         if (state.searchResults && state.searchResults.length > 0) {
           this.results = state.searchResults;
           this.searchDone = true;
@@ -154,7 +152,6 @@ export class BusquedaComponent implements OnInit, OnDestroy {
       headers['Authorization'] = `Bearer ${token}`;
     }
 
-    // ✅ CARGAR ESPECTROS DEL USUARIO (para usar como query)
     this.http.get('http://localhost:8000/api/spectra', { headers })
       .pipe(takeUntil(this.destroy$))
       .subscribe({
@@ -221,11 +218,9 @@ export class BusquedaComponent implements OnInit, OnDestroy {
     
     if (this.selectedSpectrum) {
       console.log('✓ Espectro seleccionado:', this.selectedSpectrum);
-      // ✅ GUARDAR ESPECTRO EN ESTADO GLOBAL
       this.spectrumStateService.setQuerySpectrum(this.selectedSpectrum);
     }
 
-    // ✅ LIMPIAR RESULTADOS ANTERIORES AL CAMBIAR ESPECTRO
     this.results = [];
     this.searchDone = false;
     this.resultsFromCache = false;
@@ -239,7 +234,7 @@ export class BusquedaComponent implements OnInit, OnDestroy {
   }
 
   // ========================================
-  // BÚSQUEDA POR SIMILITUD (USER + DATASET)
+  // BÚSQUEDA POR SIMILITUD
   // ========================================
 
   search() {
@@ -261,7 +256,6 @@ export class BusquedaComponent implements OnInit, OnDestroy {
       message: '🔎 Buscando en: Espectros del usuario + Dataset de zeolitas FTIR'
     });
 
-    // ✅ LLAMAR AL BACKEND QUE BUSCA EN AMBOS LUGARES
     this.similarityBackend.searchSimilarSpectra(spectrumId, this.config)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
@@ -272,7 +266,6 @@ export class BusquedaComponent implements OnInit, OnDestroy {
             this.results = response.data.results || [];
             this.totalFound = response.data.results_found || this.results.length;
             
-            // ✅ INFORMACIÓN SEPARADA: USUARIO vs DATASET
             this.totalUserSpectra = response.data.total_user_spectra_searched || 0;
             this.totalDatasetSpectra = response.data.total_dataset_spectra_searched || 0;
             this.userResults = response.data.user_results || 0;
@@ -281,7 +274,6 @@ export class BusquedaComponent implements OnInit, OnDestroy {
             this.executionTimeMs = response.data.execution_time_ms || 0;
             this.searchDone = true;
             
-            // ✅ GUARDAR RESULTADOS EN CACHÉ
             this.spectrumStateService.setSearchResults(
               this.results,
               parseInt(spectrumId),
@@ -314,25 +306,56 @@ export class BusquedaComponent implements OnInit, OnDestroy {
   }
 
   // ========================================
-  // NAVEGAR A COMPARACIÓN ✅
+  // NAVEGAR A COMPARACIÓN ✅ CORREGIDO
   // ========================================
 
   viewResult(spectrumId: number) {
     console.log('👁️ Ver resultado:', spectrumId);
     
     const querySpectrum = this.selectedSpectrum;
-    const refSpectrum = this.spectra.find((s: any) => s.id === spectrumId);
+    
+    // ✅ BUSCAR EN USUARIO O DATASET
+    let refSpectrum = this.spectra.find((s: any) => s.id === spectrumId);
+    
+    // Si no está en usuario, es del dataset
+    const isDatasetSpectrum = !refSpectrum;
+    
+    if (!querySpectrum) {
+      console.error('❌ No hay espectro de consulta seleccionado');
+      this.errorMessage = '❌ Error: No hay espectro seleccionado';
+      return;
+    }
+
+    if (!refSpectrum && isDatasetSpectrum) {
+      // ✅ CREAR ESPECTRO DUMMY DEL DATASET
+      const resultData = this.results.find(r => r.spectrum_id === spectrumId);
+      if (!resultData) {
+        console.error('❌ No se encontraron datos del espectro');
+        this.errorMessage = '❌ No se pudo cargar el espectro seleccionado';
+        return;
+      }
+      
+      refSpectrum = {
+        id: spectrumId,
+        filename: resultData.filename,
+        material: resultData.family || 'Dataset',
+        technique: resultData.equipment || 'N/A',
+        wavenumber_data: null,
+        source: 'zeolite_dataset'
+      };
+    }
 
     if (refSpectrum && querySpectrum) {
       // ✅ GUARDAR ESPECTROS EN ESTADO GLOBAL ANTES DE NAVEGAR
       this.spectrumStateService.setQuerySpectrum(querySpectrum);
       this.spectrumStateService.setRefSpectrum(refSpectrum);
       
-      console.log('✓ Espectros guardados, navegando a spectrum-comparison...');
+      console.log('✓ Espectros guardados, navegando a comparación...');
       console.log(`  📊 Query: ${querySpectrum.filename} (ID: ${querySpectrum.id})`);
       console.log(`  📊 Reference: ${refSpectrum.filename} (ID: ${refSpectrum.id})`);
+      console.log(`  📊 Fuente: ${refSpectrum.source || 'usuario'}`);
       
-      // ✅ NAVEGAR A SPECTRUM-COMPARISON CON LOS PARÁMETROS CORRECTOS
+      // ✅ NAVEGAR A COMPARACIÓN CON LOS PARÁMETROS CORRECTOS
       const referenceId = querySpectrum.id;
       const comparisonId = spectrumId;
       const method = this.config.method;
@@ -399,7 +422,6 @@ export class BusquedaComponent implements OnInit, OnDestroy {
       this.config.selected_windows = [];
     }
 
-    // ✅ LIMPIAR ESPECTRO Y RESULTADOS
     this.spectrumStateService.clearQuerySpectrum();
     console.log('🔄 Búsqueda reseteada');
   }

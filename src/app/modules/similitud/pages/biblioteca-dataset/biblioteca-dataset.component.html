@@ -1,0 +1,206 @@
+<div class="dataset-container">
+
+  <!-- HEADER -->
+  <div class="content-header">
+    <h1>📚 Biblioteca Dataset FTIR</h1>
+    <p>Explora {{ statistics.total | number }} espectros de zeolitas del dataset</p>
+  </div>
+
+  <!-- ESTADÍSTICAS -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <span class="stat-icon">📊</span>
+      <div class="stat-info">
+        <p class="stat-label">Total Espectros</p>
+        <p class="stat-value">{{ statistics.total | number }}</p>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <span class="stat-icon">🧬</span>
+      <div class="stat-info">
+        <p class="stat-label">Tipos de Zeolitas</p>
+        <p class="stat-value">{{ statistics.zeoliteTypes }}</p>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <span class="stat-icon">⚙️</span>
+      <div class="stat-info">
+        <p class="stat-label">Equipos</p>
+        <p class="stat-value">{{ statistics.equipmentTypes }}</p>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <span class="stat-icon">🔍</span>
+      <div class="stat-info">
+        <p class="stat-label">Mostrados</p>
+        <p class="stat-value">{{ filteredSpectra.length | number }}</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- FILTROS -->
+  <div class="filters-card">
+    <h3>🔎 Filtros</h3>
+    <div class="filters-grid">
+      <input 
+        type="text" 
+        [(ngModel)]="filterSampleCode"
+        (ngModelChange)="applyFilters()"
+        placeholder="Buscar por código..."
+        class="filter-input">
+
+      <input 
+        type="text" 
+        [(ngModel)]="filterZeolite"
+        (ngModelChange)="applyFilters()"
+        placeholder="Filtrar por zeolita..."
+        class="filter-input">
+
+      <input 
+        type="text" 
+        [(ngModel)]="filterEquipment"
+        (ngModelChange)="applyFilters()"
+        placeholder="Filtrar por equipo..."
+        class="filter-input">
+    </div>
+  </div>
+
+  <!-- TABLA -->
+  <div class="table-wrapper" *ngIf="!loading && paginatedSpectra.length > 0">
+    <table class="spectra-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Código</th>
+          <th>Zeolita</th>
+          <th>Equipo</th>
+          <th>Fecha</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let spectrum of paginatedSpectra" class="spectrum-row">
+          <td class="id-cell">{{ spectrum.id }}</td>
+          <td class="code-cell">
+            <strong>{{ spectrum.sample_code }}</strong>
+          </td>
+          <td class="zeolite-cell">
+            <span class="zeolite-badge">{{ spectrum.zeolite_name }}</span>
+          </td>
+          <td class="equipment-cell">{{ spectrum.equipment || '—' }}</td>
+          <td class="date-cell">{{ spectrum.measurement_date || '—' }}</td>
+          <td class="actions-cell">
+            <button 
+              class="btn-action btn-view"
+              (click)="viewDetails(spectrum)"
+              title="Ver detalles">
+              👁️
+            </button>
+            <button 
+              class="btn-action btn-download"
+              (click)="downloadSpectrum(spectrum)"
+              title="Descargar CSV">
+              📥
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- LOADING -->
+  <div class="loading-state" *ngIf="loading">
+    <p>⏳ Cargando espectros del dataset...</p>
+  </div>
+
+  <!-- EMPTY STATE -->
+  <div class="empty-state" *ngIf="!loading && paginatedSpectra.length === 0">
+    <p>📭 No hay espectros que coincidan con los filtros</p>
+  </div>
+
+  <!-- PAGINACIÓN -->
+  <div class="pagination" *ngIf="totalPages > 1">
+    <button 
+      (click)="goToPage(page - 1)"
+      [disabled]="page === 1"
+      class="btn-page">
+      ← Anterior
+    </button>
+
+    <span class="page-info">
+      Página {{ page }} de {{ totalPages }}
+    </span>
+
+    <button 
+      (click)="goToPage(page + 1)"
+      [disabled]="page === totalPages"
+      class="btn-page">
+      Siguiente →
+    </button>
+  </div>
+
+  <!-- MODAL DE DETALLES -->
+  <div *ngIf="showDetailsModal && selectedSpectrum" class="modal-overlay" (click)="closeModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>{{ selectedSpectrum.sample_code }}</h2>
+        <button class="close-btn" (click)="closeModal()">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="detail-group">
+          <label>Zeolita:</label>
+          <p>{{ selectedSpectrum.zeolite_name }}</p>
+        </div>
+
+        <div class="detail-group">
+          <label>Código:</label>
+          <p>{{ selectedSpectrum.sample_code }}</p>
+        </div>
+
+        <div class="detail-group">
+          <label>Equipo:</label>
+          <p>{{ selectedSpectrum.equipment || '—' }}</p>
+        </div>
+
+        <div class="detail-group">
+          <label>Fecha de Medición:</label>
+          <p>{{ selectedSpectrum.measurement_date || '—' }}</p>
+        </div>
+
+        <div class="detail-group">
+          <label>Puntos de Datos:</label>
+          <p>{{ selectedSpectrum.spectrum_data?.wavenumbers?.length || 0 }}</p>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button 
+          class="btn btn-primary"
+          (click)="downloadSpectrum(selectedSpectrum)">
+          📥 Descargar CSV
+        </button>
+        <button 
+          class="btn btn-secondary"
+          (click)="closeModal()">
+          Cerrar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MENSAJES -->
+  <div class="alert alert-error" *ngIf="errorMessage">
+    {{ errorMessage }}
+    <button (click)="errorMessage = ''">✕</button>
+  </div>
+
+  <div class="alert alert-success" *ngIf="successMessage">
+    {{ successMessage }}
+    <button (click)="successMessage = ''">✕</button>
+  </div>
+
+</div>
