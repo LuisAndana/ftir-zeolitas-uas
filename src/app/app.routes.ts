@@ -57,7 +57,8 @@ export const routes: Routes = [
             .then(m => m.Comparacion)
       },
       {
-        path: 'comparacion-espectros/:referenceId/:comparisonId/:method',
+        // ✅ PARÁMETROS CORRECTOS: queryId, referenceId, method
+        path: 'comparacion-espectros/:queryId/:referenceId/:method',
         loadComponent: () =>
           import('./modules/analysis/pages/spectrum-comparison/spectrum-comparison.component')
             .then(m => m.SpectrumComparisonComponent)

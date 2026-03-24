@@ -55,11 +55,38 @@ export interface UploadResponse {
   };
 }
 
+// ========================================
+// INTERFACES PARA COMPARACIÓN
+// ========================================
+
+export interface SpectrumDataComparison {
+  id: number;
+  filename: string;
+  family: string;
+  equipment: string;
+  spectrum_data: {
+    wavenumbers: number[];
+    intensities: number[];
+  };
+  source: string;
+}
+
+export interface SpectrumComparisonResponse {
+  success: boolean;
+  source: 'dataset' | 'user';
+  spectrum: SpectrumDataComparison;
+}
+
+// ========================================
+// SERVICE
+// ========================================
+
 @Injectable({
   providedIn: 'root'
 })
 export class SpectraBackendService {
   private readonly API_URL = 'http://localhost:8000/api/spectra';
+  private readonly SIMILARITY_API_URL = 'http://localhost:8000/api/similarity';
   
   private spectraSubject = new BehaviorSubject<SpectrumData[]>([]);
   public spectra$ = this.spectraSubject.asObservable();
@@ -75,7 +102,7 @@ export class SpectraBackendService {
     const token = this.authService.getAccessToken();
     
     if (!token) {
-      console.warn('⚠️  No hay token disponible');
+      console.warn('⚠️ No hay token disponible');
       return new HttpHeaders({
         'Content-Type': 'application/json'
       });
@@ -86,6 +113,10 @@ export class SpectraBackendService {
       'Content-Type': 'application/json'
     });
   }
+
+  // ========================================
+  // MÉTODOS PRINCIPALES (SIN CAMBIOS)
+  // ========================================
 
   getSpectra(skip: number = 0, limit: number = 20): Observable<SpectraResponse> {
     skip = Math.max(0, skip);
@@ -141,9 +172,6 @@ export class SpectraBackendService {
     );
   }
 
-  /**
-   * ✅ CAMBIO: Asegurar que SIEMPRE se envíen los metadatos
-   */
   uploadSpectrum(
     file: File,
     material?: string,
@@ -161,7 +189,6 @@ export class SpectraBackendService {
     const formData = new FormData();
     formData.append('file', file);
     
-    // ✅ CAMBIO: SIEMPRE enviar los valores, nunca dejarlos null/undefined
     const finalMaterial = material && material.trim() ? material.trim() : 'Desconocido';
     const finalTechnique = technique && technique.trim() ? technique.trim() : 'ATR';
     const finalHydration = hydration_state && hydration_state.trim() ? hydration_state.trim() : 'As-synthesized';
@@ -206,7 +233,7 @@ export class SpectraBackendService {
 
   deleteSpectrum(id: number): Observable<any> {
     const url = `${this.API_URL}/${id}`;
-    console.log(`🗑️  DELETE ${url}`);
+    console.log(`🗑️ DELETE ${url}`);
     
     return this.http.delete<any>(
       url,
@@ -225,6 +252,32 @@ export class SpectraBackendService {
       })
     );
   }
+
+  // ========================================
+  // ✅ NUEVO MÉTODO PARA COMPARACIÓN
+  // ========================================
+
+  getSpectrumForComparison(spectrum_id: number): Observable<SpectrumComparisonResponse> {
+    const url = `${this.SIMILARITY_API_URL}/spectrum-for-comparison/${spectrum_id}`;
+    
+    console.log(`📡 GET ${url}`);
+    console.log(`   Buscando espectro ID: ${spectrum_id}`);
+    
+    return this.http.get<SpectrumComparisonResponse>(url).pipe(
+      tap(response => {
+        console.log(`✅ Espectro cargado exitosamente`);
+        console.log(`   Nombre: ${response.spectrum.filename}`);
+        console.log(`   Fuente: ${response.source}`);
+        console.log(`   Familia: ${response.spectrum.family}`);
+        console.log(`   Puntos de datos: ${response.spectrum.spectrum_data.wavenumbers.length}`);
+      }),
+      catchError(error => this.handleError(error, url))
+    );
+  }
+
+  // ========================================
+  // MÉTODOS AUXILIARES (SIN CAMBIOS)
+  // ========================================
 
   getSpectraFromCache(): Observable<SpectrumData[]> {
     return this.spectra$;
@@ -251,29 +304,35 @@ export class SpectraBackendService {
     };
   }
 
-  private handleError(error: HttpErrorResponse) {
+  private handleError(error: HttpErrorResponse, url: string) {
     let errorMessage = 'Error desconocido';
+    
+    console.error(`❌ Error HTTP ${error.status}:`);
+    console.error(`   URL: ${url}`);
+    console.error(`   Message: ${error.message}`);
     
     if (error.error instanceof ErrorEvent) {
       errorMessage = `Error: ${error.error.message}`;
+      console.error('   Tipo: Error del cliente');
     } else {
-      console.error(`❌ HTTP Error ${error.status}:`);
-      console.error(`   URL: ${error.url}`);
-      console.error(`   Message: ${error.message}`);
-      
-      if (error.status === 401) {
-        console.error('🔐 Error 401: Token expirado o inválido');
-        errorMessage = 'Token expirado. Por favor, inicia sesión nuevamente.';
+      if (error.status === 404) {
+        errorMessage = `Espectro no encontrado (404)`;
+        console.error('🔍 El espectro no existe en ninguna base de datos');
+      } else if (error.status === 401) {
+        errorMessage = 'No autorizado (401)';
+        console.error('🔐 Token expirado o inválido');
       } else if (error.status === 403) {
-        console.error('🚫 Error 403: No autorizado');
-        errorMessage = 'No tienes permiso para acceder a este recurso.';
-      } else if (error.status === 404) {
-        console.error('🔍 Error 404: No encontrado');
-        errorMessage = 'El recurso no fue encontrado.';
+        errorMessage = 'Acceso prohibido (403)';
+        console.error('🚫 No tienes permisos');
+      } else if (error.status === 500) {
+        errorMessage = 'Error en el servidor (500)';
+        console.error('⚠️ El servidor encontró un error');
       } else {
         errorMessage = `Error ${error.status}: ${error.message}`;
       }
     }
+    
+    console.error(`   Mensaje final: ${errorMessage}`);
     
     return throwError(() => new Error(errorMessage));
   }

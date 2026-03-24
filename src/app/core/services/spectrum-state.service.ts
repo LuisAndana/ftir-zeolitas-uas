@@ -1,6 +1,10 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 
+// ========================================
+// INTERFACES
+// ========================================
+
 export interface Comparison {
   id: string;
   queryId: number;
@@ -54,6 +58,10 @@ export interface SpectrumState {
   graphState: GraphState;
 }
 
+// ========================================
+// SERVICE
+// ========================================
+
 @Injectable({
   providedIn: 'root'
 })
@@ -81,10 +89,10 @@ export class SpectrumStateService {
       selectedSpectraIds: [],
       selectedMaterial: null,
       selectedTechnique: null,
-      invertirX: false, // ✅ CAMBIO: false por defecto
+      invertirX: false,
       mostrarCuadricula: true,
       mostrarLeyenda: true,
-      grosorLinea: 2,
+      grosorLinea: 2.5,
       suavizado: 0
     }
   };
@@ -98,6 +106,10 @@ export class SpectrumStateService {
       this.saveStateToLocalStorage(state);
     });
   }
+
+  // ========================================
+  // OBSERVABLES Y GETTERS
+  // ========================================
 
   /**
    * Obtener el estado actual como Observable
@@ -113,6 +125,10 @@ export class SpectrumStateService {
     return this.spectrumState$.value;
   }
 
+  // ========================================
+  // ESPECTROS
+  // ========================================
+
   /**
    * Establecer espectro de consulta
    */
@@ -122,6 +138,7 @@ export class SpectrumStateService {
       ...currentState,
       querySpectrum: spectrum
     });
+    console.log(`✅ Espectro de consulta establecido: ${spectrum?.filename}`);
   }
 
   /**
@@ -133,6 +150,7 @@ export class SpectrumStateService {
       ...currentState,
       refSpectrum: spectrum
     });
+    console.log(`✅ Espectro de referencia establecido: ${spectrum?.filename}`);
   }
 
   /**
@@ -144,7 +162,12 @@ export class SpectrumStateService {
       ...currentState,
       allSpectra: spectra
     });
+    console.log(`✅ ${spectra.length} espectros cargados en el estado`);
   }
+
+  // ========================================
+  // COMPARACIONES
+  // ========================================
 
   /**
    * Guardar resultados de comparación
@@ -160,6 +183,7 @@ export class SpectrumStateService {
         timestamp: new Date()
       }
     });
+    console.log(`✅ Resultados de comparación guardados`);
   }
 
   /**
@@ -195,7 +219,7 @@ export class SpectrumStateService {
       comparisonHistory: history
     });
 
-    console.log(` Comparación agregada al historial (${history.length} total)`);
+    console.log(`📊 Comparación agregada al historial (${history.length} total)`);
   }
 
   /**
@@ -209,7 +233,11 @@ export class SpectrumStateService {
    * Cargar comparación desde historial
    */
   loadComparisonFromHistory(comparisonId: string): Comparison | undefined {
-    return this.spectrumState$.value.comparisonHistory.find(c => c.id === comparisonId);
+    const comparison = this.spectrumState$.value.comparisonHistory.find(c => c.id === comparisonId);
+    if (comparison) {
+      console.log(`✅ Comparación cargada del historial: ${comparison.queryFilename} vs ${comparison.refFilename}`);
+    }
+    return comparison;
   }
 
   /**
@@ -221,7 +249,24 @@ export class SpectrumStateService {
       ...currentState,
       comparisonHistory: []
     });
+    console.log(`🧹 Historial de comparaciones limpiado`);
   }
+
+  /**
+   * Limpiar solo los resultados de comparación actual
+   */
+  clearComparisonResults(): void {
+    const currentState = this.spectrumState$.value;
+    this.spectrumState$.next({
+      ...currentState,
+      comparisonResults: null
+    });
+    console.log(`🧹 Resultados de comparación actual limpiados`);
+  }
+
+  // ========================================
+  // BÚSQUEDAS
+  // ========================================
 
   /**
    * Guardar resultados de búsqueda
@@ -238,7 +283,7 @@ export class SpectrumStateService {
         timestamp: new Date()
       }
     });
-    console.log(` Resultados de búsqueda guardados: ${results.length} espectros`);
+    console.log(`🔍 Resultados de búsqueda guardados: ${results.length} espectros`);
   }
 
   /**
@@ -256,16 +301,38 @@ export class SpectrumStateService {
   }
 
   /**
-   * ✅ NUEVO: Guardar estado de gráfica
+   * Limpiar solo los resultados de búsqueda
+   */
+  clearSearchResults(): void {
+    const currentState = this.spectrumState$.value;
+    this.spectrumState$.next({
+      ...currentState,
+      searchResults: [],
+      lastSearch: {
+        spectrumId: null,
+        method: null,
+        tolerance: null,
+        timestamp: null
+      }
+    });
+    console.log(`🧹 Resultados de búsqueda limpiados`);
+  }
+
+  // ========================================
+  // ESTADO DE GRÁFICA
+  // ========================================
+
+  /**
+   * ✅ Guardar estado de gráfica
    */
   setGraphState(
     selectedSpectraIds: number[],
     selectedMaterial: string | null,
     selectedTechnique: string | null,
-    invertirX: boolean = false, // ✅ CAMBIO: false por defecto
+    invertirX: boolean = false,
     mostrarCuadricula: boolean = true,
     mostrarLeyenda: boolean = true,
-    grosorLinea: number = 2,
+    grosorLinea: number = 2.5,
     suavizado: number = 0
   ): void {
     const currentState = this.spectrumState$.value;
@@ -282,18 +349,18 @@ export class SpectrumStateService {
         suavizado
       }
     });
-    console.log(` Estado de gráfica guardado: ${selectedSpectraIds.length} espectros`);
+    console.log(`📊 Estado de gráfica guardado: ${selectedSpectraIds.length} espectros seleccionados`);
   }
 
   /**
-   * ✅ NUEVO: Obtener estado de gráfica
+   * ✅ Obtener estado de gráfica
    */
   getGraphState(): GraphState {
     return this.spectrumState$.value.graphState;
   }
 
   /**
-   * ✅ NUEVO: Limpiar estado de gráfica
+   * ✅ Limpiar estado de gráfica
    */
   clearGraphState(): void {
     const currentState = this.spectrumState$.value;
@@ -303,14 +370,19 @@ export class SpectrumStateService {
         selectedSpectraIds: [],
         selectedMaterial: null,
         selectedTechnique: null,
-        invertirX: false, // ✅ CAMBIO: false
+        invertirX: false,
         mostrarCuadricula: true,
         mostrarLeyenda: true,
-        grosorLinea: 2,
+        grosorLinea: 2.5,
         suavizado: 0
       }
     });
+    console.log(`🧹 Estado de gráfica limpiado`);
   }
+
+  // ========================================
+  // LIMPIEZAS GENERALES
+  // ========================================
 
   /**
    * Limpiar espectro de consulta
@@ -328,6 +400,7 @@ export class SpectrumStateService {
         timestamp: null
       }
     });
+    console.log(`🧹 Espectro de consulta limpiado`);
   }
 
   /**
@@ -339,6 +412,7 @@ export class SpectrumStateService {
       ...currentState,
       refSpectrum: null
     });
+    console.log(`🧹 Espectro de referencia limpiado`);
   }
 
   /**
@@ -346,35 +420,12 @@ export class SpectrumStateService {
    */
   clearAllSpectra(): void {
     this.spectrumState$.next(this.initialState);
+    console.log(`🧹 Todos los espectros y estado limpiados`);
   }
 
-  /**
-   * Limpiar solo resultados de búsqueda
-   */
-  clearSearchResults(): void {
-    const currentState = this.spectrumState$.value;
-    this.spectrumState$.next({
-      ...currentState,
-      searchResults: [],
-      lastSearch: {
-        spectrumId: null,
-        method: null,
-        tolerance: null,
-        timestamp: null
-      }
-    });
-  }
-
-  /**
-   * Limpiar solo los resultados de comparación actual
-   */
-  clearComparisonResults(): void {
-    const currentState = this.spectrumState$.value;
-    this.spectrumState$.next({
-      ...currentState,
-      comparisonResults: null
-    });
-  }
+  // ========================================
+  // PERSISTENCIA (localStorage)
+  // ========================================
 
   /**
    * Guardar estado en localStorage
@@ -382,8 +433,9 @@ export class SpectrumStateService {
   private saveStateToLocalStorage(state: SpectrumState): void {
     try {
       localStorage.setItem('spectrum_state', JSON.stringify(state));
+      console.log(`💾 Estado guardado en localStorage`);
     } catch (error) {
-      console.error('Error guardando estado de espectros:', error);
+      console.error(`❌ Error guardando estado en localStorage:`, error);
     }
   }
 
@@ -393,27 +445,67 @@ export class SpectrumStateService {
   private loadStateFromLocalStorage(): SpectrumState {
     try {
       const saved = localStorage.getItem('spectrum_state');
+      
       if (saved) {
         const state = JSON.parse(saved);
+        
         // Convertir timestamps de string a Date
-        if (state.comparisonHistory) {
+        if (state.comparisonHistory && Array.isArray(state.comparisonHistory)) {
           state.comparisonHistory = state.comparisonHistory.map((c: any) => ({
             ...c,
             timestamp: new Date(c.timestamp)
           }));
         }
+        
         if (state.lastComparison?.timestamp) {
           state.lastComparison.timestamp = new Date(state.lastComparison.timestamp);
         }
+        
         if (state.lastSearch?.timestamp) {
           state.lastSearch.timestamp = new Date(state.lastSearch.timestamp);
         }
+        
+        console.log(`✅ Estado cargado desde localStorage`);
         return state;
       }
+      
+      console.log(`📝 Usando estado inicial (localStorage vacío)`);
       return this.initialState;
     } catch (error) {
-      console.error('Error cargando estado de espectros:', error);
+      console.error(`❌ Error cargando estado desde localStorage:`, error);
       return this.initialState;
+    }
+  }
+
+  /**
+   * Limpiar localStorage completamente
+   */
+  clearLocalStorage(): void {
+    try {
+      localStorage.removeItem('spectrum_state');
+      console.log(`🧹 Estado removido de localStorage`);
+    } catch (error) {
+      console.error(`❌ Error limpiando localStorage:`, error);
+    }
+  }
+
+  /**
+   * Exportar estado actual como JSON (para debugging)
+   */
+  exportState(): string {
+    return JSON.stringify(this.spectrumState$.value, null, 2);
+  }
+
+  /**
+   * Importar estado desde JSON (para debugging)
+   */
+  importState(stateJson: string): void {
+    try {
+      const state = JSON.parse(stateJson);
+      this.spectrumState$.next(state);
+      console.log(`✅ Estado importado correctamente`);
+    } catch (error) {
+      console.error(`❌ Error importando estado:`, error);
     }
   }
 }

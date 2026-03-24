@@ -1,6 +1,6 @@
 /**
- * SPECTRUM COMPARISON COMPONENT - ✅ COMPLETAMENTE CORREGIDO
- * Carga gráficas correctamente desde el endpoint /api/similarity/spectrum/{id}
+ * SPECTRUM COMPARISON COMPONENT - ✅ COMPLETAMENTE ACTUALIZADO
+ * Carga gráficas correctamente usando el nuevo endpoint /spectrum-for-comparison/{id}
  */
 
 import { Component, OnInit, OnDestroy } from '@angular/core';
@@ -43,6 +43,10 @@ export class SpectrumComparisonComponent implements OnInit, OnDestroy {
   referenceId: number = 0;
   comparisonId: number = 0;
 
+  // ========================================
+  // CONTROLES DE GRÁFICA
+  // ========================================
+
   invertirX: boolean = false;
   mostrarCuadricula: boolean = true;
   mostrarLeyenda: boolean = true;
@@ -50,6 +54,10 @@ export class SpectrumComparisonComponent implements OnInit, OnDestroy {
   suavizado: number = 0;
   isZoomed: boolean = false;
   modoSeleccion: boolean = false;
+
+  // ========================================
+  // ESTADO DE ZOOM
+  // ========================================
 
   private currentXMin: number = 400;
   private currentXMax: number = 4000;
@@ -67,17 +75,25 @@ export class SpectrumComparisonComponent implements OnInit, OnDestroy {
 
   spectralOffsetAmount: number = 0.15;
 
+  // ========================================
+  // SELECCIÓN RECTANGULAR
+  // ========================================
+
   private selectionBox: HTMLDivElement | null = null;
   private selStartX: number = 0;
   private selStartY: number = 0;
   private isSelecting: boolean = false;
 
-  private wheelListener:      ((e: WheelEvent) => void) | null = null;
-  private mouseDownListener:  ((e: MouseEvent) => void) | null = null;
-  private mouseMoveListener:  ((e: MouseEvent) => void) | null = null;
-  private mouseUpListener:    ((e: MouseEvent) => void) | null = null;
+  // ========================================
+  // LISTENERS
+  // ========================================
+
+  private wheelListener: ((e: WheelEvent) => void) | null = null;
+  private mouseDownListener: ((e: MouseEvent) => void) | null = null;
+  private mouseMoveListener: ((e: MouseEvent) => void) | null = null;
+  private mouseUpListener: ((e: MouseEvent) => void) | null = null;
   private mouseLeaveListener: (() => void) | null = null;
-  private dblClickListener:   (() => void) | null = null;
+  private dblClickListener: (() => void) | null = null;
 
   private isDragging: boolean = false;
   private lastClientX: number = 0;
@@ -96,21 +112,25 @@ export class SpectrumComparisonComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     console.log('🚀 Spectrum Comparison Component iniciado');
     
+    // ✅ PRIMERO: Intenta cargar desde SpectrumStateService
     this.loadSpectraFromState();
 
+    // ✅ SEGUNDO: Obtiene parámetros de ruta
     this.route.params
       .pipe(takeUntil(this.destroy$))
       .subscribe(params => {
-        this.referenceId = parseInt(params['referenceId']);
-        this.comparisonId = parseInt(params['comparisonId']);
+        // ✅ CORRECCIÓN: queryId PRIMERO, referenceId SEGUNDO
+        this.referenceId = parseInt(params['queryId']);
+        this.comparisonId = parseInt(params['referenceId']);
         this.method = params['method'] || 'pearson';
 
         console.log('📍 Route params:', {
-          referenceId: this.referenceId,
-          comparisonId: this.comparisonId,
+          queryId: this.referenceId,
+          referenceId: this.comparisonId,
           method: this.method
         });
 
+        // ✅ Si no tiene datos del state, carga desde backend
         if (!this.referenceSpectrum || !this.comparisonSpectrum) {
           console.log('⚠️ No hay datos en State, cargando desde backend...');
           this.loadSpectra();
@@ -130,9 +150,9 @@ export class SpectrumComparisonComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
     this.removeChartListeners();
     this.destroySelectionBox();
-    if (this.chartReference)  this.chartReference.destroy();
+    if (this.chartReference) this.chartReference.destroy();
     if (this.chartComparison) this.chartComparison.destroy();
-    if (this.chartOverlay)    this.chartOverlay.destroy();
+    if (this.chartOverlay) this.chartOverlay.destroy();
   }
 
   // ========================================
@@ -167,24 +187,26 @@ export class SpectrumComparisonComponent implements OnInit, OnDestroy {
     this.error = '';
 
     console.log('📡 Cargando espectros desde backend...');
+    console.log('  Reference ID:', this.referenceId);
+    console.log('  Comparison ID:', this.comparisonId);
 
-    // ✅ CARGAR ESPECTRO DE REFERENCIA
-    this.http.get(`http://localhost:8000/api/similarity/spectrum/${this.referenceId}`)
+    // ✅ USAR NUEVO ENDPOINT QUE BUSCA EN AMBAS BDs
+    this.http.get(`http://localhost:8000/api/similarity/spectrum-for-comparison/${this.referenceId}`)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (response: any) => {
-          console.log('✅ Respuesta de referencia:', response);
+          console.log('✅ Respuesta de referencia recibida');
 
           if (response.success && response.spectrum) {
             this.referenceSpectrum = this.processSpectrum(response.spectrum);
             console.log('✓ Espectro de referencia procesado:', this.referenceSpectrum);
 
-            // ✅ CARGAR ESPECTRO DE COMPARACIÓN
-            this.http.get(`http://localhost:8000/api/similarity/spectrum/${this.comparisonId}`)
+            // ✅ CARGAR ESPECTRO DE COMPARACIÓN CON NUEVO ENDPOINT
+            this.http.get(`http://localhost:8000/api/similarity/spectrum-for-comparison/${this.comparisonId}`)
               .pipe(takeUntil(this.destroy$))
               .subscribe({
                 next: (compResponse: any) => {
-                  console.log('✅ Respuesta de comparación:', compResponse);
+                  console.log('✅ Respuesta de comparación recibida');
 
                   if (compResponse.success && compResponse.spectrum) {
                     this.comparisonSpectrum = this.processSpectrum(compResponse.spectrum);
@@ -214,7 +236,7 @@ export class SpectrumComparisonComponent implements OnInit, OnDestroy {
   }
 
   // ========================================
-  // ✅ PROCESAR ESPECTRO - CORREGIDO PARA BACKEND
+  // ✅ PROCESAR ESPECTRO - OPTIMIZADO
   // ========================================
 
   private processSpectrum(spectrum: any): any {
@@ -226,10 +248,10 @@ export class SpectrumComparisonComponent implements OnInit, OnDestroy {
     }
 
     // ========================================
-    // CASO 1: Respuesta del endpoint backend (/api/similarity/spectrum/{id})
+    // CASO 1: Estructura correcta con spectrum_data
     // ========================================
     if (spectrum.spectrum_data && typeof spectrum.spectrum_data === 'object') {
-      console.log('📊 Detectado: Estructura del backend (spectrum_data como objeto)');
+      console.log('📊 Detectado: spectrum_data como objeto');
       
       const data = spectrum.spectrum_data;
       let intensities: number[] = data.intensities || data.absorbance || [];
@@ -237,6 +259,7 @@ export class SpectrumComparisonComponent implements OnInit, OnDestroy {
       
       console.log(`  Wavenumbers: ${wavenumbers.length}, Intensities: ${intensities.length}`);
       
+      // ✅ Generar wavenumbers si no existen
       if (!wavenumbers || wavenumbers.length === 0) {
         const step = (4000 - 400) / (Math.max(intensities.length - 1, 1));
         wavenumbers = intensities.map((_: any, i: number) => 400 + i * step);
@@ -257,7 +280,7 @@ export class SpectrumComparisonComponent implements OnInit, OnDestroy {
       };
       
       console.log('✓ Espectro procesado correctamente');
-      console.log(`  Final: ${processed.spectrum_data.wavenumbers.length} puntos de datos`);
+      console.log(`  Final: ${processed.spectrum_data.wavenumbers.length} puntos`);
       return processed;
     }
 
@@ -265,7 +288,7 @@ export class SpectrumComparisonComponent implements OnInit, OnDestroy {
     // CASO 2: Datos del usuario (wavenumber_data)
     // ========================================
     if (spectrum.wavenumber_data) {
-      console.log('👤 Detectado: Datos del usuario (wavenumber_data)');
+      console.log('👤 Detectado: wavenumber_data');
       
       const wavedata = spectrum.wavenumber_data;
       let intensities: number[] = [];
@@ -290,7 +313,7 @@ export class SpectrumComparisonComponent implements OnInit, OnDestroy {
         filename: spectrum.filename || 'Unknown',
         source: 'user_database',
         family: spectrum.material || spectrum.family || 'N/A',
-        equipment: spectrum.equipment || 'N/A',
+        equipment: spectrum.equipment || spectrum.technique || 'N/A',
         spectrum_data: {
           wavenumbers: wavenumbers.slice(0, minLen),
           intensities: intensities.slice(0, minLen)
@@ -301,7 +324,7 @@ export class SpectrumComparisonComponent implements OnInit, OnDestroy {
     // ========================================
     // CASO 3: Fallback para datos legacy
     // ========================================
-    console.log('⚠️ Procesamiento fallback');
+    console.log('⚠️ Fallback para datos legacy');
     
     let intensities: number[] = spectrum.intensities || spectrum.data || spectrum.absorbance || [];
     let wavenumbers: number[] = spectrum.wavenumbers || spectrum.wavenumber || [];

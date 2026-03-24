@@ -306,7 +306,7 @@ export class BusquedaComponent implements OnInit, OnDestroy {
   }
 
   // ========================================
-  // NAVEGAR A COMPARACIÓN ✅ CORREGIDO
+  // ✅ NAVEGAR A COMPARACIÓN - CORREGIDO
   // ========================================
 
   viewResult(spectrumId: number) {
@@ -355,15 +355,21 @@ export class BusquedaComponent implements OnInit, OnDestroy {
       console.log(`  📊 Reference: ${refSpectrum.filename} (ID: ${refSpectrum.id})`);
       console.log(`  📊 Fuente: ${refSpectrum.source || 'usuario'}`);
       
-      // ✅ NAVEGAR A COMPARACIÓN CON LOS PARÁMETROS CORRECTOS
-      const referenceId = querySpectrum.id;
-      const comparisonId = spectrumId;
+      // ✅ PARÁMETROS CORRECTOS: queryId PRIMERO, luego referenceId
+      const queryId = querySpectrum.id;
+      const referenceId = spectrumId;
       const method = this.config.method;
+      
+      console.log('📍 Route params:', {
+        queryId: queryId,
+        referenceId: referenceId,
+        method: method
+      });
       
       this.router.navigate([
         '/dashboard/comparacion-espectros',
+        queryId,
         referenceId,
-        comparisonId,
         method
       ]);
     } else {
