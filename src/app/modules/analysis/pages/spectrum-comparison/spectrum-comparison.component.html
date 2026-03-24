@@ -35,13 +35,29 @@
     <!-- INFORMACIÓN DE ESPECTROS -->
     <div class="info-section">
       <div class="spectrum-info">
-        <div class="info-card">
-          <h3>Espectro de Referencia</h3>
+        <div class="info-card info-card-reference">
+          <h3>
+            Espectro de Referencia
+            <span class="reference-lock-badge" aria-label="Espectro de referencia fijo" title="El espectro de referencia permanece fijo durante las comparaciones">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" aria-hidden="true">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+              </svg>
+              <span>Fijo</span>
+            </span>
+          </h3>
           <div class="info-content">
             <p><strong>Archivo:</strong> {{ referenceSpectrum.filename }}</p>
             <p><strong>Fuente:</strong>  {{ referenceSpectrum.source || 'N/A' }}</p>
             <p><strong>Familia:</strong> {{ referenceSpectrum.family || 'N/A' }}</p>
           </div>
+          <button (click)="goBack()" class="btn btn-change-reference" title="Volver para seleccionar un espectro de referencia diferente">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+              <path d="M11 17l-5-5 5-5"></path>
+              <path d="M18 17l-5-5 5-5"></path>
+            </svg>
+            Cambiar Referencia
+          </button>
         </div>
         <div class="vs-badge">VS</div>
         <div class="info-card">

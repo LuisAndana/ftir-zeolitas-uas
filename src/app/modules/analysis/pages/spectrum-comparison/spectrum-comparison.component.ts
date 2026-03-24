@@ -115,7 +115,7 @@ export class SpectrumComparisonComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     console.log('🚀 Spectrum Comparison Component iniciado');
     
-    // ✅ PRIMERO: Intenta cargar desde SpectrumStateService
+    // ✅ PRIMERO: Intenta cargar desde SpectrumStateService (snapshot)
     this.loadSpectraFromState();
 
     // ✅ SEGUNDO: Obtiene parámetros de ruta
@@ -133,9 +133,17 @@ export class SpectrumComparisonComponent implements OnInit, OnDestroy {
           method: this.method
         });
 
-        // ✅ Si no tiene datos del state, carga desde backend
+        // ✅ Verificar que el espectro de referencia del state corresponde al queryId de la URL
+        const stateQueryId = this.spectrumStateService.getCurrentState().querySpectrum?.id;
+        if (stateQueryId && stateQueryId !== this.referenceId) {
+          console.warn('⚠️ El estado tiene un espectro de referencia diferente al queryId. Limpiando espectros.');
+          this.referenceSpectrum = null;
+          this.comparisonSpectrum = null;
+        }
+
+        // ✅ Si no hay datos suficientes, carga desde backend
         if (!this.referenceSpectrum || !this.comparisonSpectrum) {
-          console.log('⚠️ No hay datos en State, cargando desde backend...');
+          console.log('⚠️ Datos incompletos, cargando desde backend...');
           this.loadSpectra();
         } else {
           console.log('✅ Usando espectros del State Service');
@@ -164,21 +172,19 @@ export class SpectrumComparisonComponent implements OnInit, OnDestroy {
 
   private loadSpectraFromState(): void {
     console.log('📦 Intentando cargar espectros desde SpectrumStateService...');
-    
-    this.spectrumStateService
-      .getSpectrumState()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(state => {
-        if (state.querySpectrum && state.refSpectrum) {
-          console.log('✅ Espectros encontrados en State');
-          
-          this.referenceSpectrum = this.processSpectrum(state.querySpectrum);
-          this.comparisonSpectrum = this.processSpectrum(state.refSpectrum);
-          
-          console.log('✓ Espectro de referencia procesado:', this.referenceSpectrum);
-          console.log('✓ Espectro de comparación procesado:', this.comparisonSpectrum);
-        }
-      });
+
+    // ✅ Usar snapshot sincrónico para evitar sobreescribir el espectro de referencia
+    // en emisiones futuras del estado (e.g. al cambiar el espectro de comparación).
+    const state = this.spectrumStateService.getCurrentState();
+    if (state.querySpectrum && state.refSpectrum) {
+      console.log('✅ Espectros encontrados en State');
+
+      this.referenceSpectrum = this.processSpectrum(state.querySpectrum);
+      this.comparisonSpectrum = this.processSpectrum(state.refSpectrum);
+
+      console.log('✓ Espectro de referencia procesado:', this.referenceSpectrum);
+      console.log('✓ Espectro de comparación procesado:', this.comparisonSpectrum);
+    }
   }
 
   // ========================================
@@ -209,6 +215,34 @@ export class SpectrumComparisonComponent implements OnInit, OnDestroy {
     console.log('  Comparison ID:', this.comparisonId);
 
     const headers = this.getAuthHeaders();
+
+    // ✅ Si el espectro de referencia ya está cargado (del estado del usuario),
+    // solo cargar el espectro de comparación para preservar la referencia original.
+    if (this.referenceSpectrum) {
+      console.log('🔒 Espectro de referencia preservado, cargando solo el espectro de comparación...');
+      this.http.get(`http://localhost:8000/api/similarity/spectrum-for-comparison/${this.comparisonId}`, { headers })
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: (compResponse: any) => {
+            console.log('✅ Respuesta de comparación recibida');
+            if (compResponse.success && compResponse.spectrum) {
+              this.comparisonSpectrum = this.processSpectrum(compResponse.spectrum);
+              console.log('✓ Espectro de comparación procesado:', this.comparisonSpectrum);
+              this.loading = false;
+              setTimeout(() => {
+                this.renderCharts();
+                this.calculateSimilarity();
+              }, 100);
+            }
+          },
+          error: (error: any) => {
+            console.error('❌ Error cargando comparación:', error);
+            this.error = `❌ Error: ${error.message}`;
+            this.loading = false;
+          }
+        });
+      return;
+    }
 
     // ✅ USAR NUEVO ENDPOINT QUE BUSCA EN AMBAS BDs
     this.http.get(`http://localhost:8000/api/similarity/spectrum-for-comparison/${this.referenceId}`, { headers })
