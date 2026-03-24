@@ -24,6 +24,9 @@ import { takeUntil } from 'rxjs/operators';
 })
 export class SpectrumComparisonComponent implements OnInit, OnDestroy {
 
+  private readonly MIN_WAVENUMBER = 400;
+  private readonly MAX_WAVENUMBER = 4000;
+
   referenceSpectrum: any = null;
   comparisonSpectrum: any = null;
 
@@ -248,67 +251,54 @@ export class SpectrumComparisonComponent implements OnInit, OnDestroy {
     }
 
     // ========================================
-    // CASO 1: Estructura correcta con spectrum_data
+    // CASO 1: Estructura con spectrum_data (dataset correcto)
     // ========================================
     if (spectrum.spectrum_data && typeof spectrum.spectrum_data === 'object') {
-      console.log('📊 Detectado: spectrum_data como objeto');
-      
+      console.log('📊 Caso 1: spectrum_data como objeto');
+
       const data = spectrum.spectrum_data;
       let intensities: number[] = data.intensities || data.absorbance || [];
       let wavenumbers: number[] = data.wavenumbers || [];
-      
+
       console.log(`  Wavenumbers: ${wavenumbers.length}, Intensities: ${intensities.length}`);
-      
-      // ✅ Generar wavenumbers si no existen
+
       if (!wavenumbers || wavenumbers.length === 0) {
-        const step = (4000 - 400) / (Math.max(intensities.length - 1, 1));
-        wavenumbers = intensities.map((_: any, i: number) => 400 + i * step);
+        const step = (this.MAX_WAVENUMBER - this.MIN_WAVENUMBER) / (Math.max(intensities.length - 1, 1));
+        wavenumbers = intensities.map((_: any, i: number) => this.MIN_WAVENUMBER + i * step);
         console.log(`  Wavenumbers generados: ${wavenumbers.length}`);
       }
-      
-      const minLen = Math.min(wavenumbers.length, intensities.length);
 
-      const processed = {
-        filename: spectrum.sample_code || spectrum.filename || 'Unknown',
-        source: spectrum.source || 'dataset',
-        family: spectrum.zeolite_name || spectrum.family || 'N/A',
-        equipment: spectrum.equipment || 'N/A',
-        spectrum_data: {
-          wavenumbers: wavenumbers.slice(0, minLen),
-          intensities: intensities.slice(0, minLen)
-        }
-      };
-      
-      console.log('✓ Espectro procesado correctamente');
-      console.log(`  Final: ${processed.spectrum_data.wavenumbers.length} puntos`);
-      return processed;
+      if (intensities.length > 0) {
+        const minLen = Math.min(wavenumbers.length, intensities.length);
+        const processed = {
+          filename: spectrum.sample_code || spectrum.filename || 'Unknown',
+          source: spectrum.source || 'dataset',
+          family: spectrum.zeolite_name || spectrum.family || 'N/A',
+          equipment: spectrum.equipment || 'N/A',
+          spectrum_data: {
+            wavenumbers: wavenumbers.slice(0, minLen),
+            intensities: intensities.slice(0, minLen)
+          }
+        };
+        console.log('✓ Caso 1: Espectro procesado correctamente');
+        console.log(`  Final: ${processed.spectrum_data.wavenumbers.length} puntos`);
+        return processed;
+      }
+
+      console.warn('⚠️ Caso 1: spectrum_data vacío, continuando búsqueda...');
     }
 
     // ========================================
-    // CASO 2: Datos del usuario (wavenumber_data)
+    // CASO 2: Array directo en wavenumber_data
     // ========================================
-    if (spectrum.wavenumber_data) {
-      console.log('👤 Detectado: wavenumber_data');
-      
-      const wavedata = spectrum.wavenumber_data;
-      let intensities: number[] = [];
-      let wavenumbers: number[] = [];
+    if (Array.isArray(spectrum.wavenumber_data)) {
+      console.log('👤 Caso 2: wavenumber_data como array directo');
 
-      if (Array.isArray(wavedata)) {
-        intensities = wavedata;
-        wavenumbers = intensities.map((_, i) => 400 + (i * (4000 - 400)) / intensities.length);
-      } else if (typeof wavedata === 'object') {
-        intensities = wavedata.intensities || wavedata.absorbance || wavedata.data || [];
-        wavenumbers = wavedata.wavenumbers || wavedata.wavenumber || [];
-        
-        if (!wavenumbers || wavenumbers.length === 0) {
-          const step = (4000 - 400) / (Math.max(intensities.length - 1, 1));
-          wavenumbers = intensities.map((_: any, i: number) => 400 + i * step);
-        }
-      }
-
+      const intensities: number[] = spectrum.wavenumber_data;
+      const wavenumbers: number[] = intensities.map((_, i) => this.MIN_WAVENUMBER + (i * (this.MAX_WAVENUMBER - this.MIN_WAVENUMBER)) / Math.max(intensities.length, 1));
       const minLen = Math.min(wavenumbers.length, intensities.length);
 
+      console.log(`  Final: ${minLen} puntos`);
       return {
         filename: spectrum.filename || 'Unknown',
         source: 'user_database',
@@ -322,20 +312,81 @@ export class SpectrumComparisonComponent implements OnInit, OnDestroy {
     }
 
     // ========================================
-    // CASO 3: Fallback para datos legacy
+    // CASO 3: Objeto en wavenumber_data con sub-propiedades
+    // (también maneja JSON string almacenado desde el backend)
     // ========================================
-    console.log('⚠️ Fallback para datos legacy');
-    
-    let intensities: number[] = spectrum.intensities || spectrum.data || spectrum.absorbance || [];
+    if (spectrum.wavenumber_data != null) {
+      console.log('📦 Caso 3: wavenumber_data como objeto/string');
+
+      let wavedata: any = spectrum.wavenumber_data;
+
+      if (typeof wavedata === 'string') {
+        try {
+          wavedata = JSON.parse(wavedata);
+          console.log('  JSON parseado correctamente');
+        } catch (e: any) {
+          console.warn('  ⚠️ Error parseando wavenumber_data como JSON:', e?.message || e);
+          wavedata = null;
+        }
+      }
+
+      if (wavedata && typeof wavedata === 'object') {
+        let intensities: number[] = wavedata.intensities || wavedata.absorbance || wavedata.data || [];
+        let wavenumbers: number[] = wavedata.wavenumbers || wavedata.wavenumber || [];
+
+        console.log(`  Wavenumbers: ${wavenumbers.length}, Intensities: ${intensities.length}`);
+
+        if (!wavenumbers || wavenumbers.length === 0) {
+          const step = (this.MAX_WAVENUMBER - this.MIN_WAVENUMBER) / (Math.max(intensities.length - 1, 1));
+          wavenumbers = intensities.map((_: any, i: number) => this.MIN_WAVENUMBER + i * step);
+        }
+
+        if (intensities.length > 0) {
+          const minLen = Math.min(wavenumbers.length, intensities.length);
+          console.log(`  Final: ${minLen} puntos`);
+          return {
+            filename: spectrum.filename || 'Unknown',
+            source: 'user_database',
+            family: spectrum.material || spectrum.family || 'N/A',
+            equipment: spectrum.equipment || spectrum.technique || 'N/A',
+            spectrum_data: {
+              wavenumbers: wavenumbers.slice(0, minLen),
+              intensities: intensities.slice(0, minLen)
+            }
+          };
+        }
+      }
+
+      console.warn('⚠️ Caso 3: sin datos válidos en wavenumber_data, continuando búsqueda...');
+    }
+
+    // ========================================
+    // CASO 4: Búsqueda robusta en propiedades raíz
+    // ========================================
+    console.log('🔎 Caso 4: Búsqueda en propiedades raíz');
+    console.log('  spectrum.wavenumber_data:', spectrum.wavenumber_data);
+    console.log('  spectrum.intensities:', Array.isArray(spectrum.intensities) ? `array[${spectrum.intensities.length}]` : spectrum.intensities);
+    console.log('  spectrum.data:', Array.isArray(spectrum.data) ? `array[${spectrum.data.length}]` : spectrum.data);
+    console.log('  spectrum.absorbance:', Array.isArray(spectrum.absorbance) ? `array[${spectrum.absorbance.length}]` : spectrum.absorbance);
+
+    const intensities: number[] = spectrum.intensities || spectrum.data || spectrum.absorbance || [];
     let wavenumbers: number[] = spectrum.wavenumbers || spectrum.wavenumber || [];
 
+    if (intensities.length === 0) {
+      // Returning null signals the caller to invoke loadSpectra() and fetch
+      // the full spectrum data from the /spectrum-for-comparison/{id} endpoint.
+      console.warn('❌ Caso 4: Sin datos de intensidad en ninguna propiedad. Se cargará desde backend.');
+      return null;
+    }
+
     if (!wavenumbers || wavenumbers.length === 0) {
-      const step = (4000 - 400) / (Math.max(intensities.length - 1, 1));
-      wavenumbers = intensities.map((_: any, i: number) => 400 + i * step);
+      const step = (this.MAX_WAVENUMBER - this.MIN_WAVENUMBER) / (Math.max(intensities.length - 1, 1));
+      wavenumbers = intensities.map((_: any, i: number) => this.MIN_WAVENUMBER + i * step);
     }
 
     const minLen = Math.min(wavenumbers.length, intensities.length);
 
+    console.log(`✓ Caso 4: Datos encontrados en propiedades raíz (${minLen} puntos)`);
     return {
       ...spectrum,
       spectrum_data: {
