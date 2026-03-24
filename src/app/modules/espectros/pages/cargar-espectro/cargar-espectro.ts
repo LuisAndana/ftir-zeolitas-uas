@@ -66,7 +66,7 @@ export class CargarEspectro implements OnInit, OnDestroy {
    * Cargar lista de espectros del backend
    */
   private loadSpectraFromBackend() {
-    console.log('📊 Cargando espectros del backend...');
+    console.log(' Cargando espectros del backend...');
     this.loading = true;
     this.errorMessage = '';
 
@@ -74,7 +74,7 @@ export class CargarEspectro implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (response) => {
-          console.log('✅ Espectros cargados del backend:', response.data);
+          console.log(' Espectros cargados del backend:', response.data);
           this.spectra = response.data;
           this.total = response.total;
           this.page = response.page;
@@ -82,8 +82,8 @@ export class CargarEspectro implements OnInit, OnDestroy {
           this.loading = false;
         },
         error: (error) => {
-          console.error('❌ Error cargando espectros:', error);
-          this.errorMessage = `❌ Error: ${error.message || 'No se pudo cargar los espectros'}`;
+          console.error(' Error cargando espectros:', error);
+          this.errorMessage = ` Error: ${error.message || 'No se pudo cargar los espectros'}`;
           this.loading = false;
         }
       });
@@ -138,7 +138,7 @@ export class CargarEspectro implements OnInit, OnDestroy {
    */
   async uploadFile(file: File | null) {
     if (!file) {
-      this.errorMessage = '❌ No hay archivo seleccionado';
+      this.errorMessage = ' No hay archivo seleccionado';
       return;
     }
 
@@ -152,7 +152,7 @@ export class CargarEspectro implements OnInit, OnDestroy {
       // Validar archivo
       this.validateFile(file);
 
-      console.log('📤 Cargando archivo al backend:', file.name);
+      console.log(' Cargando archivo al backend:', file.name);
 
       // ✅ Llamar al backend para cargar el espectro
       this.spectraBackendService.uploadSpectrum(
@@ -165,7 +165,7 @@ export class CargarEspectro implements OnInit, OnDestroy {
         .pipe(takeUntil(this.destroy$))
         .subscribe({
           next: (response) => {
-            console.log('✅ Espectro cargado al backend:', response.data.spectrum);
+            console.log(' Espectro cargado al backend:', response.data.spectrum);
             
             const spectrum = response.data.spectrum;
             
@@ -181,7 +181,7 @@ export class CargarEspectro implements OnInit, OnDestroy {
               technique: spectrum.technique
             };
 
-            this.successMessage = `✅ Espectro "${file.name}" cargado exitosamente (${spectrum.point_count} puntos)`;
+            this.successMessage = ` Espectro "${file.name}" cargado exitosamente (${spectrum.point_count} puntos)`;
             
             // Recargar lista desde backend
             this.loadSpectraFromBackend();
@@ -223,7 +223,7 @@ export class CargarEspectro implements OnInit, OnDestroy {
    */
   deleteSpectrum(id: number, filename: string) {
     if (confirm(`¿Eliminar espectro "${filename}"?`)) {
-      console.log('🗑️  Eliminando espectro:', id);
+      console.log('  Eliminando espectro:', id);
       
       this.spectraBackendService.deleteSpectrum(id)
         .pipe(takeUntil(this.destroy$))
@@ -234,8 +234,8 @@ export class CargarEspectro implements OnInit, OnDestroy {
             this.loadSpectraFromBackend();
           },
           error: (error) => {
-            console.error('❌ Error eliminando espectro:', error);
-            this.errorMessage = `❌ Error: ${error.message}`;
+            console.error(' Error eliminando espectro:', error);
+            this.errorMessage = ` Error: ${error.message}`;
           }
         });
     }
@@ -272,11 +272,11 @@ export class CargarEspectro implements OnInit, OnDestroy {
   getFormatIcon(filename: string): string {
     const ext = filename.substring(filename.lastIndexOf('.')).toLowerCase();
     const icons: { [key: string]: string } = {
-      '.csv': '📊',
-      '.txt': '📄',
-      '.dpt': '🔬',
+      '.csv': '',
+      '.txt': '',
+      '.dpt': '',
       '.json': '{}',
-      '.xlsx': '📈'
+      '.xlsx': ''
     };
     return icons[ext] || '📁';
   }
