@@ -3,58 +3,51 @@
   <!-- HEADER -->
   <div class="content-header">
     <h1>Cargar Espectros FTIR</h1>
-    <p>Carga espectros en múltiples formatos (DPT, CSV, TXT, JSON, XLSX) y gestiona tu biblioteca</p>
+    <p>Carga múltiples espectros a la vez en formato DPT, CSV, TXT, JSON o XLSX</p>
   </div>
 
   <!-- ÁREA DE CARGA -->
   <div class="upload-section">
     <div class="upload-card">
-      
+
       <!-- Zona de arrastre -->
-      <div class="drop-zone" 
+      <div class="drop-zone"
            [class.dragover]="dragover"
            (dragover)="onDragOver($event)"
            (dragleave)="onDragLeave($event)"
            (drop)="onDrop($event)">
-        
+
         <div class="drop-content">
-          <span class="drop-icon"></span>
+          <span class="drop-icon">📂</span>
           <h3>Arrastra archivos aquí</h3>
-          <p>o haz clic para seleccionar</p>
-          <p class="drop-formats">Formatos: DPT • CSV • TXT • JSON • XLSX</p>
+          <p>Puedes soltar <strong>varios archivos</strong> a la vez</p>
+          <p class="drop-formats">DPT • CSV • TXT • JSON • XLSX</p>
         </div>
 
-        <input type="file" 
+        <input type="file"
                #fileInput
                (change)="onFileSelected($event)"
                accept=".csv,.txt,.dpt,.json,.xlsx"
+               multiple
                style="display: none">
-        
-        <button class="btn-primary" (click)="fileInput.click()" type="button">
-           Seleccionar Archivo
-        </button>
-      </div>
 
-      <!-- Información de archivo seleccionado -->
-      <div class="file-info" *ngIf="uploadedFile">
-        <p><strong> Archivo:</strong> {{ uploadedFile.name }}</p>
-        <p><strong> Tamaño:</strong> {{ (uploadedFile.size / 1024).toFixed(2) }} KB</p>
+        <button class="btn-primary" (click)="fileInput.click()" type="button">
+          📁 Seleccionar Archivos
+        </button>
       </div>
 
     </div>
 
     <!-- Opciones de metadata -->
     <div class="metadata-card">
-      <h3>Información del Espectro</h3>
-      
+      <h3>Metadatos (aplica a todos los archivos)</h3>
+
       <div class="metadata-grid">
-        <!-- Material -->
         <div class="form-group">
           <label>Material</label>
           <input type="text" [(ngModel)]="material" placeholder="Ej: Zeolita Y">
         </div>
 
-        <!-- Técnica -->
         <div class="form-group">
           <label>Técnica</label>
           <select [(ngModel)]="technique">
@@ -65,7 +58,6 @@
           </select>
         </div>
 
-        <!-- Estado de hidratación -->
         <div class="form-group">
           <label>Estado de Hidratación</label>
           <select [(ngModel)]="hydrationState">
@@ -77,17 +69,92 @@
           </select>
         </div>
 
-        <!-- Temperatura -->
         <div class="form-group">
           <label>Temperatura</label>
           <input type="text" [(ngModel)]="temperature" placeholder="Ej: 25°C">
         </div>
       </div>
 
-      <!-- Descripción -->
       <div class="form-group full-width">
         <label>Descripción (Opcional)</label>
-        <textarea [(ngModel)]="description" placeholder="Notas sobre el espectro..." rows="3"></textarea>
+        <textarea [(ngModel)]="description" placeholder="Notas sobre los espectros..." rows="3"></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- COLA DE CARGA -->
+  <div class="queue-section" *ngIf="uploadQueue.length > 0">
+
+    <!-- Encabezado de la cola -->
+    <div class="queue-header">
+      <div class="queue-title">
+        <h2>Cola de Carga</h2>
+        <div class="queue-stats">
+          <span class="stat stat-pending" *ngIf="queuePending > 0">
+            ⏳ {{ queuePending }} en espera
+          </span>
+          <span class="stat stat-uploading" *ngIf="queueUploading > 0">
+            ⬆️ {{ queueUploading }} subiendo
+          </span>
+          <span class="stat stat-success" *ngIf="queueSuccess > 0">
+            ✅ {{ queueSuccess }} completado{{ queueSuccess > 1 ? 's' : '' }}
+          </span>
+          <span class="stat stat-error" *ngIf="queueError > 0">
+            ❌ {{ queueError }} con error
+          </span>
+        </div>
+      </div>
+
+      <div class="queue-actions">
+        <button class="btn-retry" *ngIf="queueError > 0 && !isProcessingQueue" (click)="retryFailed()" type="button">
+          🔄 Reintentar fallidos
+        </button>
+        <button class="btn-clear" *ngIf="queueHasFinished && !isProcessingQueue" (click)="clearFinishedQueue()" type="button">
+          🗑 Limpiar completados
+        </button>
+      </div>
+    </div>
+
+    <!-- Lista de archivos en cola -->
+    <div class="queue-list">
+      <div class="queue-item"
+           *ngFor="let item of uploadQueue; let i = index"
+           [class.status-pending]="item.status === 'pending'"
+           [class.status-uploading]="item.status === 'uploading'"
+           [class.status-success]="item.status === 'success'"
+           [class.status-error]="item.status === 'error'">
+
+        <!-- Icono de formato -->
+        <span class="queue-icon">{{ getFormatIcon(item.file.name) }}</span>
+
+        <!-- Nombre y tamaño -->
+        <div class="queue-file-info">
+          <span class="queue-filename" [title]="item.file.name">{{ item.file.name }}</span>
+          <span class="queue-size">{{ (item.file.size / 1024).toFixed(1) }} KB</span>
+        </div>
+
+        <!-- Mensaje de estado -->
+        <span class="queue-message">{{ item.message }}</span>
+
+        <!-- Indicador de estado -->
+        <span class="queue-status-icon">
+          <span *ngIf="item.status === 'pending'">⏳</span>
+          <span *ngIf="item.status === 'uploading'" class="spinner">⬆️</span>
+          <span *ngIf="item.status === 'success'">✅</span>
+          <span *ngIf="item.status === 'error'">❌</span>
+        </span>
+
+        <!-- Barra de progreso (solo uploading) -->
+        <div class="queue-progress-bar" *ngIf="item.status === 'uploading'">
+          <div class="queue-progress-fill"></div>
+        </div>
+
+        <!-- Botón eliminar (solo si no está subiendo) -->
+        <button class="queue-remove"
+                *ngIf="item.status !== 'uploading'"
+                (click)="removeFromQueue(i)"
+                title="Eliminar de la cola"
+                type="button">✕</button>
       </div>
     </div>
   </div>
@@ -104,55 +171,22 @@
       <button class="close-btn" (click)="errorMessage = ''">✕</button>
     </div>
 
-    <!-- Información de carga -->
-    <div class="alert alert-info" *ngIf="loading">
-       Cargando espectro...
-    </div>
-  </div>
-
-  <!-- INFORMACIÓN DEL ESPECTRO CARGADO -->
-  <div class="file-details" *ngIf="fileInfo">
-    <h3> Detalles del Espectro Cargado</h3>
-    <div class="details-grid">
-      <div class="detail-item">
-        <strong>Archivo:</strong>
-        <span>{{ fileInfo.filename }}</span>
-      </div>
-      <div class="detail-item">
-        <strong>Puntos:</strong>
-        <span>{{ fileInfo.points }}</span>
-      </div>
-      <div class="detail-item">
-        <strong>Rango (cm⁻¹):</strong>
-        <span>{{ fileInfo.wavenumberMin }} - {{ fileInfo.wavenumberMax }}</span>
-      </div>
-      <div class="detail-item">
-        <strong>Absorbancia:</strong>
-        <span>{{ fileInfo.absorbanceMin }} - {{ fileInfo.absorbanceMax }}</span>
-      </div>
-      <div class="detail-item">
-        <strong>Material:</strong>
-        <span>{{ fileInfo.material }}</span>
-      </div>
-      <div class="detail-item">
-        <strong>Técnica:</strong>
-        <span>{{ fileInfo.technique }}</span>
-      </div>
+    <div class="alert alert-info" *ngIf="loading && uploadQueue.length === 0">
+      ⏳ Cargando lista de espectros...
     </div>
   </div>
 
   <!-- LISTA DE ESPECTROS -->
   <div class="spectra-list-section">
     <div class="section-header">
-      <h2> Tus Espectros</h2>
-      
-      <!-- Filtros -->
+      <h2>📚 Tus Espectros</h2>
+
       <div class="filters">
-        <input type="text" 
-               placeholder="Filtrar por material..." 
+        <input type="text"
+               placeholder="Filtrar por material..."
                [(ngModel)]="filterMaterial"
                class="filter-input">
-        
+
         <select [(ngModel)]="filterTechnique" class="filter-select">
           <option value="">Todas las técnicas</option>
           <option value="ATR">ATR</option>
@@ -163,14 +197,12 @@
       </div>
     </div>
 
-    <!-- Estado vacío -->
-    <div class="empty-state" *ngIf="filteredSpectra.length === 0">
-      <span class="empty-icon"></span>
+    <div class="empty-state" *ngIf="filteredSpectra.length === 0 && !loading">
+      <span class="empty-icon">📭</span>
       <p>No hay espectros cargados</p>
       <p class="hint">Carga tu primer espectro usando la zona de arriba</p>
     </div>
 
-    <!-- Tabla de espectros -->
     <div class="spectra-table" *ngIf="filteredSpectra.length > 0">
       <table>
         <thead>
@@ -194,7 +226,6 @@
             <td>{{ spectrum.technique || '-' }}</td>
             <td class="date-cell">{{ getFormattedDate(spectrum.created_at) }}</td>
             <td class="actions-cell">
-              <!-- BOTÓN DESCARGAR -->
               <button class="btn-action btn-download"
                       (click)="downloadSpectrum(spectrum, spectrum.filename)"
                       title="Descargar como CSV">
@@ -205,7 +236,6 @@
                 </svg>
                 <span>CSV</span>
               </button>
-              <!-- BOTÓN ELIMINAR -->
               <button class="btn-action btn-delete"
                       (click)="deleteSpectrum(spectrum.id, spectrum.filename)"
                       title="Eliminar espectro">
@@ -227,44 +257,39 @@
 
   <!-- INFORMACIÓN DE FORMATOS -->
   <div class="info-section">
-    <h3> Información de Formatos</h3>
-    
+    <h3>📋 Información de Formatos</h3>
+
     <div class="format-cards">
-      <!-- DPT -->
       <div class="format-card">
-        <h4> DPT (Perkin Elmer)</h4>
+        <h4>📈 DPT (Perkin Elmer)</h4>
         <p>Formato nativo de espectrómetros Perkin Elmer</p>
         <code>índice   wavenumber   absorbance<br>1   3997.23779   0.99338</code>
         <p class="note">Soporta índice opcional en primera columna</p>
       </div>
 
-      <!-- CSV -->
       <div class="format-card">
-        <h4> CSV</h4>
+        <h4>📊 CSV</h4>
         <p>Formato universal de valores separados por comas</p>
         <code>wavenumber,absorbance<br>4000.0,0.5<br>3995.5,0.51</code>
         <p class="note">Con o sin encabezados</p>
       </div>
 
-      <!-- TXT -->
       <div class="format-card">
-        <h4> TXT</h4>
+        <h4>📄 TXT</h4>
         <p>Texto plano con números separados por espacios</p>
         <code>4000.0 0.5<br>3995.5 0.51<br>3991.0 0.52</code>
         <p class="note">Flexible y portable</p>
       </div>
 
-      <!-- JSON -->
       <div class="format-card">
-        <h4> JSON</h4>
+        <h4>&#123;&#125; JSON</h4>
         <p>Formato JavaScript Object Notation</p>
-        <code>{{'{'}}wavenumbers: [...], absorbance: [...]{{'}'}}</code>
+        <code>{{ '{' }}wavenumbers: [...], absorbance: [...]{{ '}' }}</code>
         <p class="note">O array de objetos con keys</p>
       </div>
 
-      <!-- XLSX -->
       <div class="format-card">
-        <h4> XLSX</h4>
+        <h4>📗 XLSX</h4>
         <p>Formato Excel (requiere npm install xlsx)</p>
         <code>Columnas: wavenumber, absorbance</code>
         <p class="note">Instala librería SheetJS para soporte</p>
