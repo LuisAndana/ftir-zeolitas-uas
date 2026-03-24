@@ -54,10 +54,13 @@ export class BusquedaComponent implements OnInit, OnDestroy {
   successMessage: string = '';
   resultsFromCache: boolean = false;
 
-  // ✅ NUEVAS PROPIEDADES PARA EL HTML
   windowOptions: any[] = [];
   totalFound: number = 0;
   totalSearched: number = 0;
+  totalUserSpectra: number = 0;
+  totalDatasetSpectra: number = 0;
+  userResults: number = 0;
+  datasetResults: number = 0;
   executionTimeMs: number = 0;
 
   spectralWindows = SPECTRAL_WINDOWS;
@@ -100,7 +103,7 @@ export class BusquedaComponent implements OnInit, OnDestroy {
   // ========================================
 
   private loadSavedState(): void {
-    console.log(' Cargando estado guardado de búsqueda...');
+    console.log('🔍 Cargando estado guardado de búsqueda...');
     
     this.spectrumStateService
       .getSpectrumState()
@@ -110,7 +113,7 @@ export class BusquedaComponent implements OnInit, OnDestroy {
         if (state.querySpectrum) {
           this.selectedSpectrum = state.querySpectrum;
           this.selectedSpectrumId = this.selectedSpectrum.id;
-          console.log(` Espectro restaurado: ${this.selectedSpectrum.filename}`);
+          console.log(`✓ Espectro restaurado: ${this.selectedSpectrum.filename}`);
         }
 
         // ✅ RESTAURAR RESULTADOS EN CACHÉ
@@ -119,28 +122,28 @@ export class BusquedaComponent implements OnInit, OnDestroy {
           this.searchDone = true;
           this.resultsFromCache = true;
           this.totalFound = this.results.length;
-          console.log(` ${this.results.length} resultados restaurados desde caché`);
+          console.log(`✓ ${this.results.length} resultados restaurados desde caché`);
           
           const lastSearch = state.lastSearch;
           if (lastSearch.timestamp) {
             const timestamp = new Date(lastSearch.timestamp);
             const now = new Date();
             const minutesAgo = Math.floor((now.getTime() - timestamp.getTime()) / 60000);
-            this.successMessage = ` Resultados en caché (hace ${minutesAgo} minuto${minutesAgo !== 1 ? 's' : ''})`;
+            this.successMessage = `📦 Resultados en caché (hace ${minutesAgo} minuto${minutesAgo !== 1 ? 's' : ''})`;
           }
         }
       });
   }
 
   // ========================================
-  // CARGA DE ESPECTROS
+  // CARGA DE ESPECTROS DEL USUARIO
   // ========================================
 
   loadSpectra() {
     this.loadingSpectra = true;
     this.errorLoadingSpectra = '';
 
-    console.log('📊 Cargando espectros desde base de datos...');
+    console.log('📊 Cargando espectros del usuario desde base de datos...');
 
     const token = this.getAuthToken();
     const headers: any = {
@@ -151,6 +154,7 @@ export class BusquedaComponent implements OnInit, OnDestroy {
       headers['Authorization'] = `Bearer ${token}`;
     }
 
+    // ✅ CARGAR ESPECTROS DEL USUARIO (para usar como query)
     this.http.get('http://localhost:8000/api/spectra', { headers })
       .pipe(takeUntil(this.destroy$))
       .subscribe({
@@ -159,12 +163,12 @@ export class BusquedaComponent implements OnInit, OnDestroy {
 
           if (response.success && response.data && Array.isArray(response.data)) {
             this.spectra = response.data;
-            console.log(`✓ Cargados ${this.spectra.length} espectros desde BD`);
+            console.log(`✓ Cargados ${this.spectra.length} espectros del usuario desde BD`);
           } else if (Array.isArray(response)) {
             this.spectra = response;
-            console.log(`✓ Cargados ${this.spectra.length} espectros desde BD`);
+            console.log(`✓ Cargados ${this.spectra.length} espectros del usuario desde BD`);
           } else {
-            console.warn('Formato de respuesta no esperado:', response);
+            console.warn('⚠️ Formato de respuesta no esperado:', response);
             this.spectra = [];
             this.errorLoadingSpectra = 'Formato de respuesta incorrecto';
           }
@@ -175,15 +179,15 @@ export class BusquedaComponent implements OnInit, OnDestroy {
           console.error('❌ Error al cargar espectros:', error);
 
           if (error.status === 403) {
-            this.errorLoadingSpectra = 'Error 403: Acceso prohibido';
+            this.errorLoadingSpectra = '🔒 Error 403: Acceso prohibido';
           } else if (error.status === 401) {
-            this.errorLoadingSpectra = 'Error 401: No autenticado';
+            this.errorLoadingSpectra = '🔐 Error 401: No autenticado';
           } else if (error.status === 404) {
-            this.errorLoadingSpectra = 'Error 404: Endpoint no encontrado';
+            this.errorLoadingSpectra = '🔍 Error 404: Endpoint no encontrado';
           } else if (error.status === 500) {
-            this.errorLoadingSpectra = 'Error 500: Error del servidor';
+            this.errorLoadingSpectra = '⚠️ Error 500: Error del servidor';
           } else {
-            this.errorLoadingSpectra = `Error: ${error.message || 'Error desconocido'}`;
+            this.errorLoadingSpectra = `❌ Error: ${error.message || 'Error desconocido'}`;
           }
 
           console.error('Detalles del error:', error);
@@ -226,19 +230,22 @@ export class BusquedaComponent implements OnInit, OnDestroy {
     this.searchDone = false;
     this.resultsFromCache = false;
     this.totalFound = 0;
+    this.totalSearched = 0;
+    this.userResults = 0;
+    this.datasetResults = 0;
     this.errorMessage = '';
     this.successMessage = '';
     console.log('✓ Espectro seleccionado:', this.selectedSpectrum);
   }
 
   // ========================================
-  // BÚSQUEDA POR SIMILITUD
+  // BÚSQUEDA POR SIMILITUD (USER + DATASET)
   // ========================================
 
   search() {
     if (!this.selectedSpectrum || !this.selectedSpectrumId) {
       this.errorMessage = 'Por favor selecciona un espectro';
-      console.error(' ' + this.errorMessage);
+      console.error('❌ ' + this.errorMessage);
       return;
     }
 
@@ -248,21 +255,29 @@ export class BusquedaComponent implements OnInit, OnDestroy {
     this.resultsFromCache = false;
     const spectrumId = this.selectedSpectrumId.toString();
 
-    console.log('🔍 Iniciando búsqueda:', {
+    console.log('🔍 Iniciando búsqueda de similitud:', {
       spectrum_id: spectrumId,
-      config: this.config
+      config: this.config,
+      message: '🔎 Buscando en: Espectros del usuario + Dataset de zeolitas FTIR'
     });
 
+    // ✅ LLAMAR AL BACKEND QUE BUSCA EN AMBOS LUGARES
     this.similarityBackend.searchSimilarSpectra(spectrumId, this.config)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (response: any) => {
-          console.log('✅ Respuesta recibida:', response);
+          console.log('✅ Respuesta de búsqueda recibida:', response);
 
           if (response.success && response.data) {
             this.results = response.data.results || [];
             this.totalFound = response.data.results_found || this.results.length;
-            this.totalSearched = response.data.total_spectra_searched || 0;
+            
+            // ✅ INFORMACIÓN SEPARADA: USUARIO vs DATASET
+            this.totalUserSpectra = response.data.total_user_spectra_searched || 0;
+            this.totalDatasetSpectra = response.data.total_dataset_spectra_searched || 0;
+            this.userResults = response.data.user_results || 0;
+            this.datasetResults = response.data.dataset_results || 0;
+            this.totalSearched = this.totalUserSpectra + this.totalDatasetSpectra;
             this.executionTimeMs = response.data.execution_time_ms || 0;
             this.searchDone = true;
             
@@ -274,10 +289,17 @@ export class BusquedaComponent implements OnInit, OnDestroy {
               this.config.tolerance
             );
 
-            this.successMessage = ` Búsqueda completada: ${this.results.length} espectros similares encontrados en ${this.executionTimeMs}ms`;
-            console.log(`📊 ${this.results.length} resultados obtenidos`);
+            console.log(`📊 Búsqueda completada:`);
+            console.log(`   - Espectros del usuario buscados: ${this.totalUserSpectra}`);
+            console.log(`   - Espectros del dataset buscados: ${this.totalDatasetSpectra}`);
+            console.log(`   - Resultados del usuario: ${this.userResults}`);
+            console.log(`   - Resultados del dataset: ${this.datasetResults}`);
+            console.log(`   - Tiempo total: ${this.executionTimeMs}ms`);
+
+            this.successMessage = `✅ Búsqueda completada: ${this.totalFound} espectros encontrados (${this.userResults} usuario + ${this.datasetResults} dataset) en ${this.executionTimeMs}ms`;
+            
           } else {
-            this.errorMessage = 'Error: respuesta inválida del servidor';
+            this.errorMessage = '❌ Error: respuesta inválida del servidor';
             console.error('Respuesta inválida:', response);
           }
 
@@ -285,44 +307,48 @@ export class BusquedaComponent implements OnInit, OnDestroy {
         },
         error: (error: any) => {
           console.error('❌ Error en búsqueda:', error);
-          this.errorMessage = 'Error al conectar con el servidor de búsqueda';
+          this.errorMessage = error.error?.detail || '❌ Error al conectar con el servidor de búsqueda';
           this.searching = false;
         }
       });
   }
 
   // ========================================
-  // NAVEGAR A COMPARACIÓN
+  // NAVEGAR A COMPARACIÓN ✅
   // ========================================
 
-viewResult(spectrumId: number) {
-  console.log('👁️ Ver resultado:', spectrumId);
-  
-  const querySpectrum = this.selectedSpectrum;
-  const refSpectrum = this.spectra.find((s: any) => s.id === spectrumId);
+  viewResult(spectrumId: number) {
+    console.log('👁️ Ver resultado:', spectrumId);
+    
+    const querySpectrum = this.selectedSpectrum;
+    const refSpectrum = this.spectra.find((s: any) => s.id === spectrumId);
 
-  if (refSpectrum && querySpectrum) {
-    // ✅ GUARDAR ESPECTROS EN ESTADO GLOBAL ANTES DE NAVEGAR
-    this.spectrumStateService.setQuerySpectrum(querySpectrum);
-    this.spectrumStateService.setRefSpectrum(refSpectrum);
-    
-    console.log('Espectros guardados, navegando a spectrum-comparison...');
-    
-    // ✅ NAVEGAR A SPECTRUM-COMPARISON CON LOS PARÁMETROS CORRECTOS
-    const referenceId = querySpectrum.id;
-    const comparisonId = spectrumId;
-    const method = this.config.method;
-    
-    this.router.navigate([
-      '/dashboard/comparacion-espectros',
-      referenceId,
-      comparisonId,
-      method
-    ]);
-  } else {
-    console.error('❌ No se encontraron los espectros');
+    if (refSpectrum && querySpectrum) {
+      // ✅ GUARDAR ESPECTROS EN ESTADO GLOBAL ANTES DE NAVEGAR
+      this.spectrumStateService.setQuerySpectrum(querySpectrum);
+      this.spectrumStateService.setRefSpectrum(refSpectrum);
+      
+      console.log('✓ Espectros guardados, navegando a spectrum-comparison...');
+      console.log(`  📊 Query: ${querySpectrum.filename} (ID: ${querySpectrum.id})`);
+      console.log(`  📊 Reference: ${refSpectrum.filename} (ID: ${refSpectrum.id})`);
+      
+      // ✅ NAVEGAR A SPECTRUM-COMPARISON CON LOS PARÁMETROS CORRECTOS
+      const referenceId = querySpectrum.id;
+      const comparisonId = spectrumId;
+      const method = this.config.method;
+      
+      this.router.navigate([
+        '/dashboard/comparacion-espectros',
+        referenceId,
+        comparisonId,
+        method
+      ]);
+    } else {
+      console.error('❌ No se encontraron los espectros');
+      this.errorMessage = '❌ No se pudo cargar el espectro seleccionado';
+    }
   }
-}
+
   // ========================================
   // TOGGLE VENTANAS ESPECTRALES
   // ========================================
@@ -335,11 +361,11 @@ viewResult(spectrumId: number) {
     const index = this.config.selected_windows.indexOf(windowId);
     if (index > -1) {
       this.config.selected_windows.splice(index, 1);
+      console.log(`✓ Ventana removida: ${windowId}`);
     } else {
       this.config.selected_windows.push(windowId);
+      console.log(`✓ Ventana agregada: ${windowId}`);
     }
-
-    console.log('✓ Ventanas seleccionadas:', this.config.selected_windows);
   }
 
   isWindowSelected(windowId: string): boolean {
@@ -361,6 +387,10 @@ viewResult(spectrumId: number) {
     this.resultsFromCache = false;
     this.totalFound = 0;
     this.totalSearched = 0;
+    this.totalUserSpectra = 0;
+    this.totalDatasetSpectra = 0;
+    this.userResults = 0;
+    this.datasetResults = 0;
     this.executionTimeMs = 0;
     this.errorMessage = '';
     this.successMessage = '';
@@ -394,17 +424,18 @@ viewResult(spectrumId: number) {
     window.URL.revokeObjectURL(url);
 
     console.log('📥 Resultados exportados');
-    this.successMessage = 'Resultados exportados correctamente';
+    this.successMessage = '✅ Resultados exportados correctamente';
   }
 
   private generateCSV(): string {
-    const headers = ['Ranking', 'Archivo', 'Familia', 'Similitud (%)', 'Picos Coincidentes'];
+    const headers = ['Ranking', 'Archivo', 'Familia', 'Similitud (%)', 'Picos Match', 'Fuente'];
     const rows = this.results.map((r, i) => [
       (i + 1).toString(),
       r.filename,
       r.family || '—',
       (r.global_score * 100).toFixed(2),
-      `${r.matching_peaks}/${r.total_peaks}`
+      `${r.matching_peaks}/${r.total_peaks}`,
+      r.source === 'user_database' ? 'Usuario' : 'Dataset'
     ]);
 
     const csvContent = [
@@ -430,9 +461,13 @@ viewResult(spectrumId: number) {
     return (score * 100).toFixed(1);
   }
 
+  getSourceBadge(source: string): string {
+    return source === 'user_database' ? '👤 Usuario' : '📚 Dataset';
+  }
+
   // ✅ LIMPIAR TODOS LOS DATOS GUARDADOS
   clearAllData() {
-    console.log(' Limpiando todos los datos guardados...');
+    console.log('🗑️ Limpiando todos los datos guardados...');
     this.spectrumStateService.clearAllSpectra();
     this.resetSearch();
   }

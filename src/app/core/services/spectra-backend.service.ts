@@ -59,14 +59,11 @@ export interface UploadResponse {
   providedIn: 'root'
 })
 export class SpectraBackendService {
-  // ✅ IMPORTANTE: Incluir /api en la URL
   private readonly API_URL = 'http://localhost:8000/api/spectra';
   
-  // BehaviorSubject para manejar la lista de espectros
   private spectraSubject = new BehaviorSubject<SpectrumData[]>([]);
   public spectra$ = this.spectraSubject.asObservable();
 
-  // Cache de espectros por página
   private cache: Map<string, SpectraResponse> = new Map();
 
   constructor(
@@ -74,9 +71,6 @@ export class SpectraBackendService {
     private authService: AuthBackendService
   ) {}
 
-  /**
-   * Obtener headers con autenticación
-   */
   private getHeaders(): HttpHeaders {
     const token = this.authService.getAccessToken();
     
@@ -93,18 +87,12 @@ export class SpectraBackendService {
     });
   }
 
-  /**
-   * Cargar lista de espectros del usuario
-   * ✅ CON VALIDACIÓN DE PARÁMETROS
-   */
   getSpectra(skip: number = 0, limit: number = 20): Observable<SpectraResponse> {
-    // ✅ Validar parámetros
     skip = Math.max(0, skip);
     limit = Math.max(1, Math.min(100, limit));
     
     const cacheKey = `skip=${skip}&limit=${limit}`;
     
-    // Verificar cache
     if (this.cache.has(cacheKey)) {
       console.log(`📦 Usando cache para ${cacheKey}`);
       return new Observable(observer => {
@@ -120,14 +108,12 @@ export class SpectraBackendService {
       url,
       { headers: this.getHeaders() }
     ).pipe(
-      retry(1),  // ✅ Reintentar 1 vez en caso de error
+      retry(1),
       tap(response => {
         console.log(`✅ Espectros cargados: ${response.data.length} de ${response.total}`);
         
-        // Guardar en cache
         this.cache.set(cacheKey, response);
         
-        // Guardar en BehaviorSubject
         this.spectraSubject.next(response.data);
       }),
       catchError(error => {
@@ -137,9 +123,6 @@ export class SpectraBackendService {
     );
   }
 
-  /**
-   * Cargar espectro específico por ID
-   */
   getSpectrumDetail(id: number): Observable<SpectrumDetailResponse> {
     const url = `${this.API_URL}/${id}`;
     console.log(`📡 GET ${url}`);
@@ -159,7 +142,7 @@ export class SpectraBackendService {
   }
 
   /**
-   * Cargar archivo de espectro
+   * ✅ CAMBIO: Asegurar que SIEMPRE se envíen los metadatos
    */
   uploadSpectrum(
     file: File,
@@ -169,18 +152,32 @@ export class SpectraBackendService {
     temperature?: string
   ): Observable<UploadResponse> {
     const url = `${this.API_URL}/upload`;
+    
     console.log(`📤 POST ${url}`);
     console.log(`   Archivo: ${file.name}`);
+    console.log(`   Material recibido: "${material}" (tipo: ${typeof material})`);
+    console.log(`   Técnica recibida: "${technique}" (tipo: ${typeof technique})`);
     
     const formData = new FormData();
     formData.append('file', file);
     
-    if (material) formData.append('material', material);
-    if (technique) formData.append('technique', technique);
-    if (hydration_state) formData.append('hydration_state', hydration_state);
-    if (temperature) formData.append('temperature', temperature);
+    // ✅ CAMBIO: SIEMPRE enviar los valores, nunca dejarlos null/undefined
+    const finalMaterial = material && material.trim() ? material.trim() : 'Desconocido';
+    const finalTechnique = technique && technique.trim() ? technique.trim() : 'ATR';
+    const finalHydration = hydration_state && hydration_state.trim() ? hydration_state.trim() : 'As-synthesized';
+    const finalTemperature = temperature && temperature.trim() ? temperature.trim() : '25°C';
+    
+    console.log(`   ✅ Valores finales a enviar en FormData:`);
+    console.log(`      - material: "${finalMaterial}"`);
+    console.log(`      - technique: "${finalTechnique}"`);
+    console.log(`      - hydration_state: "${finalHydration}"`);
+    console.log(`      - temperature: "${finalTemperature}"`);
+    
+    formData.append('material', finalMaterial);
+    formData.append('technique', finalTechnique);
+    formData.append('hydration_state', finalHydration);
+    formData.append('temperature', finalTemperature);
 
-    // ✅ Para multipart/form-data, no usar Content-Type header
     const token = this.authService.getAccessToken();
     const headers = new HttpHeaders({
       'Authorization': `Bearer ${token}`
@@ -193,11 +190,11 @@ export class SpectraBackendService {
     ).pipe(
       tap(response => {
         console.log(`✅ Espectro cargado: ${response.data.spectrum.filename}`);
+        console.log(`   Material guardado en BD: ${response.data.spectrum.material}`);
+        console.log(`   Técnica guardada en BD: ${response.data.spectrum.technique}`);
         
-        // Limpiar cache
         this.cache.clear();
         
-        // Recargar lista
         this.getSpectra().subscribe();
       }),
       catchError(error => {
@@ -207,9 +204,6 @@ export class SpectraBackendService {
     );
   }
 
-  /**
-   * Eliminar espectro
-   */
   deleteSpectrum(id: number): Observable<any> {
     const url = `${this.API_URL}/${id}`;
     console.log(`🗑️  DELETE ${url}`);
@@ -221,10 +215,8 @@ export class SpectraBackendService {
       tap(response => {
         console.log(`✅ Espectro eliminado (ID ${id})`);
         
-        // Limpiar cache
         this.cache.clear();
         
-        // Recargar lista
         this.getSpectra().subscribe();
       }),
       catchError(error => {
@@ -234,32 +226,20 @@ export class SpectraBackendService {
     );
   }
 
-  /**
-   * Obtener espectros desde BehaviorSubject (sin hacer llamada HTTP)
-   */
   getSpectraFromCache(): Observable<SpectrumData[]> {
     return this.spectra$;
   }
 
-  /**
-   * Obtener último espectro cargado
-   */
   getLastSpectrum(): SpectrumData | null {
     const spectra = this.spectraSubject.value;
     return spectra.length > 0 ? spectra[spectra.length - 1] : null;
   }
 
-  /**
-   * Limpiar cache
-   */
   clearCache(): void {
     console.log('🧹 Limpiando cache de espectros');
     this.cache.clear();
   }
 
-  /**
-   * Helper: Convertir SpectrumData a formato para Plotly
-   */
   convertToPlotlyFormat(spectrum: SpectrumData): { x: number[], y: number[], name: string } {
     const wavenumbers = spectrum.wavenumbers || [];
     const absorbance = spectrum.absorbance || [];
@@ -271,9 +251,6 @@ export class SpectraBackendService {
     };
   }
 
-  /**
-   * Manejo de errores HTTP
-   */
   private handleError(error: HttpErrorResponse) {
     let errorMessage = 'Error desconocido';
     

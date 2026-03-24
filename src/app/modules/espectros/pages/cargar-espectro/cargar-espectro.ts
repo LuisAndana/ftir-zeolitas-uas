@@ -34,8 +34,8 @@ export class CargarEspectro implements OnInit, OnDestroy {
   uploadQueue: UploadQueueItem[] = [];
   isProcessingQueue = false;
 
-  // Opciones de carga
-  material = '';
+  // ✅ CAMBIO: De vacío a un valor por defecto
+  material = 'Zeolita Y';
   technique = 'ATR';
   hydrationState = 'As-synthesized';
   temperature = '25°C';
@@ -113,7 +113,6 @@ export class CargarEspectro implements OnInit, OnDestroy {
     const files = input.files;
     if (files && files.length > 0) {
       this.addFilesToQueue(Array.from(files));
-      // Limpiar input para permitir re-selección del mismo archivo
       input.value = '';
     }
   }
@@ -172,7 +171,7 @@ export class CargarEspectro implements OnInit, OnDestroy {
       }
 
       if (alreadyInQueue) {
-        continue; // Ignorar duplicados
+        continue;
       }
 
       this.uploadQueue.push({
@@ -182,7 +181,6 @@ export class CargarEspectro implements OnInit, OnDestroy {
       });
     }
 
-    // Iniciar procesamiento automático
     if (!this.isProcessingQueue) {
       this.processQueue();
     }
@@ -205,10 +203,8 @@ export class CargarEspectro implements OnInit, OnDestroy {
 
     this.isProcessingQueue = false;
 
-    // Recargar lista al finalizar
     this.loadSpectraFromBackend();
 
-    // Mensaje resumen
     const succeeded = this.uploadQueue.filter(i => i.status === 'success').length;
     const failed = this.uploadQueue.filter(i => i.status === 'error').length;
 
@@ -224,9 +220,11 @@ export class CargarEspectro implements OnInit, OnDestroy {
    */
   private uploadSingleFile(item: UploadQueueItem): Promise<void> {
     return new Promise((resolve) => {
+      console.log(`🔍 Enviando material: "${this.material}"`);
+      
       this.spectraBackendService.uploadSpectrum(
         item.file,
-        this.material || undefined,
+        this.material,
         this.technique,
         this.hydrationState,
         this.temperature

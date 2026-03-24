@@ -45,33 +45,50 @@
       <div class="metadata-grid">
         <div class="form-group">
           <label>Material</label>
-          <input type="text" [(ngModel)]="material" placeholder="Ej: Zeolita Y">
+          <!-- ✅ CAMBIO: De input a select con opciones -->
+          <select [(ngModel)]="material" name="material" class="material-select">
+            <option value="Zeolita Y">Zeolita Y</option>
+            <option value="Zeolita A">Zeolita A</option>
+            <option value="Zeolita X">Zeolita X</option>
+            <option value="ZSM-5">ZSM-5</option>
+            <option value="Mordenita">Mordenita</option>
+            <option value="Clinoptilolita">Clinoptilolita</option>
+            <option value="Sodalita">Sodalita</option>
+            <option value="Beta">Beta</option>
+            <option value="4A">4A (LTA)</option>
+            <option value="5A">5A (LTA)</option>
+            <option value="13X">13X (FAU)</option>
+            <option value="Desconocido">Desconocido</option>
+          </select>
         </div>
 
         <div class="form-group">
           <label>Técnica</label>
-          <select [(ngModel)]="technique">
-            <option>ATR</option>
-            <option>Transmisión</option>
-            <option>Reflexión</option>
-            <option>DRIFT</option>
+          <select [(ngModel)]="technique" name="technique">
+            <option value="ATR">ATR</option>
+            <option value="Transmisión">Transmisión</option>
+            <option value="Reflexión">Reflexión</option>
+            <option value="DRIFT">DRIFT</option>
           </select>
         </div>
 
         <div class="form-group">
           <label>Estado de Hidratación</label>
-          <select [(ngModel)]="hydrationState">
-            <option>As-synthesized</option>
-            <option>Secado 110°C</option>
-            <option>Secado 200°C</option>
-            <option>Calcinado</option>
-            <option>Rehidratado</option>
+          <select [(ngModel)]="hydrationState" name="hydrationState">
+            <option value="As-synthesized">As-synthesized</option>
+            <option value="Secado 110°C">Secado 110°C</option>
+            <option value="Secado 200°C">Secado 200°C</option>
+            <option value="Calcinado">Calcinado</option>
+            <option value="Rehidratado">Rehidratado</option>
           </select>
         </div>
 
         <div class="form-group">
           <label>Temperatura</label>
-          <input type="text" [(ngModel)]="temperature" placeholder="Ej: 25°C">
+          <input type="text" 
+                 [(ngModel)]="temperature" 
+                 name="temperature"
+                 placeholder="Ej: 25°C">
         </div>
       </div>
 
