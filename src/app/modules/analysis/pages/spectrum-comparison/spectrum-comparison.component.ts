@@ -113,7 +113,7 @@ export class SpectrumComparisonComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    console.log('🚀 Spectrum Comparison Component iniciado');
+    console.log(' Spectrum Comparison Component iniciado');
     
     // ✅ PRIMERO: Intenta cargar desde SpectrumStateService (snapshot)
     this.loadSpectraFromState();
@@ -127,7 +127,7 @@ export class SpectrumComparisonComponent implements OnInit, OnDestroy {
         this.comparisonId = parseInt(params['referenceId']);
         this.method = params['method'] || 'pearson';
 
-        console.log('📍 Route params:', {
+        console.log(' Route params:', {
           queryId: this.referenceId,
           referenceId: this.comparisonId,
           method: this.method
@@ -136,17 +136,17 @@ export class SpectrumComparisonComponent implements OnInit, OnDestroy {
         // ✅ Verificar que el espectro de referencia del state corresponde al queryId de la URL
         const stateQueryId = this.spectrumStateService.getCurrentState().querySpectrum?.id;
         if (stateQueryId && stateQueryId !== this.referenceId) {
-          console.warn('⚠️ El estado tiene un espectro de referencia diferente al queryId. Limpiando espectros.');
+          console.warn(' El estado tiene un espectro de referencia diferente al queryId. Limpiando espectros.');
           this.referenceSpectrum = null;
           this.comparisonSpectrum = null;
         }
 
         // ✅ Si no hay datos suficientes, carga desde backend
         if (!this.referenceSpectrum || !this.comparisonSpectrum) {
-          console.log('⚠️ Datos incompletos, cargando desde backend...');
+          console.log(' Datos incompletos, cargando desde backend...');
           this.loadSpectra();
         } else {
-          console.log('✅ Usando espectros del State Service');
+          console.log(' Usando espectros del State Service');
           this.loading = false;
           setTimeout(() => {
             this.renderCharts();
@@ -177,7 +177,7 @@ export class SpectrumComparisonComponent implements OnInit, OnDestroy {
     // en emisiones futuras del estado (e.g. al cambiar el espectro de comparación).
     const state = this.spectrumStateService.getCurrentState();
     if (state.querySpectrum && state.refSpectrum) {
-      console.log('✅ Espectros encontrados en State');
+      console.log(' Espectros encontrados en State');
 
       this.referenceSpectrum = this.processSpectrum(state.querySpectrum);
       this.comparisonSpectrum = this.processSpectrum(state.refSpectrum);
@@ -194,7 +194,7 @@ export class SpectrumComparisonComponent implements OnInit, OnDestroy {
   private getAuthHeaders(): HttpHeaders {
     const token = localStorage.getItem('access_token');
     if (!token) {
-      console.warn('⚠️ No hay token de autenticación en localStorage');
+      console.warn(' No hay token de autenticación en localStorage');
     }
     return new HttpHeaders({
       'Authorization': `Bearer ${token || ''}`,
@@ -210,7 +210,7 @@ export class SpectrumComparisonComponent implements OnInit, OnDestroy {
     this.loading = true;
     this.error = '';
 
-    console.log('📡 Cargando espectros desde backend...');
+    console.log(' Cargando espectros desde backend...');
     console.log('  Reference ID:', this.referenceId);
     console.log('  Comparison ID:', this.comparisonId);
 
@@ -219,12 +219,12 @@ export class SpectrumComparisonComponent implements OnInit, OnDestroy {
     // ✅ Si el espectro de referencia ya está cargado (del estado del usuario),
     // solo cargar el espectro de comparación para preservar la referencia original.
     if (this.referenceSpectrum) {
-      console.log('🔒 Espectro de referencia preservado, cargando solo el espectro de comparación...');
+      console.log(' Espectro de referencia preservado, cargando solo el espectro de comparación...');
       this.http.get(`http://localhost:8000/api/similarity/spectrum-for-comparison/${this.comparisonId}`, { headers })
         .pipe(takeUntil(this.destroy$))
         .subscribe({
           next: (compResponse: any) => {
-            console.log('✅ Respuesta de comparación recibida');
+            console.log(' Respuesta de comparación recibida');
             if (compResponse.success && compResponse.spectrum) {
               this.comparisonSpectrum = this.processSpectrum(compResponse.spectrum);
               console.log('✓ Espectro de comparación procesado:', this.comparisonSpectrum);
@@ -236,8 +236,8 @@ export class SpectrumComparisonComponent implements OnInit, OnDestroy {
             }
           },
           error: (error: any) => {
-            console.error('❌ Error cargando comparación:', error);
-            this.error = `❌ Error: ${error.message}`;
+            console.error(' Error cargando comparación:', error);
+            this.error = ` Error: ${error.message}`;
             this.loading = false;
           }
         });
@@ -249,7 +249,7 @@ export class SpectrumComparisonComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (response: any) => {
-          console.log('✅ Respuesta de referencia recibida');
+          console.log(' Respuesta de referencia recibida');
 
           if (response.success && response.spectrum) {
             this.referenceSpectrum = this.processSpectrum(response.spectrum);
@@ -260,7 +260,7 @@ export class SpectrumComparisonComponent implements OnInit, OnDestroy {
               .pipe(takeUntil(this.destroy$))
               .subscribe({
                 next: (compResponse: any) => {
-                  console.log('✅ Respuesta de comparación recibida');
+                  console.log(' Respuesta de comparación recibida');
 
                   if (compResponse.success && compResponse.spectrum) {
                     this.comparisonSpectrum = this.processSpectrum(compResponse.spectrum);
@@ -274,16 +274,16 @@ export class SpectrumComparisonComponent implements OnInit, OnDestroy {
                   }
                 },
                 error: (error: any) => {
-                  console.error('❌ Error cargando comparación:', error);
-                  this.error = `❌ Error: ${error.message}`;
+                  console.error(' Error cargando comparación:', error);
+                  this.error = ` Error: ${error.message}`;
                   this.loading = false;
                 }
               });
           }
         },
         error: (error: any) => {
-          console.error('❌ Error cargando referencia:', error);
-          this.error = `❌ Error: ${error.message}`;
+          console.error(' Error cargando referencia:', error);
+          this.error = ` Error: ${error.message}`;
           this.loading = false;
         }
       });
@@ -297,7 +297,7 @@ export class SpectrumComparisonComponent implements OnInit, OnDestroy {
     console.log('🔍 Processing spectrum:', spectrum);
 
     if (!spectrum) {
-      console.error('❌ Espectro es null/undefined');
+      console.error(' Espectro es null/undefined');
       return null;
     }
 
@@ -305,7 +305,7 @@ export class SpectrumComparisonComponent implements OnInit, OnDestroy {
     // CASO 1: Estructura con spectrum_data (dataset correcto)
     // ========================================
     if (spectrum.spectrum_data && typeof spectrum.spectrum_data === 'object') {
-      console.log('📊 Caso 1: spectrum_data como objeto');
+      console.log(' Caso 1: spectrum_data como objeto');
 
       const data = spectrum.spectrum_data;
       let intensities: number[] = data.intensities || data.absorbance || [];
@@ -336,7 +336,7 @@ export class SpectrumComparisonComponent implements OnInit, OnDestroy {
         return processed;
       }
 
-      console.warn('⚠️ Caso 1: spectrum_data vacío, continuando búsqueda...');
+      console.warn(' Caso 1: spectrum_data vacío, continuando búsqueda...');
     }
 
     // ========================================
@@ -367,7 +367,7 @@ export class SpectrumComparisonComponent implements OnInit, OnDestroy {
     // (también maneja JSON string almacenado desde el backend)
     // ========================================
     if (spectrum.wavenumber_data != null) {
-      console.log('📦 Caso 3: wavenumber_data como objeto/string');
+      console.log(' Caso 3: wavenumber_data como objeto/string');
 
       let wavedata: any = spectrum.wavenumber_data;
 
@@ -376,7 +376,7 @@ export class SpectrumComparisonComponent implements OnInit, OnDestroy {
           wavedata = JSON.parse(wavedata);
           console.log('  JSON parseado correctamente');
         } catch (e: any) {
-          console.warn('  ⚠️ Error parseando wavenumber_data como JSON:', e?.message || e);
+          console.warn('   Error parseando wavenumber_data como JSON:', e?.message || e);
           wavedata = null;
         }
       }
@@ -408,13 +408,13 @@ export class SpectrumComparisonComponent implements OnInit, OnDestroy {
         }
       }
 
-      console.warn('⚠️ Caso 3: sin datos válidos en wavenumber_data, continuando búsqueda...');
+      console.warn(' Caso 3: sin datos válidos en wavenumber_data, continuando búsqueda...');
     }
 
     // ========================================
     // CASO 4: Búsqueda robusta en propiedades raíz
     // ========================================
-    console.log('🔎 Caso 4: Búsqueda en propiedades raíz');
+    console.log(' Caso 4: Búsqueda en propiedades raíz');
     console.log('  spectrum.wavenumber_data:', spectrum.wavenumber_data);
     console.log('  spectrum.intensities:', Array.isArray(spectrum.intensities) ? `array[${spectrum.intensities.length}]` : spectrum.intensities);
     console.log('  spectrum.data:', Array.isArray(spectrum.data) ? `array[${spectrum.data.length}]` : spectrum.data);
@@ -426,7 +426,7 @@ export class SpectrumComparisonComponent implements OnInit, OnDestroy {
     if (intensities.length === 0) {
       // Returning null signals the caller to invoke loadSpectra() and fetch
       // the full spectrum data from the /spectrum-for-comparison/{id} endpoint.
-      console.warn('❌ Caso 4: Sin datos de intensidad en ninguna propiedad. Se cargará desde backend.');
+      console.warn(' Caso 4: Sin datos de intensidad en ninguna propiedad. Se cargará desde backend.');
       return null;
     }
 
@@ -452,7 +452,7 @@ export class SpectrumComparisonComponent implements OnInit, OnDestroy {
   // ========================================
 
   renderCharts(): void {
-    console.log('🎨 Renderizando gráficas...');
+    console.log(' Renderizando gráficas...');
     console.log('  Reference valid:', !!this.referenceSpectrum?.spectrum_data?.wavenumbers?.length);
     console.log('  Comparison valid:', !!this.comparisonSpectrum?.spectrum_data?.wavenumbers?.length);
     
@@ -548,7 +548,7 @@ export class SpectrumComparisonComponent implements OnInit, OnDestroy {
         if (canvasId === 'chartReference') this.chartReference = chart;
         else this.chartComparison = chart;
 
-        console.log(`✅ ${canvasId} renderizado: ${wavenumbers.length} puntos`);
+        console.log(` ${canvasId} renderizado: ${wavenumbers.length} puntos`);
 
       } catch (err) {
         console.error(`Error en ${canvasId}:`, err);
@@ -632,7 +632,7 @@ export class SpectrumComparisonComponent implements OnInit, OnDestroy {
         });
 
         this.enableChartInteraction();
-        console.log('✅ Overlay chart renderizado');
+        console.log(' Overlay chart renderizado');
 
       } catch (err) {
         console.error('Error creando overlay:', err);
@@ -1005,10 +1005,10 @@ export class SpectrumComparisonComponent implements OnInit, OnDestroy {
       this.unmatchedPeaks = peakMatch.unmatched;
       this.totalPeaks = peakMatch.total;
       
-      this.successMessage = `✅ Similitud: ${(this.similarityScore * 100).toFixed(1)}%`;
-      console.log('✅ Similitud calculada:', this.successMessage);
+      this.successMessage = ` Similitud: ${(this.similarityScore * 100).toFixed(1)}%`;
+      console.log(' Similitud calculada:', this.successMessage);
     } catch (err) {
-      this.error = `❌ Error: ${err instanceof Error ? err.message : 'Unknown'}`;
+      this.error = ` Error: ${err instanceof Error ? err.message : 'Unknown'}`;
       console.error(this.error);
     } finally { 
       this.calculating = false; 
@@ -1017,11 +1017,11 @@ export class SpectrumComparisonComponent implements OnInit, OnDestroy {
 
   private validateData(): boolean {
     if (!this.referenceSpectrum?.spectrum_data?.wavenumbers?.length) { 
-      this.error = '❌ Espectro de referencia inválido'; 
+      this.error = ' Espectro de referencia inválido'; 
       return false; 
     }
     if (!this.comparisonSpectrum?.spectrum_data?.wavenumbers?.length) { 
-      this.error = '❌ Espectro de comparación inválido'; 
+      this.error = ' Espectro de comparación inválido'; 
       return false; 
     }
     return true;

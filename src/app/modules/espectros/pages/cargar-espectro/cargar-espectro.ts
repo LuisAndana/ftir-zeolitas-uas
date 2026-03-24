@@ -347,11 +347,11 @@ export class CargarEspectro implements OnInit, OnDestroy {
   getFormatIcon(filename: string): string {
     const ext = filename.substring(filename.lastIndexOf('.')).toLowerCase();
     const icons: { [key: string]: string } = {
-      '.csv': '📊',
-      '.txt': '📄',
-      '.dpt': '📈',
+      '.csv': '',
+      '.txt': '',
+      '.dpt': '',
       '.json': '{}',
-      '.xlsx': '📗'
+      '.xlsx': ''
     };
     return icons[ext] || '📁';
   }

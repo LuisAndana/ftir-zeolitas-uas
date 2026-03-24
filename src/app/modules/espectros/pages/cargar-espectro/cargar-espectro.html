@@ -93,8 +93,7 @@
       </div>
 
       <div class="form-group full-width">
-        <label>Descripción (Opcional)</label>
-        <textarea [(ngModel)]="description" placeholder="Notas sobre los espectros..." rows="3"></textarea>
+        
       </div>
     </div>
   </div>
@@ -108,26 +107,26 @@
         <h2>Cola de Carga</h2>
         <div class="queue-stats">
           <span class="stat stat-pending" *ngIf="queuePending > 0">
-            ⏳ {{ queuePending }} en espera
+             {{ queuePending }} en espera
           </span>
           <span class="stat stat-uploading" *ngIf="queueUploading > 0">
-            ⬆️ {{ queueUploading }} subiendo
+            ⬆ {{ queueUploading }} subiendo
           </span>
           <span class="stat stat-success" *ngIf="queueSuccess > 0">
-            ✅ {{ queueSuccess }} completado{{ queueSuccess > 1 ? 's' : '' }}
+             {{ queueSuccess }} completado{{ queueSuccess > 1 ? 's' : '' }}
           </span>
           <span class="stat stat-error" *ngIf="queueError > 0">
-            ❌ {{ queueError }} con error
+             {{ queueError }} con error
           </span>
         </div>
       </div>
 
       <div class="queue-actions">
         <button class="btn-retry" *ngIf="queueError > 0 && !isProcessingQueue" (click)="retryFailed()" type="button">
-          🔄 Reintentar fallidos
+           Reintentar fallidos
         </button>
         <button class="btn-clear" *ngIf="queueHasFinished && !isProcessingQueue" (click)="clearFinishedQueue()" type="button">
-          🗑 Limpiar completados
+           Limpiar completados
         </button>
       </div>
     </div>
@@ -155,10 +154,10 @@
 
         <!-- Indicador de estado -->
         <span class="queue-status-icon">
-          <span *ngIf="item.status === 'pending'">⏳</span>
+          <span *ngIf="item.status === 'pending'"></span>
           <span *ngIf="item.status === 'uploading'" class="spinner">⬆️</span>
-          <span *ngIf="item.status === 'success'">✅</span>
-          <span *ngIf="item.status === 'error'">❌</span>
+          <span *ngIf="item.status === 'success'"></span>
+          <span *ngIf="item.status === 'error'"></span>
         </span>
 
         <!-- Barra de progreso (solo uploading) -->
@@ -189,14 +188,14 @@
     </div>
 
     <div class="alert alert-info" *ngIf="loading && uploadQueue.length === 0">
-      ⏳ Cargando lista de espectros...
+       Cargando lista de espectros...
     </div>
   </div>
 
   <!-- LISTA DE ESPECTROS -->
   <div class="spectra-list-section">
     <div class="section-header">
-      <h2>📚 Tus Espectros</h2>
+      <h2> Tus Espectros</h2>
 
       <div class="filters">
         <input type="text"
@@ -215,7 +214,7 @@
     </div>
 
     <div class="empty-state" *ngIf="filteredSpectra.length === 0 && !loading">
-      <span class="empty-icon">📭</span>
+      <span class="empty-icon"></span>
       <p>No hay espectros cargados</p>
       <p class="hint">Carga tu primer espectro usando la zona de arriba</p>
     </div>
@@ -274,25 +273,25 @@
 
   <!-- INFORMACIÓN DE FORMATOS -->
   <div class="info-section">
-    <h3>📋 Información de Formatos</h3>
+    <h3> Información de Formatos</h3>
 
     <div class="format-cards">
       <div class="format-card">
-        <h4>📈 DPT (Perkin Elmer)</h4>
+        <h4> DPT (Perkin Elmer)</h4>
         <p>Formato nativo de espectrómetros Perkin Elmer</p>
         <code>índice   wavenumber   absorbance<br>1   3997.23779   0.99338</code>
         <p class="note">Soporta índice opcional en primera columna</p>
       </div>
 
       <div class="format-card">
-        <h4>📊 CSV</h4>
+        <h4> CSV</h4>
         <p>Formato universal de valores separados por comas</p>
         <code>wavenumber,absorbance<br>4000.0,0.5<br>3995.5,0.51</code>
         <p class="note">Con o sin encabezados</p>
       </div>
 
       <div class="format-card">
-        <h4>📄 TXT</h4>
+        <h4> TXT</h4>
         <p>Texto plano con números separados por espacios</p>
         <code>4000.0 0.5<br>3995.5 0.51<br>3991.0 0.52</code>
         <p class="note">Flexible y portable</p>
@@ -306,7 +305,7 @@
       </div>
 
       <div class="format-card">
-        <h4>📗 XLSX</h4>
+        <h4> XLSX</h4>
         <p>Formato Excel (requiere npm install xlsx)</p>
         <code>Columnas: wavenumber, absorbance</code>
         <p class="note">Instala librería SheetJS para soporte</p>

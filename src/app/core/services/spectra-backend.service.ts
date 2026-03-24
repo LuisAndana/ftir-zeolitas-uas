@@ -102,7 +102,7 @@ export class SpectraBackendService {
     const token = this.authService.getAccessToken();
     
     if (!token) {
-      console.warn('⚠️ No hay token disponible');
+      console.warn(' No hay token disponible');
       return new HttpHeaders({
         'Content-Type': 'application/json'
       });
@@ -125,7 +125,7 @@ export class SpectraBackendService {
     const cacheKey = `skip=${skip}&limit=${limit}`;
     
     if (this.cache.has(cacheKey)) {
-      console.log(`📦 Usando cache para ${cacheKey}`);
+      console.log(` Usando cache para ${cacheKey}`);
       return new Observable(observer => {
         observer.next(this.cache.get(cacheKey)!);
         observer.complete();
@@ -133,7 +133,7 @@ export class SpectraBackendService {
     }
 
     const url = `${this.API_URL}?skip=${skip}&limit=${limit}`;
-    console.log(`📡 GET ${url}`);
+    console.log(` GET ${url}`);
     
     return this.http.get<SpectraResponse>(
       url,
@@ -141,14 +141,14 @@ export class SpectraBackendService {
     ).pipe(
       retry(1),
       tap(response => {
-        console.log(`✅ Espectros cargados: ${response.data.length} de ${response.total}`);
+        console.log(` Espectros cargados: ${response.data.length} de ${response.total}`);
         
         this.cache.set(cacheKey, response);
         
         this.spectraSubject.next(response.data);
       }),
       catchError(error => {
-        console.error(`❌ Error cargando espectros (${url}):`, error);
+        console.error(` Error cargando espectros (${url}):`, error);
         return throwError(() => error);
       })
     );
@@ -156,17 +156,17 @@ export class SpectraBackendService {
 
   getSpectrumDetail(id: number): Observable<SpectrumDetailResponse> {
     const url = `${this.API_URL}/${id}`;
-    console.log(`📡 GET ${url}`);
+    console.log(` GET ${url}`);
     
     return this.http.get<SpectrumDetailResponse>(
       url,
       { headers: this.getHeaders() }
     ).pipe(
       tap(response => {
-        console.log(`✅ Espectro detalle cargado: ${response.data.spectrum.filename}`);
+        console.log(` Espectro detalle cargado: ${response.data.spectrum.filename}`);
       }),
       catchError(error => {
-        console.error(`❌ Error cargando espectro (${url}):`, error);
+        console.error(` Error cargando espectro (${url}):`, error);
         return throwError(() => error);
       })
     );
@@ -181,7 +181,7 @@ export class SpectraBackendService {
   ): Observable<UploadResponse> {
     const url = `${this.API_URL}/upload`;
     
-    console.log(`📤 POST ${url}`);
+    console.log(` POST ${url}`);
     console.log(`   Archivo: ${file.name}`);
     console.log(`   Material recibido: "${material}" (tipo: ${typeof material})`);
     console.log(`   Técnica recibida: "${technique}" (tipo: ${typeof technique})`);
@@ -194,7 +194,7 @@ export class SpectraBackendService {
     const finalHydration = hydration_state && hydration_state.trim() ? hydration_state.trim() : 'As-synthesized';
     const finalTemperature = temperature && temperature.trim() ? temperature.trim() : '25°C';
     
-    console.log(`   ✅ Valores finales a enviar en FormData:`);
+    console.log(`    Valores finales a enviar en FormData:`);
     console.log(`      - material: "${finalMaterial}"`);
     console.log(`      - technique: "${finalTechnique}"`);
     console.log(`      - hydration_state: "${finalHydration}"`);
@@ -216,7 +216,7 @@ export class SpectraBackendService {
       { headers }
     ).pipe(
       tap(response => {
-        console.log(`✅ Espectro cargado: ${response.data.spectrum.filename}`);
+        console.log(` Espectro cargado: ${response.data.spectrum.filename}`);
         console.log(`   Material guardado en BD: ${response.data.spectrum.material}`);
         console.log(`   Técnica guardada en BD: ${response.data.spectrum.technique}`);
         
@@ -225,7 +225,7 @@ export class SpectraBackendService {
         this.getSpectra().subscribe();
       }),
       catchError(error => {
-        console.error(`❌ Error cargando archivo (${url}):`, error);
+        console.error(` Error cargando archivo (${url}):`, error);
         return throwError(() => error);
       })
     );
@@ -233,21 +233,21 @@ export class SpectraBackendService {
 
   deleteSpectrum(id: number): Observable<any> {
     const url = `${this.API_URL}/${id}`;
-    console.log(`🗑️ DELETE ${url}`);
+    console.log(` DELETE ${url}`);
     
     return this.http.delete<any>(
       url,
       { headers: this.getHeaders() }
     ).pipe(
       tap(response => {
-        console.log(`✅ Espectro eliminado (ID ${id})`);
+        console.log(` Espectro eliminado (ID ${id})`);
         
         this.cache.clear();
         
         this.getSpectra().subscribe();
       }),
       catchError(error => {
-        console.error(`❌ Error eliminando espectro (${url}):`, error);
+        console.error(` Error eliminando espectro (${url}):`, error);
         return throwError(() => error);
       })
     );
@@ -265,7 +265,7 @@ export class SpectraBackendService {
     
     return this.http.get<SpectrumComparisonResponse>(url, { headers: this.getHeaders() }).pipe(
       tap(response => {
-        console.log(`✅ Espectro cargado exitosamente`);
+        console.log(` Espectro cargado exitosamente`);
         console.log(`   Nombre: ${response.spectrum.filename}`);
         console.log(`   Fuente: ${response.source}`);
         console.log(`   Familia: ${response.spectrum.family}`);
@@ -289,7 +289,7 @@ export class SpectraBackendService {
   }
 
   clearCache(): void {
-    console.log('🧹 Limpiando cache de espectros');
+    console.log(' Limpiando cache de espectros');
     this.cache.clear();
   }
 
@@ -307,7 +307,7 @@ export class SpectraBackendService {
   private handleError(error: HttpErrorResponse, url: string) {
     let errorMessage = 'Error desconocido';
     
-    console.error(`❌ Error HTTP ${error.status}:`);
+    console.error(` Error HTTP ${error.status}:`);
     console.error(`   URL: ${url}`);
     console.error(`   Message: ${error.message}`);
     
@@ -317,16 +317,16 @@ export class SpectraBackendService {
     } else {
       if (error.status === 404) {
         errorMessage = `Espectro no encontrado (404)`;
-        console.error('🔍 El espectro no existe en ninguna base de datos');
+        console.error(' El espectro no existe en ninguna base de datos');
       } else if (error.status === 401) {
         errorMessage = 'No autorizado (401)';
-        console.error('🔐 Token expirado o inválido');
+        console.error(' Token expirado o inválido');
       } else if (error.status === 403) {
         errorMessage = 'Acceso prohibido (403)';
-        console.error('🚫 No tienes permisos');
+        console.error(' No tienes permisos');
       } else if (error.status === 500) {
         errorMessage = 'Error en el servidor (500)';
-        console.error('⚠️ El servidor encontró un error');
+        console.error(' El servidor encontró un error');
       } else {
         errorMessage = `Error ${error.status}: ${error.message}`;
       }
