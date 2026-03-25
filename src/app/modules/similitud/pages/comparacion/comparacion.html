@@ -92,12 +92,9 @@
       <h2>📊 Gráficas de Comparación</h2>
 
       <div class="charts-grid">
-        <!-- Query Chart -->
         <div class="chart-container">
           <canvas #queryChartCanvas></canvas>
         </div>
-
-        <!-- Reference Chart -->
         <div class="chart-container">
           <canvas #refChartCanvas></canvas>
         </div>
@@ -106,6 +103,8 @@
       <!-- Overlay Chart (Full Width) -->
       <div class="chart-container full-width">
         <div class="chart-toolbar">
+
+          <!-- Zoom tools -->
           <div class="tools-group">
             <button class="btn-tool" (click)="zoomIn()" title="Zoom In (+)">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -131,6 +130,7 @@
             </button>
           </div>
 
+          <!-- Selection mode -->
           <div class="tools-group">
             <button class="btn-tool" (click)="toggleModoSeleccion()" [class.active]="modoSeleccion" title="Modo Selección">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -139,16 +139,43 @@
             </button>
           </div>
 
+          <!-- ✅ Display options -->
           <div class="tools-group">
             <label class="checkbox-label">
-              <input type="checkbox" [(ngModel)]="mostrarLeyenda" class="checkbox-input">
+              <input type="checkbox"
+                     [(ngModel)]="mostrarLeyenda"
+                     (change)="onToggleLeyenda()"
+                     class="checkbox-input">
               <span>Leyenda</span>
             </label>
             <label class="checkbox-label">
-              <input type="checkbox" [(ngModel)]="mostrarCuadricula" class="checkbox-input">
+              <input type="checkbox"
+                     [(ngModel)]="mostrarCuadricula"
+                     (change)="onToggleCuadricula()"
+                     class="checkbox-input">
               <span>Cuadrícula</span>
             </label>
+            <!-- ✅ NUEVO: Invertir eje X -->
+            <label class="checkbox-label" title="Invertir eje X (convención FTIR: 4000→400)">
+              <input type="checkbox"
+                     [(ngModel)]="invertirX"
+                     (change)="onToggleInvertirX()"
+                     class="checkbox-input">
+              <span>Invertir X</span>
+            </label>
           </div>
+
+          <!-- ✅ Tooltip mode toggle -->
+          <div class="tools-group">
+            <label class="checkbox-label" title="Activar para ver ambos espectros en el hover">
+              <input type="checkbox"
+                     [checked]="tooltipMode === 'both'"
+                     (change)="onToggleTooltipMode()"
+                     class="checkbox-input">
+              <span>Hover doble</span>
+            </label>
+          </div>
+
         </div>
 
         <canvas #overlayChartCanvas></canvas>
@@ -157,6 +184,7 @@
 
     <!-- RESULTS SECTION -->
     <div *ngIf="compared" class="compare-results">
+
       <!-- Global Score -->
       <div [ngClass]="'global-score-card ' + getScoreClass(globalScore)">
         <div class="score-content">
@@ -169,31 +197,12 @@
             <span class="score-desc">Método: {{ method | uppercase }}</span>
           </div>
         </div>
-        <div *ngIf="allScores" class="all-scores">
-          <div class="score-method">
-            <span class="method-label">Pearson:</span>
-            <span class="method-value" [ngClass]="getScoreClass(allScores.pearson)">
-              {{ (allScores.pearson * 100).toFixed(1) }}%
-            </span>
-          </div>
-          <div class="score-method">
-            <span class="method-label">Coseno:</span>
-            <span class="method-value" [ngClass]="getScoreClass(allScores.cosine)">
-              {{ (allScores.cosine * 100).toFixed(1) }}%
-            </span>
-          </div>
-          <div class="score-method">
-            <span class="method-label">Euclidiana:</span>
-            <span class="method-value" [ngClass]="getScoreClass(allScores.euclidean)">
-              {{ (allScores.euclidean * 100).toFixed(1) }}%
-            </span>
-          </div>
-        </div>
       </div>
 
       <!-- Peaks Section -->
       <div class="peaks-section">
         <h4>🎯 Análisis de Picos</h4>
+
         <div class="peaks-summary">
           <div class="peak-stat matched">
             <div class="peak-num">{{ matchingPeaksCount }}</div>
@@ -211,6 +220,74 @@
             <div class="peak-num">{{ totalPeaks > 0 ? ((matchingPeaksCount / totalPeaks) * 100).toFixed(1) : 0 }}</div>
             <div class="peak-label">%</div>
           </div>
+        </div>
+
+        <div class="peaks-detail-grid">
+
+          <!-- Query -->
+          <div class="peaks-detail-card query-peaks-card">
+            <div class="peaks-detail-header">
+              <span class="peaks-detail-dot" style="background:#2E75B6"></span>
+              <span class="peaks-detail-title">Query: {{ querySpectrum?.filename }}</span>
+            </div>
+            <div class="peaks-detail-row">
+              <div class="peaks-detail-group">
+                <span class="peaks-detail-label">▲ Máximos ({{ queryMaxPeaks.length }})</span>
+                <div class="peaks-chips">
+                  <span class="peak-chip peak-chip--max" *ngFor="let p of queryMaxPeaks.slice(0,8)">
+                    {{ p.toFixed(0) }} cm⁻¹
+                  </span>
+                  <span class="peak-chip peak-chip--more" *ngIf="queryMaxPeaks.length > 8">
+                    +{{ queryMaxPeaks.length - 8 }} más
+                  </span>
+                </div>
+              </div>
+              <div class="peaks-detail-group">
+                <span class="peaks-detail-label">▼ Mínimos ({{ queryMinPeaks.length }})</span>
+                <div class="peaks-chips">
+                  <span class="peak-chip peak-chip--min" *ngFor="let p of queryMinPeaks.slice(0,8)">
+                    {{ p.toFixed(0) }} cm⁻¹
+                  </span>
+                  <span class="peak-chip peak-chip--more" *ngIf="queryMinPeaks.length > 8">
+                    +{{ queryMinPeaks.length - 8 }} más
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Reference -->
+          <div class="peaks-detail-card ref-peaks-card">
+            <div class="peaks-detail-header">
+              <span class="peaks-detail-dot" style="background:#f59e0b"></span>
+              <span class="peaks-detail-title">Reference: {{ refSpectrum?.filename }}</span>
+            </div>
+            <div class="peaks-detail-row">
+              <div class="peaks-detail-group">
+                <span class="peaks-detail-label">▲ Máximos ({{ refMaxPeaks.length }})</span>
+                <div class="peaks-chips">
+                  <span class="peak-chip peak-chip--max" *ngFor="let p of refMaxPeaks.slice(0,8)">
+                    {{ p.toFixed(0) }} cm⁻¹
+                  </span>
+                  <span class="peak-chip peak-chip--more" *ngIf="refMaxPeaks.length > 8">
+                    +{{ refMaxPeaks.length - 8 }} más
+                  </span>
+                </div>
+              </div>
+              <div class="peaks-detail-group">
+                <span class="peaks-detail-label">▼ Mínimos ({{ refMinPeaks.length }})</span>
+                <div class="peaks-chips">
+                  <span class="peak-chip peak-chip--min" *ngFor="let p of refMinPeaks.slice(0,8)">
+                    {{ p.toFixed(0) }} cm⁻¹
+                  </span>
+                  <span class="peak-chip peak-chip--more" *ngIf="refMinPeaks.length > 8">
+                    +{{ refMinPeaks.length - 8 }} más
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
         </div>
       </div>
 
@@ -231,6 +308,7 @@
         </div>
         <button class="btn-clear" (click)="clearHistory()">Limpiar Historial</button>
       </div>
+
     </div>
 
     <!-- Empty State -->

@@ -47,33 +47,40 @@ export class Comparacion implements OnInit, OnDestroy {
   private origXMin: number = 400;
   private origXMax: number = 4000;
   private origYMin: number = -0.05;
-  private origYMax: number = 1.0;
+  private origYMax: number = 1.1;
 
   private currentXMin: number = 400;
   private currentXMax: number = 4000;
   private currentYMin: number = -0.05;
-  private currentYMax: number = 1.0;
+  private currentYMax: number = 1.1;
 
   private selectionBox: HTMLDivElement | null = null;
   private selStartX: number = 0;
   private selStartY: number = 0;
   private isSelecting: boolean = false;
 
-  private wheelListener: ((e: WheelEvent) => void) | null = null;
-  private mouseDownListener: ((e: MouseEvent) => void) | null = null;
-  private mouseMoveListener: ((e: MouseEvent) => void) | null = null;
-  private mouseUpListener: ((e: MouseEvent) => void) | null = null;
-  private mouseLeaveListener: (() => void) | null = null;
-  private dblClickListener: (() => void) | null = null;
+  private wheelListener:      (e: WheelEvent) => void = () => {};
+  private mouseDownListener:  (e: MouseEvent) => void = () => {};
+  private mouseMoveListener:  (e: MouseEvent) => void = () => {};
+  private mouseUpListener:    (e: MouseEvent) => void = () => {};
+  private mouseLeaveListener: (e: MouseEvent) => void = () => {};
+  private dblClickListener:   (e: MouseEvent) => void = () => {};
 
   private isDragging: boolean = false;
   private lastClientX: number = 0;
+  private lastClientY: number = 0;
 
   globalScore: number = 0;
   allScores: { euclidean: number; cosine: number; pearson: number } | null = null;
   windowScores: { window: string; score: number; range: string }[] = [];
-  matchedPeaks: number[] = [];
-  unmatchedPeaks: number[] = [];
+  matchedPeaks:       number[] = [];
+  unmatchedPeaks:     number[] = [];
+  // ✅ NEW: max/min peaks per spectrum
+  queryMaxPeaks:      number[] = [];
+  queryMinPeaks:      number[] = [];
+  refMaxPeaks:        number[] = [];
+  refMinPeaks:        number[] = [];
+  tooltipMode: 'single' | 'both' = 'single';
   totalPeaks: number = 0;
   matchingPeaksCount: number = 0;
 
@@ -94,20 +101,10 @@ export class Comparacion implements OnInit, OnDestroy {
     private similarityBackendService: SimilarityBackendService,
     private similarityService: SimilarityService,
     private spectrumStateService: SpectrumStateService
-  ) {
-    console.log('🚀 Constructor Comparacion ejecutado');
-  }
+  ) {}
 
   ngOnInit() {
-    if (this.isInitialized) {
-      console.log('⚠️ Componente ya inicializado');
-      return;
-    }
-
-    console.log('='.repeat(70));
-    console.log('📊 INICIALIZANDO COMPARACION');
-    console.log('='.repeat(70));
-
+    if (this.isInitialized) return;
     this.isInitialized = true;
     this.loadSpectraFromBackend();
     this.loadSavedState();
@@ -123,77 +120,66 @@ export class Comparacion implements OnInit, OnDestroy {
       });
   }
 
-  private loadSavedState(): void {
+ private loadSavedState(): void {
     this.spectrumStateService
       .getSpectrumState()
       .pipe(takeUntil(this.destroy$))
       .subscribe(state => {
-        // ✅ SOLUCIÓN: Usar non-null assertion (!) después de verificar null
         if (state.querySpectrum) {
           this.querySpectrum = state.querySpectrum;
-          this.queryId = this.querySpectrum!.id.toString(); // ✅ Sin error TS2531
+          this.queryId = this.querySpectrum!.id.toString();
         }
-
         if (state.refSpectrum) {
           this.refSpectrum = state.refSpectrum;
-          this.refId = this.refSpectrum!.id.toString(); // ✅ Sin error TS2531
+          this.refId = this.refSpectrum!.id.toString();
         }
-
         if (state.comparisonResults && !this.compared) {
           const data = state.comparisonResults;
-          this.globalScore = data.global_score || 0;
-          this.allScores = data.all_scores || null;
-          this.matchedPeaks = data.matched_peaks || [];
-          this.unmatchedPeaks = data.unmatched_peaks || [];
-          this.totalPeaks = data.total_peaks || 0;
+          this.globalScore        = data.global_score || 0;
+          this.allScores          = data.all_scores || null;
+          this.matchedPeaks       = data.matched_peaks || [];
+          this.unmatchedPeaks     = data.unmatched_peaks || [];
+          this.totalPeaks         = data.total_peaks || 0;
           this.matchingPeaksCount = data.matching_peaks_count || 0;
-          
-          if (data.window_scores && data.window_scores.length > 0) {
-            this.windowScores = data.window_scores.map((w: any) => ({
-              window: w.window,
-              score: w.score,
-              range: '0-4000'
+          if ((data.window_scores?.length ?? 0) > 0) {
+            this.windowScores = (data.window_scores ?? []).map((w: any) => ({
+              window: w.window || 'N/A', score: w.score ?? 0, range: '0-4000'
             }));
           }
-          
-          this.compared = true;
-          this.successMessage = ` Comparación restaurada: ${(this.globalScore * 100).toFixed(1)}%`;
-        }
+          this.compared       = true;
+          this.successMessage = `Comparación restaurada: ${(this.globalScore * 100).toFixed(1)}%`;
 
+          // ✅ Re-renderizar gráficas al restaurar estado
+          if (this.querySpectrum && this.refSpectrum) {
+            setTimeout(() => this.renderCharts(), 200);
+          }
+        }
         this.comparisonHistory = state.comparisonHistory || [];
       });
   }
 
-  private loadSpectraFromBackend() {
+private loadSpectraFromBackend() {
     this.isLoadingSpectra = true;
-    console.log('\n' + '='.repeat(70));
-    console.log('📊 CARGANDO ESPECTROS DEL BACKEND');
-    console.log('='.repeat(70));
-
     this.espectroLoader.espectros$
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (espectros) => {
-          console.log(`\n✅ ESPECTROS CARGADOS: ${espectros.length} total`);
-          
-          if (espectros.length > 0) {
-            const first = espectros[0];
-            console.log(`📋 PRIMER ESPECTRO: ${first.filename}`);
-            console.log(`   Wavenumbers: ${first.wavenumbers?.length || 0} elementos`);
-            console.log(`   Data: ${first.data?.length || 0} elementos`);
-          }
-          
           this.spectra = espectros;
           this.isLoadingSpectra = false;
+          this.errorMessage = espectros.length === 0
+            ? 'No hay espectros disponibles. Carga algunos en "Cargar Espectro"'
+            : '';
 
-          if (espectros.length === 0) {
-            this.errorMessage = 'No hay espectros disponibles. Carga algunos en "Cargar Espectro"';
-          } else {
-            this.errorMessage = '';
+          // ✅ Si hay comparación guardada y espectros cargados, re-renderizar
+          if (this.compared && this.querySpectrum && this.refSpectrum && espectros.length > 0) {
+            const qId = this.parseId(this.queryId);
+            const rId = this.parseId(this.refId);
+            this.querySpectrum = espectros.find(s => this.parseId(s.id) === qId) || this.querySpectrum;
+            this.refSpectrum   = espectros.find(s => this.parseId(s.id) === rId) || this.refSpectrum;
+            setTimeout(() => this.renderCharts(), 300);
           }
         },
-        error: (error) => {
-          console.error('❌ Error conectando:', error);
+        error: () => {
           this.isLoadingSpectra = false;
           if (!this.compared) {
             this.errorMessage = 'Error al conectar. Backend debe estar en localhost:8000';
@@ -210,48 +196,197 @@ export class Comparacion implements OnInit, OnDestroy {
     this.destroyAllCharts();
   }
 
-  public renderCharts() {
-    console.log('\n' + '='.repeat(70));
-    console.log('📊 RENDERIZANDO 3 GRÁFICAS');
-    console.log('='.repeat(70));
-    
-    if (!this.querySpectrum || !this.refSpectrum) {
-      console.error('❌ Espectros no disponibles');
-      return;
-    }
+  // ============================================================
+  // CHART DATA HELPERS
+  // ============================================================
 
-    console.log(`Query: ${this.querySpectrum.filename}`);
-    console.log(`Ref: ${this.refSpectrum.filename}`);
-    
-    this.renderQueryChart();
-    this.renderRefChart();
-    
-    setTimeout(() => {
-      this.renderOverlayChart();
-    }, 200);
+  private buildChartPoints(spectrum: Spectrum): { x: number; y: number }[] {
+    const wn   = spectrum.wavenumbers || [];
+    const vals = spectrum.data || [];
+    if (wn.length === 0 || vals.length === 0) return [];
+
+    const len = Math.min(wn.length, vals.length);
+    const points: { x: number; y: number }[] = [];
+    for (let i = 0; i < len; i++) {
+      const x = Number(wn[i]);
+      const y = Number(vals[i]);
+      if (isFinite(x) && isFinite(y)) points.push({ x, y });
+    }
+    points.sort((a, b) => a.x - b.x);
+    return points;
   }
 
-  private renderQueryChart() {
-    const canvas = this.queryChartCanvas?.nativeElement;
-    if (!canvas || !this.querySpectrum) return;
+  private computeYBounds(points: { x: number; y: number }[]): { yMin: number; yMax: number } {
+    if (points.length === 0) return { yMin: -0.1, yMax: 1.2 };
+    const ys     = points.map(p => p.y);
+    const rawMin = Math.min(...ys);
+    const rawMax = Math.max(...ys);
+    const margin = (rawMax - rawMin) * 0.25 || 0.90;
+    return { yMin: rawMin - margin, yMax: rawMax + margin };
+  }
 
-    if (this.queryChart) {
-      this.queryChart.destroy();
-      this.queryChart = null;
+  // ✅ Detect local maxima (peaks)
+  private detectPeaks(wavenumbers: number[], intensities: number[], threshold = 0.05): number[] {
+    if (wavenumbers.length < 3 || intensities.length < 3) return [];
+    const len  = Math.min(wavenumbers.length, intensities.length);
+    const ints = intensities.slice(0, len).map(Number);
+    const minV = Math.min(...ints);
+    const maxV = Math.max(...ints);
+    if (maxV - minV === 0) return [];
+    const norm     = ints.map(v => (v - minV) / (maxV - minV));
+    const smoothed = norm.map((_, i, arr) => {
+      const s = Math.max(0, i - 2);
+      const e = Math.min(arr.length - 1, i + 2);
+      let sum = 0;
+      for (let j = s; j <= e; j++) sum += arr[j];
+      return sum / (e - s + 1);
+    });
+    const peaks: number[] = [];
+    for (let i = 1; i < len - 1; i++) {
+      if (smoothed[i] > smoothed[i - 1] && smoothed[i] > smoothed[i + 1] && smoothed[i] > threshold) {
+        peaks.push(Number(wavenumbers[i]));
+      }
     }
+    const filtered: number[] = [];
+    for (const p of peaks) {
+      if (filtered.length === 0 || Math.abs(p - filtered[filtered.length - 1]) > 10) filtered.push(p);
+    }
+    return filtered;
+  }
 
-    const queryWn = this.querySpectrum.wavenumbers;
-    const queryData = this.querySpectrum.data;
+  // ✅ Detect local minima (valleys)
+  private detectValleys(wavenumbers: number[], intensities: number[], threshold = 0.05): number[] {
+    if (wavenumbers.length < 3 || intensities.length < 3) return [];
+    const len  = Math.min(wavenumbers.length, intensities.length);
+    const ints = intensities.slice(0, len).map(Number);
+    const minV = Math.min(...ints);
+    const maxV = Math.max(...ints);
+    if (maxV - minV === 0) return [];
+    const norm     = ints.map(v => (v - minV) / (maxV - minV));
+    const smoothed = norm.map((_, i, arr) => {
+      const s = Math.max(0, i - 2);
+      const e = Math.min(arr.length - 1, i + 2);
+      let sum = 0;
+      for (let j = s; j <= e; j++) sum += arr[j];
+      return sum / (e - s + 1);
+    });
+    const valleys: number[] = [];
+    for (let i = 1; i < len - 1; i++) {
+      if (smoothed[i] < smoothed[i - 1] && smoothed[i] < smoothed[i + 1] && smoothed[i] < (1 - threshold)) {
+        valleys.push(Number(wavenumbers[i]));
+      }
+    }
+    const filtered: number[] = [];
+    for (const v of valleys) {
+      if (filtered.length === 0 || Math.abs(v - filtered[filtered.length - 1]) > 10) filtered.push(v);
+    }
+    return filtered;
+  }
 
-    if (queryWn.length === 0 || queryData.length === 0) {
-      console.error('❌ Sin datos para Query Chart');
+  private matchPeaks(
+    queryPeaks: number[], refPeaks: number[], tol: number
+  ): { matched: number[]; unmatched: number[] } {
+    if (!queryPeaks.length || !refPeaks.length) return { matched: [], unmatched: [...queryPeaks] };
+    const matched: number[]   = [];
+    const unmatched: number[] = [];
+    for (const qp of queryPeaks) {
+      refPeaks.some(rp => Math.abs(qp - rp) <= tol) ? matched.push(qp) : unmatched.push(qp);
+    }
+    return { matched, unmatched };
+  }
+
+  // ============================================================
+  // CHART RENDERING
+  // ============================================================
+
+  public renderCharts() {
+    if (!this.querySpectrum || !this.refSpectrum) return;
+
+    const queryPts = this.buildChartPoints(this.querySpectrum);
+    const refPts   = this.buildChartPoints(this.refSpectrum);
+    if (queryPts.length === 0 || refPts.length === 0) {
+      this.errorMessage = '⚠️ Los espectros no tienen datos de wavenumbers válidos para graficar.';
       return;
     }
 
+    const { yMin, yMax } = this.computeYBounds([...queryPts, ...refPts]);
+    this.origYMin = yMin; this.origYMax = yMax;
+    this.currentYMin = yMin; this.currentYMax = yMax;
+
+    this.renderQueryChart(queryPts);
+    this.renderRefChart(refPts);
+
+    const qWn   = this.querySpectrum.wavenumbers || [];
+    const qVals = this.querySpectrum.data || [];
+    const rWn   = this.refSpectrum.wavenumbers || [];
+    const rVals = this.refSpectrum.data || [];
+
+    const queryPeaks = this.detectPeaks(qWn, qVals);
+    const refPeaks   = this.detectPeaks(rWn, rVals);
+    const { matched, unmatched } = this.matchPeaks(queryPeaks, refPeaks, this.tolerance);
+
+    // ✅ Siempre actualizar peaks
+    this.matchedPeaks       = matched;
+    this.unmatchedPeaks     = unmatched;
+    this.totalPeaks         = queryPeaks.length;
+    this.matchingPeaksCount = matched.length;
+
+    // ✅ Store max/min peaks for both spectra
+    this.queryMaxPeaks = queryPeaks;
+    this.queryMinPeaks = this.detectValleys(qWn, qVals);
+    this.refMaxPeaks   = refPeaks;
+    this.refMinPeaks   = this.detectValleys(rWn, rVals);
+
+    setTimeout(() => this.renderOverlayChart(queryPts, refPts, queryPeaks), 150);
+  }
+
+  private getChartOptions(title: string, points: { x: number; y: number }[]): any {
+    const { yMin, yMax } = this.computeYBounds(points);
+    return {
+      responsive: true,
+      maintainAspectRatio: true,
+      animation: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: {
+          display: this.mostrarLeyenda, position: 'top',
+          labels: { usePointStyle: true, padding: 15, font: { size: 11, weight: 'bold' as const } }
+        },
+        title: { display: true, text: title, font: { size: 13, weight: 'bold' as const } },
+        filler: { propagate: true },
+        tooltip: {
+          callbacks: {
+            label: (ctx: any) =>
+              `Wavenumber: ${ctx.parsed.x?.toFixed(1) ?? ''} cm⁻¹  |  Abs: ${ctx.parsed.y?.toFixed(4) ?? ''}`
+          }
+        }
+      },
+      scales: {
+        x: {
+          type: 'linear', reverse: this.invertirX,
+          title: { display: true, text: 'Número de Onda (cm⁻¹)', font: { weight: 'bold' as const, size: 10 } },
+          min: 400, max: 4000,
+          grid: { display: this.mostrarCuadricula, color: 'rgba(0,0,0,0.08)' }
+        },
+        y: {
+          title: { display: true, text: 'Absorbancia', font: { weight: 'bold' as const, size: 10 } },
+          min: yMin, max: yMax,
+          grid: { display: this.mostrarCuadricula, color: 'rgba(0,0,0,0.08)' }
+        }
+      }
+    };
+  }
+
+  private renderQueryChart(points: { x: number; y: number }[]) {
+    const canvas = this.queryChartCanvas?.nativeElement;
+    if (!canvas || !this.querySpectrum) return;
+    if (this.queryChart) { this.queryChart.destroy(); this.queryChart = null; }
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    console.log(`📊 Renderizando Query Chart: ${queryWn.length} puntos`);
+    const qWn   = this.querySpectrum.wavenumbers || [];
+    const qVals = this.querySpectrum.data || [];
+    const peaks  = this.detectPeaks(qWn, qVals);
 
     this.queryChart = new Chart(ctx, {
       type: 'scatter',
@@ -259,76 +394,36 @@ export class Comparacion implements OnInit, OnDestroy {
         datasets: [
           {
             label: `Query: ${this.querySpectrum.filename}`,
-            data: queryData.map((y: number, i: number) => ({ x: queryWn[i], y })),
-            borderColor: '#2E75B6',
-            backgroundColor: 'rgba(46, 117, 182, 0.1)',
-            borderWidth: this.grosorLinea,
-            fill: true,
-            tension: 0.1,
-            pointRadius: 0,
-            pointHoverRadius: 6,
-            spanGaps: true
+            data: points,
+            borderColor: '#2E75B6', backgroundColor: 'rgba(46,117,182,0.08)',
+            borderWidth: this.grosorLinea, showLine: true, fill: true,
+            tension: 0.1, pointRadius: 0, pointHoverRadius: 5, spanGaps: true
+          },
+          {
+            label: 'Picos',
+            data: peaks.map(wn => {
+              const idx = (qWn as number[]).findIndex((w: number) => Math.abs(w - wn) < 2);
+              return { x: wn, y: idx >= 0 ? Number(qVals[idx]) : null };
+            }).filter((p): p is { x: number; y: number } => p.y !== null),
+            borderColor: '#ef4444', backgroundColor: '#ef4444',
+            pointRadius: 5, pointStyle: 'triangle' as const, showLine: false, fill: false
           }
         ]
       },
-      options: {
-        responsive: true,
-        maintainAspectRatio: true,
-        animation: false,
-        interaction: { mode: 'index', intersect: false },
-        plugins: {
-          legend: {
-            display: this.mostrarLeyenda,
-            position: 'top',
-            labels: { usePointStyle: true, padding: 15, font: { size: 11, weight: 'bold' as const } }
-          },
-          title: {
-            display: true,
-            text: 'Espectro de Consulta',
-            font: { size: 13, weight: 'bold' as const }
-          },
-          filler: { propagate: true }
-        },
-        scales: {
-          x: {
-            type: 'linear',
-            title: { display: true, text: 'Número de Onda (cm⁻¹)', font: { weight: 'bold' as const, size: 10 } },
-            min: 400,
-            max: 4000,
-            grid: { display: this.mostrarCuadricula, color: 'rgba(0,0,0,0.1)' }
-          },
-          y: {
-            title: { display: true, text: 'Absorbancia', font: { weight: 'bold' as const, size: 10 } },
-            grid: { display: this.mostrarCuadricula, color: 'rgba(0,0,0,0.1)' }
-          }
-        }
-      }
+      options: this.getChartOptions(`Espectro de Consulta — ${this.querySpectrum.filename}`, points)
     });
-
-    console.log('✅ Query Chart renderizado');
   }
 
-  private renderRefChart() {
+  private renderRefChart(points: { x: number; y: number }[]) {
     const canvas = this.refChartCanvas?.nativeElement;
     if (!canvas || !this.refSpectrum) return;
-
-    if (this.refChart) {
-      this.refChart.destroy();
-      this.refChart = null;
-    }
-
-    const refWn = this.refSpectrum.wavenumbers;
-    const refData = this.refSpectrum.data;
-
-    if (refWn.length === 0 || refData.length === 0) {
-      console.error('❌ Sin datos para Ref Chart');
-      return;
-    }
-
+    if (this.refChart) { this.refChart.destroy(); this.refChart = null; }
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    console.log(`📊 Renderizando Ref Chart: ${refWn.length} puntos`);
+    const rWn   = this.refSpectrum.wavenumbers || [];
+    const rVals = this.refSpectrum.data || [];
+    const peaks  = this.detectPeaks(rWn, rVals);
 
     this.refChart = new Chart(ctx, {
       type: 'scatter',
@@ -336,84 +431,81 @@ export class Comparacion implements OnInit, OnDestroy {
         datasets: [
           {
             label: `Reference: ${this.refSpectrum.filename}`,
-            data: refData.map((y: number, i: number) => ({ x: refWn[i], y })),
-            borderColor: '#f59e0b',
-            backgroundColor: 'rgba(245, 158, 11, 0.1)',
-            borderWidth: this.grosorLinea,
-            fill: true,
-            tension: 0.1,
-            pointRadius: 0,
-            pointHoverRadius: 6,
-            spanGaps: true
+            data: points,
+            borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.08)',
+            borderWidth: this.grosorLinea, showLine: true, fill: true,
+            tension: 0.1, pointRadius: 0, pointHoverRadius: 5, spanGaps: true
+          },
+          {
+            label: 'Picos',
+            data: peaks.map(wn => {
+              const idx = (rWn as number[]).findIndex((w: number) => Math.abs(w - wn) < 2);
+              return { x: wn, y: idx >= 0 ? Number(rVals[idx]) : null };
+            }).filter((p): p is { x: number; y: number } => p.y !== null),
+            borderColor: '#ef4444', backgroundColor: '#ef4444',
+            pointRadius: 5, pointStyle: 'triangle' as const, showLine: false, fill: false
           }
         ]
       },
-      options: {
-        responsive: true,
-        maintainAspectRatio: true,
-        animation: false,
-        interaction: { mode: 'index', intersect: false },
-        plugins: {
-          legend: {
-            display: this.mostrarLeyenda,
-            position: 'top',
-            labels: { usePointStyle: true, padding: 15, font: { size: 11, weight: 'bold' as const } }
-          },
-          title: {
-            display: true,
-            text: 'Espectro de Referencia',
-            font: { size: 13, weight: 'bold' as const }
-          },
-          filler: { propagate: true }
-        },
-        scales: {
-          x: {
-            type: 'linear',
-            title: { display: true, text: 'Número de Onda (cm⁻¹)', font: { weight: 'bold' as const, size: 10 } },
-            min: 400,
-            max: 4000,
-            grid: { display: this.mostrarCuadricula, color: 'rgba(0,0,0,0.1)' }
-          },
-          y: {
-            title: { display: true, text: 'Absorbancia', font: { weight: 'bold' as const, size: 10 } },
-            grid: { display: this.mostrarCuadricula, color: 'rgba(0,0,0,0.1)' }
-          }
-        }
-      }
+      options: this.getChartOptions(`Espectro de Referencia — ${this.refSpectrum.filename}`, points)
     });
-
-    console.log('✅ Ref Chart renderizado');
   }
 
-  public renderOverlayChart() {
+public renderOverlayChart(
+    queryPts:   { x: number; y: number }[],
+    refPts:     { x: number; y: number }[],
+    queryPeaks: number[] = []
+  ) {
     const canvas = this.overlayChartCanvas?.nativeElement;
     if (!canvas || !this.querySpectrum || !this.refSpectrum) return;
+    if (this.overlayChart) { this.overlayChart.destroy(); this.overlayChart = null; }
 
-    if (this.overlayChart) {
-      this.overlayChart.destroy();
-      this.overlayChart = null;
-    }
-
-    const queryWn = this.querySpectrum.wavenumbers;
-    const queryData = this.querySpectrum.data;
-    const refWn = this.refSpectrum.wavenumbers;
-    const refData = this.refSpectrum.data;
-
-    if (queryWn.length === 0 || queryData.length === 0 || refWn.length === 0 || refData.length === 0) {
-      console.error('❌ Datos incompletos para Overlay');
-      return;
-    }
-
-    this.currentXMin = this.origXMin;
-    this.currentXMax = this.origXMax;
-    this.currentYMin = this.origYMin;
-    this.currentYMax = this.origYMax;
     this.isZoomed = false;
 
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    console.log(`📊 Renderizando Overlay`);
+    const qWn   = this.querySpectrum.wavenumbers || [];
+    const qVals = this.querySpectrum.data || [];
+    const rWn   = this.refSpectrum.wavenumbers || [];
+    const rVals = this.refSpectrum.data || [];
+
+    const allY   = [...queryPts, ...refPts].map(p => p.y);
+    const rawMin = Math.min(...allY);
+    const rawMax = Math.max(...allY);
+    const range  = rawMax - rawMin;
+    const offset = range * 0.6;
+
+    const queryPtsShifted = queryPts.map(p => ({ x: p.x, y: p.y + offset }));
+    const refPtsShifted   = refPts.map(p =>   ({ x: p.x, y: p.y - offset }));
+
+    // ✅ Calcular bounds REALES con offset aplicado y guardarlos como origen
+    const { yMin, yMax } = this.computeYBounds([...queryPtsShifted, ...refPtsShifted]);
+
+    const allX       = [...queryPtsShifted, ...refPtsShifted].map(p => p.x);
+    const dataXMin   = Math.min(...allX);
+    const dataXMax   = Math.max(...allX);
+
+    // ✅ Guardar como origen para zoomReset()
+    this.origXMin    = dataXMin;
+    this.origXMax    = dataXMax;
+    this.origYMin    = yMin;
+    this.origYMax    = yMax;
+    this.currentXMin = dataXMin;
+    this.currentXMax = dataXMax;
+    this.currentYMin = yMin;
+    this.currentYMax = yMax;
+
+    const queryPeakPoints = queryPeaks.map(wn => {
+      const idx = (qWn as number[]).findIndex((w: number) => Math.abs(w - wn) < 2);
+      return { x: wn, y: idx >= 0 ? Number(qVals[idx]) + offset : null };
+    }).filter((p): p is { x: number; y: number } => p.y !== null);
+
+    const refPeaks      = this.detectPeaks(rWn, rVals);
+    const refPeakPoints = refPeaks.map(wn => {
+      const idx = (rWn as number[]).findIndex((w: number) => Math.abs(w - wn) < 2);
+      return { x: wn, y: idx >= 0 ? Number(rVals[idx]) - offset : null };
+    }).filter((p): p is { x: number; y: number } => p.y !== null);
 
     this.overlayChart = new Chart(ctx, {
       type: 'scatter',
@@ -421,187 +513,306 @@ export class Comparacion implements OnInit, OnDestroy {
         datasets: [
           {
             label: `Query: ${this.querySpectrum.filename}`,
-            data: queryData.map((y: number, i: number) => ({ x: queryWn[i], y })),
-            borderColor: '#2E75B6',
-            backgroundColor: 'rgba(46, 117, 182, 0.1)',
-            borderWidth: this.grosorLinea,
-            fill: true,
-            tension: 0.1,
-            pointRadius: 0,
-            pointHoverRadius: 6,
-            spanGaps: true
+            data: queryPtsShifted,
+            borderColor: '#2E75B6', backgroundColor: 'rgba(46,117,182,0.07)',
+            borderWidth: this.grosorLinea, showLine: true, fill: true,
+            tension: 0.1, pointRadius: 0, pointHoverRadius: 5, spanGaps: true
           },
           {
             label: `Reference: ${this.refSpectrum.filename}`,
-            data: refData.map((y: number, i: number) => ({ x: refWn[i], y })),
-            borderColor: '#f59e0b',
-            backgroundColor: 'rgba(245, 158, 11, 0.1)',
-            borderWidth: this.grosorLinea,
-            fill: true,
-            tension: 0.1,
-            pointRadius: 0,
-            pointHoverRadius: 6,
-            spanGaps: true
+            data: refPtsShifted,
+            borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.07)',
+            borderWidth: this.grosorLinea, showLine: true, fill: true,
+            tension: 0.1, pointRadius: 0, pointHoverRadius: 5, spanGaps: true
+          },
+          {
+            label: 'Picos Coincidentes (Query)',
+            data: queryPeakPoints.filter(p => this.matchedPeaks.some(m => Math.abs(m - p.x) <= this.tolerance)),
+            borderColor: '#10b981', backgroundColor: '#10b981',
+            pointRadius: 6, pointStyle: 'triangle' as const, showLine: false, fill: false
+          },
+          {
+            label: 'Picos No Coincidentes (Query)',
+            data: queryPeakPoints.filter(p => !this.matchedPeaks.some(m => Math.abs(m - p.x) <= this.tolerance)),
+            borderColor: '#ef4444', backgroundColor: '#ef4444',
+            pointRadius: 6, pointStyle: 'rectRot' as const, showLine: false, fill: false
+          },
+          {
+            label: 'Picos Coincidentes (Ref)',
+            data: refPeakPoints.filter(p => this.matchedPeaks.some(m => Math.abs(m - p.x) <= this.tolerance)),
+            borderColor: '#10b981', backgroundColor: '#10b981',
+            pointRadius: 6, pointStyle: 'triangle' as const, showLine: false, fill: false
+          },
+          {
+            label: 'Picos No Coincidentes (Ref)',
+            data: refPeakPoints.filter(p => !this.matchedPeaks.some(m => Math.abs(m - p.x) <= this.tolerance)),
+            borderColor: '#ef4444', backgroundColor: '#ef4444',
+            pointRadius: 6, pointStyle: 'rectRot' as const, showLine: false, fill: false
           }
         ]
       },
       options: {
-        responsive: true,
-        maintainAspectRatio: true,
-        animation: false,
-        interaction: { mode: 'index', intersect: false },
+        responsive: true, maintainAspectRatio: true, animation: false,
+        interaction: {
+          mode: 'index' as const,
+          intersect: false,
+          axis: 'x' as const
+        },
+        layout: { padding: { top: 5, bottom: 5, left: 10, right: 10 } },
         plugins: {
           legend: {
             display: this.mostrarLeyenda,
-            position: 'top',
-            labels: { usePointStyle: true, padding: 15, font: { size: 12, weight: 'bold' as const } }
+            position: 'bottom',
+            align: 'center',
+            labels: {
+              usePointStyle: true,
+              pointStyleWidth: 10,
+              padding: 20,
+              font: { size: 11, weight: 'bold' as const },
+              color: '#374151',
+              filter: (item: any) => {
+                const label = item.text;
+                if (label === 'Picos Coincidentes (Ref)')    return false;
+                if (label === 'Picos No Coincidentes (Ref)') return false;
+                if (label === 'Picos Coincidentes (Query)')    item.text = '▲ Picos Coincidentes';
+                if (label === 'Picos No Coincidentes (Query)') item.text = '◆ Picos No Coincidentes';
+                return true;
+              },
+              boxWidth: 12,
+              boxHeight: 12
+            }
           },
           title: {
             display: true,
-            text: `Superposición (Similitud: ${(this.globalScore * 100).toFixed(1)}%)`,
-            font: { size: 14, weight: 'bold' as const }
+            text: `Superposición — Similitud: ${(this.globalScore * 100).toFixed(1)}%`,
+            font: { size: 14, weight: 'bold' as const },
+            color: '#1f2937',
+            padding: { top: 10, bottom: 15 }
           },
-          filler: { propagate: true }
+          filler: { propagate: true },
+          tooltip: {
+            mode: 'index' as const,
+            intersect: false,
+            position: 'nearest' as const,
+            backgroundColor: 'rgba(255,255,255,0.92)',
+            borderColor: 'rgba(0,0,0,0.08)',
+            borderWidth: 1,
+            padding: { top: 4, bottom: 4, left: 8, right: 8 },
+            boxPadding: 3,
+            usePointStyle: true,
+            callbacks: {
+              title: () => '',
+              label: (ctx: any) => {
+                if (ctx.datasetIndex > 1) return '';
+                if (this.tooltipMode === 'single' && ctx.datasetIndex === 1) return '';
+                const wn  = ctx.parsed.x?.toFixed(1) ?? '';
+                const raw = ctx.datasetIndex === 0
+                  ? (ctx.parsed.y - offset).toFixed(4)
+                  : (ctx.parsed.y + offset).toFixed(4);
+                const name = ctx.dataset.label
+                  .replace('Query: ', '')
+                  .replace('Reference: ', '');
+                return `${name}   ${wn} cm⁻¹   ${raw} A.U.`;
+              },
+              afterLabel: () => '',
+              labelColor: (ctx: any) => {
+                if (ctx.datasetIndex > 1) return { borderColor: 'transparent', backgroundColor: 'transparent' };
+                return {
+                  borderColor:     ctx.dataset.borderColor as string,
+                  backgroundColor: ctx.dataset.borderColor as string,
+                  borderWidth: 2,
+                  borderRadius: 3
+                };
+              },
+              labelTextColor: () => '#1f2937'
+            }
+          }
         },
         scales: {
           x: {
-            type: 'linear',
-            title: { display: true, text: 'Número de Onda (cm⁻¹)', font: { weight: 'bold' as const } },
-            min: this.currentXMin,
-            max: this.currentXMax,
-            grid: { display: this.mostrarCuadricula, color: 'rgba(0,0,0,0.1)' }
+            type: 'linear', reverse: this.invertirX,
+            title: { display: true, text: 'Número de Onda (cm⁻¹)', font: { weight: 'bold' as const }, color: '#374151' },
+            min: this.currentXMin, max: this.currentXMax,
+            grid: { display: this.mostrarCuadricula, color: 'rgba(0,0,0,0.06)' },
+            ticks: { color: '#6b7280', font: { size: 11 } }
           },
           y: {
-            title: { display: true, text: 'Absorbancia', font: { weight: 'bold' as const } },
-            min: this.currentYMin,
-            max: this.currentYMax,
-            grid: { display: this.mostrarCuadricula, color: 'rgba(0,0,0,0.1)' }
+            title: { display: true, text: 'Absorbancia (apilada)', font: { weight: 'bold' as const }, color: '#374151' },
+            min: this.currentYMin, max: this.currentYMax,
+            grid: { display: this.mostrarCuadricula, color: 'rgba(0,0,0,0.06)' },
+            ticks: { color: '#6b7280', font: { size: 11 } }
           }
         }
       }
     });
 
-    console.log('✅ Overlay Chart renderizado');
-
-    setTimeout(() => {
-      this.enableChartInteraction();
-    }, 100);
+    setTimeout(() => this.enableChartInteraction(), 100);
   }
+
+  // ============================================================
+  // INTERACTION — zoom, drag, selection
+  // ============================================================
 
   private enableChartInteraction(): void {
     const canvas = this.overlayChartCanvas?.nativeElement;
     if (!canvas) return;
 
+    this.removeChartListeners();
     canvas.style.cursor = 'grab';
+
+    let selStartCanvasX = 0;
+    let selStartCanvasY = 0;
+    let selEndCanvasX   = 0;
+    let selEndCanvasY   = 0;
 
     this.wheelListener = (e: WheelEvent) => {
       e.preventDefault();
       if (this.modoSeleccion) return;
-      const rect = canvas.getBoundingClientRect();
-      const rawFrac = (e.clientX - rect.left) / rect.width;
+      const rect      = canvas.getBoundingClientRect();
+      const rawFrac   = (e.clientX - rect.left) / rect.width;
       const pivotFrac = this.invertirX ? (1 - rawFrac) : rawFrac;
       this.applyZoom(e.deltaY > 0 ? 1.12 : 0.88, pivotFrac);
     };
 
     this.mouseDownListener = (e: MouseEvent) => {
+      if (e.button !== 0) return;
       const rect = canvas.getBoundingClientRect();
-      const px = e.clientX - rect.left;
-      const py = e.clientY - rect.top;
+      const px   = e.clientX - rect.left;
+      const py   = e.clientY - rect.top;
+
       if (this.modoSeleccion) {
         this.isSelecting = true;
-        this.selStartX = px;
-        this.selStartY = py;
+        selStartCanvasX  = px; selStartCanvasY = py;
+        selEndCanvasX    = px; selEndCanvasY   = py;
         this.createSelectionBox(canvas, px, py);
       } else {
-        this.isDragging = true;
+        this.isDragging  = true;
         this.lastClientX = e.clientX;
+        this.lastClientY = e.clientY;
         canvas.style.cursor = 'grabbing';
       }
     };
 
     this.mouseMoveListener = (e: MouseEvent) => {
       const rect = canvas.getBoundingClientRect();
-      const px = e.clientX - rect.left;
+      const px   = e.clientX - rect.left;
+      const py   = e.clientY - rect.top;
 
       if (this.modoSeleccion && this.isSelecting) {
-        this.updateSelectionBox(this.selStartX, this.selStartY, px, e.clientY - rect.top);
+        selEndCanvasX = px; selEndCanvasY = py;
+        this.updateSelectionBox(selStartCanvasX, selStartCanvasY, selEndCanvasX, selEndCanvasY);
         return;
       }
 
       if (!this.modoSeleccion && this.isDragging && this.overlayChart) {
-        const xRange = this.currentXMax - this.currentXMin;
-        const pxPerUnit = xRange / rect.width;
-        const sign = this.invertirX ? -1 : 1;
-        const delta = (e.clientX - this.lastClientX) * pxPerUnit * sign;
-        this.currentXMin += delta;
-        this.currentXMax += delta;
+        if (e.buttons !== 1) {
+          this.isDragging = false;
+          canvas.style.cursor = 'grab';
+          return;
+        }
+
+        const area = (this.overlayChart as any).chartArea;
+        if (!area) return;
+
+        const plotW = area.right  - area.left;
+        const plotH = area.bottom - area.top;
+
+        const xRange   = this.currentXMax - this.currentXMin;
+        const xPerPx   = xRange / plotW;
+        const deltaXPx = e.clientX - this.lastClientX;
+        const xShift   = this.invertirX ? deltaXPx * xPerPx : -deltaXPx * xPerPx;
+        this.currentXMin += xShift;
+        this.currentXMax += xShift;
+
+        const yRange   = this.currentYMax - this.currentYMin;
+        const yPerPx   = yRange / plotH;
+        const deltaYPx = e.clientY - this.lastClientY;
+        const yShift   = deltaYPx * yPerPx;
+        this.currentYMin += yShift;
+        this.currentYMax += yShift;
+
         this.writeScales();
         this.overlayChart.update('none');
         this.lastClientX = e.clientX;
+        this.lastClientY = e.clientY;
         canvas.style.cursor = 'grabbing';
+
       } else if (!this.modoSeleccion) {
+        this.isDragging = false;
         canvas.style.cursor = 'grab';
       }
     };
 
-    this.mouseUpListener = () => {
+    this.mouseUpListener = (e: MouseEvent) => {
       if (this.isSelecting && this.overlayChart) {
-        const rect = canvas.getBoundingClientRect();
-        const xRange = this.currentXMax - this.currentXMin;
-        const yRange = this.currentYMax - this.currentYMin;
+        const rect    = canvas.getBoundingClientRect();
+        selEndCanvasX = e.clientX - rect.left;
+        selEndCanvasY = e.clientY - rect.top;
+
         const area = (this.overlayChart as any).chartArea;
-        const plotW = area.right - area.left;
-        const plotH = area.bottom - area.top;
+        if (area) {
+          const plotW = area.right  - area.left;
+          const plotH = area.bottom - area.top;
 
-        const toDataX = (pix: number) => {
-          const frac = (pix - area.left) / plotW;
-          const f = this.invertirX ? (1 - frac) : frac;
-          return this.currentXMin + f * xRange;
-        };
-        const toDataY = (pix: number) =>
-          this.currentYMax - ((pix - area.top) / plotH) * yRange;
+          const canvasToDataX = (cpx: number): number => {
+            const clamped = Math.max(area.left, Math.min(area.right, cpx));
+            const frac    = (clamped - area.left) / plotW;
+            return this.invertirX
+              ? this.currentXMax - frac * (this.currentXMax - this.currentXMin)
+              : this.currentXMin + frac * (this.currentXMax - this.currentXMin);
+          };
 
-        if (Math.abs(this.lastClientX - this.selStartX) > 5) {
-          this.applyZoomToRange(
-            toDataX(this.selStartX), toDataX(this.lastClientX),
-            toDataY(this.selStartY), toDataY(this.lastClientX)
-          );
+          const canvasToDataY = (cpy: number): number => {
+            const clamped = Math.max(area.top, Math.min(area.bottom, cpy));
+            const frac    = (clamped - area.top) / plotH;
+            return this.currentYMax - frac * (this.currentYMax - this.currentYMin);
+          };
+
+          const dx1 = canvasToDataX(selStartCanvasX);
+          const dx2 = canvasToDataX(selEndCanvasX);
+          const dy1 = canvasToDataY(selStartCanvasY);
+          const dy2 = canvasToDataY(selEndCanvasY);
+
+          if (Math.abs(selEndCanvasX - selStartCanvasX) > 10 &&
+              Math.abs(selEndCanvasY - selStartCanvasY) > 10) {
+            this.applyZoomToRange(dx1, dx2, dy1, dy2);
+          }
         }
-        this.isSelecting = false;
-        this.destroySelectionBox();
+
+        this.isSelecting   = false;
         this.modoSeleccion = false;
+        this.destroySelectionBox();
         canvas.style.cursor = 'grab';
       }
+
       this.isDragging = false;
     };
 
     this.mouseLeaveListener = () => {
       this.isDragging = false;
-      this.isSelecting = false;
-      this.destroySelectionBox();
+      if (this.isSelecting) { this.isSelecting = false; this.destroySelectionBox(); }
       canvas.style.cursor = 'grab';
     };
 
-    this.dblClickListener = () => { this.zoomReset(); };
+    this.dblClickListener = () => this.zoomReset();
 
-    canvas.addEventListener('wheel', this.wheelListener, { passive: false });
-    canvas.addEventListener('mousedown', this.mouseDownListener);
-    canvas.addEventListener('mousemove', this.mouseMoveListener);
-    canvas.addEventListener('mouseup', this.mouseUpListener);
+    canvas.addEventListener('wheel',      this.wheelListener,      { passive: false });
+    canvas.addEventListener('mousedown',  this.mouseDownListener);
+    canvas.addEventListener('mousemove',  this.mouseMoveListener);
+    canvas.addEventListener('mouseup',    this.mouseUpListener);
     canvas.addEventListener('mouseleave', this.mouseLeaveListener);
-    canvas.addEventListener('dblclick', this.dblClickListener);
+    canvas.addEventListener('dblclick',   this.dblClickListener);
   }
 
   private removeChartListeners(): void {
     const canvas = this.overlayChartCanvas?.nativeElement;
     if (!canvas) return;
-
-    if (this.wheelListener) canvas.removeEventListener('wheel', this.wheelListener);
-    if (this.mouseDownListener) canvas.removeEventListener('mousedown', this.mouseDownListener);
-    if (this.mouseMoveListener) canvas.removeEventListener('mousemove', this.mouseMoveListener);
-    if (this.mouseUpListener) canvas.removeEventListener('mouseup', this.mouseUpListener);
-    if (this.mouseLeaveListener) canvas.removeEventListener('mouseleave', this.mouseLeaveListener);
-    if (this.dblClickListener) canvas.removeEventListener('dblclick', this.dblClickListener);
+    canvas.removeEventListener('wheel',      this.wheelListener);
+    canvas.removeEventListener('mousedown',  this.mouseDownListener);
+    canvas.removeEventListener('mousemove',  this.mouseMoveListener);
+    canvas.removeEventListener('mouseup',    this.mouseUpListener);
+    canvas.removeEventListener('mouseleave', this.mouseLeaveListener);
+    canvas.removeEventListener('dblclick',   this.dblClickListener);
   }
 
   private writeScales(): void {
@@ -612,104 +823,83 @@ export class Comparacion implements OnInit, OnDestroy {
     (this.overlayChart.options as any).scales['y'].max = this.currentYMax;
   }
 
-  private applyZoom(factor: number, pivotFrac: number = 0.5): void {
-    const xRange = this.currentXMax - this.currentXMin;
-    const yRange = this.currentYMax - this.currentYMin;
-
+  private applyZoom(factor: number, pivotFrac = 0.5): void {
+    const xRange    = this.currentXMax - this.currentXMin;
+    const yRange    = this.currentYMax - this.currentYMin;
     const newXRange = xRange * factor;
     const newYRange = yRange * factor;
-
-    const pivotX = this.currentXMin + pivotFrac * xRange;
-    const pivotY = this.currentYMin + (1 - pivotFrac) * yRange;
-
-    this.currentXMin = pivotX - (pivotFrac * newXRange);
-    this.currentXMax = pivotX + ((1 - pivotFrac) * newXRange);
-    this.currentYMin = pivotY - ((1 - pivotFrac) * newYRange);
-    this.currentYMax = pivotY + (pivotFrac * newYRange);
-
-    this.isZoomed = !(
-      this.currentXMin === this.origXMin &&
-      this.currentXMax === this.origXMax &&
-      this.currentYMin === this.origYMin &&
-      this.currentYMax === this.origYMax
-    );
-
+    const pivotX    = this.currentXMin + pivotFrac * xRange;
+    const pivotY    = this.currentYMin + (1 - pivotFrac) * yRange;
+    this.currentXMin = pivotX - pivotFrac * newXRange;
+    this.currentXMax = pivotX + (1 - pivotFrac) * newXRange;
+    this.currentYMin = pivotY - (1 - pivotFrac) * newYRange;
+    this.currentYMax = pivotY + pivotFrac * newYRange;
+    this.isZoomed = true;
     this.writeScales();
     if (this.overlayChart) this.overlayChart.update('none');
   }
 
   private applyZoomToRange(x1: number, x2: number, y1: number, y2: number): void {
-    const minX = Math.min(x1, x2);
-    const maxX = Math.max(x1, x2);
-    const minY = Math.min(y1, y2);
-    const maxY = Math.max(y1, y2);
-
-    this.currentXMin = minX;
-    this.currentXMax = maxX;
-    this.currentYMin = minY;
-    this.currentYMax = maxY;
-
-    this.isZoomed = !(
-      this.currentXMin === this.origXMin &&
-      this.currentXMax === this.origXMax &&
-      this.currentYMin === this.origYMin &&
-      this.currentYMax === this.origYMax
-    );
-
+    const newXMin = Math.min(x1, x2);
+    const newXMax = Math.max(x1, x2);
+    const newYMin = Math.min(y1, y2);
+    const newYMax = Math.max(y1, y2);
+    if (newXMax - newXMin < 1 || newYMax - newYMin < 0.001) return;
+    this.currentXMin = newXMin; this.currentXMax = newXMax;
+    this.currentYMin = newYMin; this.currentYMax = newYMax;
+    this.isZoomed = true;
     this.writeScales();
     if (this.overlayChart) this.overlayChart.update('none');
   }
 
   private createSelectionBox(canvas: HTMLCanvasElement, x: number, y: number): void {
     this.destroySelectionBox();
+    const wrapper = canvas.parentElement;
+    if (!wrapper) return;
+    if (window.getComputedStyle(wrapper).position === 'static') wrapper.style.position = 'relative';
+
+    const offL = canvas.offsetLeft;
+    const offT = canvas.offsetTop;
+
     const box = document.createElement('div');
     box.id = 'comparacionSelectionBox';
     box.style.cssText = `
       position: absolute;
       border: 2px dashed #2196F3;
-      background: rgba(33,150,243,0.08);
+      background: rgba(33,150,243,0.10);
       pointer-events: none;
       z-index: 999;
-      left: ${x}px; top: ${y}px;
-      width: 0; height: 0;
+      left: ${x + offL}px;
+      top:  ${y + offT}px;
+      width: 0px; height: 0px;
+      box-sizing: border-box;
     `;
-    const container = canvas.parentElement;
-    if (container) {
-      container.style.position = 'relative';
-      container.appendChild(box);
-    }
+    wrapper.appendChild(box);
     this.selectionBox = box;
+    (this.selectionBox as any).__offL = offL;
+    (this.selectionBox as any).__offT = offT;
   }
 
-  private updateSelectionBox(startX: number, startY: number, curX: number, curY: number): void {
+  private updateSelectionBox(sx: number, sy: number, cx: number, cy: number): void {
     if (!this.selectionBox) return;
-    this.selectionBox.style.left = `${Math.min(startX, curX)}px`;
-    this.selectionBox.style.top = `${Math.min(startY, curY)}px`;
-    this.selectionBox.style.width = `${Math.abs(curX - startX)}px`;
-    this.selectionBox.style.height = `${Math.abs(curY - startY)}px`;
-    this.lastClientX = curX;
+    const offL = (this.selectionBox as any).__offL ?? 0;
+    const offT = (this.selectionBox as any).__offT ?? 0;
+    this.selectionBox.style.left   = `${Math.min(sx, cx) + offL}px`;
+    this.selectionBox.style.top    = `${Math.min(sy, cy) + offT}px`;
+    this.selectionBox.style.width  = `${Math.abs(cx - sx)}px`;
+    this.selectionBox.style.height = `${Math.abs(cy - sy)}px`;
   }
 
   private destroySelectionBox(): void {
-    if (this.selectionBox) {
-      this.selectionBox.remove();
-      this.selectionBox = null;
-    }
+    if (this.selectionBox) { this.selectionBox.remove(); this.selectionBox = null; }
   }
 
-  public zoomIn(): void {
-    this.applyZoom(0.6);
-  }
-
-  public zoomOut(): void {
-    this.applyZoom(1.6);
-  }
+  public zoomIn():  void { this.applyZoom(0.6); }
+  public zoomOut(): void { this.applyZoom(1.6); }
 
   public zoomReset(): void {
-    this.currentXMin = this.origXMin;
-    this.currentXMax = this.origXMax;
-    this.currentYMin = this.origYMin;
-    this.currentYMax = this.origYMax;
+    this.currentXMin = this.origXMin; this.currentXMax = this.origXMax;
+    this.currentYMin = this.origYMin; this.currentYMax = this.origYMax;
     this.isZoomed = false;
     this.writeScales();
     if (this.overlayChart) this.overlayChart.update('none');
@@ -722,28 +912,48 @@ export class Comparacion implements OnInit, OnDestroy {
     if (!this.modoSeleccion) this.destroySelectionBox();
   }
 
+  public onToggleLeyenda(): void {
+    if (!this.overlayChart) return;
+    (this.overlayChart.options as any).plugins.legend.display = this.mostrarLeyenda;
+    this.overlayChart.update();
+  }
+
+  public onToggleInvertirX(): void {
+    if (!this.overlayChart) return;
+    (this.overlayChart.options as any).scales['x'].reverse = this.invertirX;
+    this.overlayChart.update();
+  }
+
+  public onToggleCuadricula(): void {
+    if (!this.overlayChart) return;
+    (this.overlayChart.options as any).scales['x'].grid.display = this.mostrarCuadricula;
+    (this.overlayChart.options as any).scales['y'].grid.display = this.mostrarCuadricula;
+    this.overlayChart.update();
+  }
+
+  public onToggleTooltipMode(): void {
+    this.tooltipMode = this.tooltipMode === 'single' ? 'both' : 'single';
+    if (!this.querySpectrum || !this.refSpectrum) return;
+    const queryPts = this.buildChartPoints(this.querySpectrum);
+    const refPts   = this.buildChartPoints(this.refSpectrum);
+    const qWn      = this.querySpectrum.wavenumbers || [];
+    const qVals    = this.querySpectrum.data || [];
+    const peaks    = this.detectPeaks(qWn, qVals);
+    this.renderOverlayChart(queryPts, refPts, peaks);
+  }
+
+  // ============================================================
+  // SPECTRA SELECTION & COMPARISON
+  // ============================================================
+
   updateSelection() {
-    this.errorMessage = '';
-    this.successMessage = '';
-
-    const queryIdNum = this.parseId(this.queryId);
-    const refIdNum = this.parseId(this.refId);
-
-    this.querySpectrum = this.spectra.find(s => this.parseId(s.id) === queryIdNum) || null;
-    this.refSpectrum = this.spectra.find(s => this.parseId(s.id) === refIdNum) || null;
-
-    if (this.querySpectrum) {
-      this.spectrumStateService.setQuerySpectrum(this.querySpectrum);
-    } else if (queryIdNum > 0) {
-      this.errorMessage = `Espectro de consulta (ID ${queryIdNum}) no encontrado`;
-    }
-
-    if (this.refSpectrum) {
-      this.spectrumStateService.setRefSpectrum(this.refSpectrum);
-    } else if (refIdNum > 0) {
-      this.errorMessage = `Espectro de referencia (ID ${refIdNum}) no encontrado`;
-    }
-
+    this.errorMessage = ''; this.successMessage = '';
+    const qId = this.parseId(this.queryId);
+    const rId = this.parseId(this.refId);
+    this.querySpectrum = this.spectra.find(s => this.parseId(s.id) === qId) || null;
+    this.refSpectrum   = this.spectra.find(s => this.parseId(s.id) === rId) || null;
+    if (this.querySpectrum) this.spectrumStateService.setQuerySpectrum(this.querySpectrum);
+    if (this.refSpectrum)   this.spectrumStateService.setRefSpectrum(this.refSpectrum);
     this.compared = false;
     this.destroyAllCharts();
     this.removeChartListeners();
@@ -751,128 +961,81 @@ export class Comparacion implements OnInit, OnDestroy {
 
   private parseId(id: any): number {
     if (typeof id === 'number') return id;
-    if (typeof id === 'string') {
-      const parsed = parseInt(id, 10);
-      return isNaN(parsed) ? 0 : parsed;
-    }
+    if (typeof id === 'string') { const p = parseInt(id, 10); return isNaN(p) ? 0 : p; }
     return 0;
   }
 
   onQueryChange() {
-    const queryIdNum = this.parseId(this.queryId);
-    this.querySpectrum = this.spectra.find(s => this.parseId(s.id) === queryIdNum) || null;
-    if (this.querySpectrum) {
-      this.spectrumStateService.setQuerySpectrum(this.querySpectrum);
-    }
-    this.compared = false;
-    this.errorMessage = '';
+    this.querySpectrum = this.spectra.find(s => this.parseId(s.id) === this.parseId(this.queryId)) || null;
+    if (this.querySpectrum) this.spectrumStateService.setQuerySpectrum(this.querySpectrum);
+    this.compared = false; this.errorMessage = '';
   }
 
   onRefChange() {
-    const refIdNum = this.parseId(this.refId);
-    this.refSpectrum = this.spectra.find(s => this.parseId(s.id) === refIdNum) || null;
-    if (this.refSpectrum) {
-      this.spectrumStateService.setRefSpectrum(this.refSpectrum);
-    }
-    this.compared = false;
-    this.errorMessage = '';
+    this.refSpectrum = this.spectra.find(s => this.parseId(s.id) === this.parseId(this.refId)) || null;
+    if (this.refSpectrum) this.spectrumStateService.setRefSpectrum(this.refSpectrum);
+    this.compared = false; this.errorMessage = '';
   }
 
   compare() {
     if (!this.querySpectrum || !this.refSpectrum) {
-      this.errorMessage = 'Debes seleccionar ambos espectros';
-      return;
+      this.errorMessage = 'Debes seleccionar ambos espectros'; return;
     }
-
     this.compareWithBackend();
   }
 
   private compareWithBackend() {
     this.isComparingWithBackend = true;
-    this.errorMessage = '';
-    this.successMessage = '';
-
-    const queryIdNum = this.parseId(this.queryId);
-    const refIdNum = this.parseId(this.refId);
-
+    this.errorMessage = ''; this.successMessage = '';
     this.similarityBackendService.compareSpectra(
-      queryIdNum,
-      refIdNum,
-      this.method,
-      this.tolerance
+      this.parseId(this.queryId), this.parseId(this.refId), this.method, this.tolerance
     ).subscribe({
-      next: (response: ComparisonResponse) => {
-        this.handleBackendResponse(response);
-        this.isComparingWithBackend = false;
-      },
-      error: (error: any) => {
-        this.handleBackendError(error);
-        this.isComparingWithBackend = false;
-      }
+      next:  (r: ComparisonResponse) => { this.handleBackendResponse(r); this.isComparingWithBackend = false; },
+      error: (e: any)                => { this.handleBackendError(e);    this.isComparingWithBackend = false; }
     });
   }
 
   private handleBackendResponse(response: ComparisonResponse) {
     if (!response?.success || !response?.data) {
-      this.errorMessage = response?.message || 'Error en respuesta del backend';
-      return;
+      this.errorMessage = response?.message || 'Error en respuesta del backend'; return;
     }
-
     const data = response.data;
-    this.globalScore = data.global_score ?? 0;
-    this.allScores = data.all_scores || null;
-    this.matchedPeaks = Array.isArray(data.matched_peaks) ? data.matched_peaks : [];
-    this.unmatchedPeaks = Array.isArray(data.unmatched_peaks) ? data.unmatched_peaks : [];
-    this.totalPeaks = data.total_peaks ?? 0;
+    this.globalScore        = data.global_score ?? 0;
+    this.allScores          = data.all_scores || null;
+    this.matchedPeaks       = Array.isArray(data.matched_peaks)   ? data.matched_peaks   : [];
+    this.unmatchedPeaks     = Array.isArray(data.unmatched_peaks) ? data.unmatched_peaks : [];
+    this.totalPeaks         = data.total_peaks ?? 0;
     this.matchingPeaksCount = data.matching_peaks_count ?? 0;
 
-    if (data.window_scores && Array.isArray(data.window_scores) && data.window_scores.length > 0) {
-      this.windowScores = data.window_scores.map((w: any) => ({
-        window: w.window || 'N/A',
-        score: w.score ?? 0,
-        range: '0-4000'
+    if ((data.window_scores?.length ?? 0) > 0) {
+      this.windowScores = (data.window_scores ?? []).map((w: any) => ({
+        window: w.window || 'N/A', score: w.score ?? 0, range: '0-4000'
       }));
     }
 
-    this.compared = true;
-    this.successMessage = ` Similitud: ${(this.globalScore * 100).toFixed(1)}%`;
-
+    this.compared       = true;
+    this.successMessage = `Similitud: ${(this.globalScore * 100).toFixed(1)}%`;
     this.spectrumStateService.setComparisonResults(data);
     this.spectrumStateService.addComparisonToHistory(
-      this.parseId(this.queryId),
-      this.querySpectrum!.filename,
-      this.parseId(this.refId),
-      this.refSpectrum!.filename,
-      this.method,
-      this.tolerance,
-      this.globalScore
+      this.parseId(this.queryId), this.querySpectrum!.filename,
+      this.parseId(this.refId),   this.refSpectrum!.filename,
+      this.method, this.tolerance, this.globalScore
     );
-
     this.comparisonHistory = this.spectrumStateService.getComparisonHistory();
-
-    setTimeout(() => {
-      this.renderCharts();
-    }, 100);
+    setTimeout(() => this.renderCharts(), 100);
   }
 
   private handleBackendError(error: any) {
-    if (error.message) {
-      this.errorMessage = error.message;
-    } else if (error.statusCode === 0) {
-      this.errorMessage = '📡 No se pudo conectar. Backend en localhost:8000?';
-    } else if (error.statusCode === 404) {
-      this.errorMessage = '🔍 Espectro no encontrado';
-    } else if (error.statusCode === 401) {
-      this.errorMessage = 'No autenticado. Inicia sesión de nuevo';
-    } else {
-      this.errorMessage = 'Error en el servidor';
-    }
+    this.errorMessage =
+      error.message            ? error.message
+      : error.statusCode === 0   ? '📡 No se pudo conectar. Backend en localhost:8000?'
+      : error.statusCode === 404 ? '🔍 Espectro no encontrado'
+      : error.statusCode === 401 ? 'No autenticado. Inicia sesión de nuevo'
+      : 'Error en el servidor';
   }
 
   private destroyAllCharts(): void {
-    [this.queryChart, this.refChart, this.overlayChart].forEach(chart => {
-      if (chart) chart.destroy();
-    });
+    [this.queryChart, this.refChart, this.overlayChart].forEach(c => { if (c) c.destroy(); });
     this.queryChart = this.refChart = this.overlayChart = null;
   }
 
@@ -883,41 +1046,30 @@ export class Comparacion implements OnInit, OnDestroy {
     return 'low';
   }
 
-  getScorePercent(score: number): string {
-    return (score * 100).toFixed(1);
-  }
+  getScorePercent(score: number): string { return (score * 100).toFixed(1); }
 
   swapSpectra() {
-    const temp = this.queryId;
-    this.queryId = this.refId;
-    this.refId = temp;
-    this.onQueryChange();
-    this.onRefChange();
-    this.compared = false;
+    [this.queryId, this.refId] = [this.refId, this.queryId];
+    this.onQueryChange(); this.onRefChange(); this.compared = false;
   }
 
-  clearComparison() {
-    this.compared = false;
-    this.globalScore = 0;
-    this.allScores = null;
-    this.windowScores = [];
-    this.matchedPeaks = [];
-    this.unmatchedPeaks = [];
-    this.totalPeaks = 0;
-    this.matchingPeaksCount = 0;
-    this.errorMessage = '';
-    this.successMessage = '';
-    this.removeChartListeners();
-    this.destroyAllCharts();
+clearComparison() {
+    this.compared = false; this.globalScore = 0; this.allScores = null;
+    this.windowScores = []; this.matchedPeaks = []; this.unmatchedPeaks = [];
+    this.queryMaxPeaks = []; this.queryMinPeaks = [];
+    this.refMaxPeaks   = []; this.refMinPeaks   = [];
+    this.totalPeaks = 0; this.matchingPeaksCount = 0;
+    this.tooltipMode = 'single';
+    this.errorMessage = ''; this.successMessage = '';
+    this.removeChartListeners(); this.destroyAllCharts();
     this.spectrumStateService.clearComparisonResults();
+    // ✅ NO limpiar querySpectrum ni refSpectrum — mantener selección
   }
 
   clearAllData() {
     this.spectrumStateService.clearAllSpectra();
-    this.querySpectrum = null;
-    this.refSpectrum = null;
-    this.queryId = '';
-    this.refId = '';
+    this.querySpectrum = null; this.refSpectrum = null;
+    this.queryId = ''; this.refId = '';
     this.comparisonHistory = [];
     this.clearComparison();
   }
@@ -930,28 +1082,24 @@ export class Comparacion implements OnInit, OnDestroy {
 
   formatTime(date: Date): string {
     const d = new Date(date);
-    return `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
+    return `${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;
   }
 
   loadFromHistory(comparison: Comparison): void {
-    this.queryId = comparison.queryId.toString();
-    this.refId = comparison.refId.toString();
-    this.method = comparison.method;
+    this.queryId   = comparison.queryId.toString();
+    this.refId     = comparison.refId.toString();
+    this.method    = comparison.method;
     this.tolerance = comparison.tolerance;
 
     const query = this.spectra.find(s => s.id === comparison.queryId);
-    const ref = this.spectra.find(s => s.id === comparison.refId);
+    const ref   = this.spectra.find(s => s.id === comparison.refId);
 
     if (query && ref) {
-      this.querySpectrum = query;
-      this.refSpectrum = ref;
-      this.globalScore = comparison.globalScore;
-      this.compared = true;
-      this.successMessage = ` Comparación restaurada: ${(comparison.globalScore * 100).toFixed(1)}%`;
-      
-      setTimeout(() => {
-        this.renderCharts();
-      }, 100);
+      this.querySpectrum  = query; this.refSpectrum = ref;
+      this.globalScore    = comparison.globalScore;
+      this.compared       = true;
+      this.successMessage = `Comparación restaurada: ${(comparison.globalScore * 100).toFixed(1)}%`;
+      setTimeout(() => this.renderCharts(), 100);
     } else {
       this.errorMessage = 'No se pudieron encontrar los espectros';
     }
