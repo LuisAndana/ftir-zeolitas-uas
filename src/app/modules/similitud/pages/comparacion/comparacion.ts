@@ -1028,8 +1028,8 @@ public renderOverlayChart(
   private handleBackendError(error: any) {
     this.errorMessage =
       error.message            ? error.message
-      : error.statusCode === 0   ? '📡 No se pudo conectar. Backend en localhost:8000?'
-      : error.statusCode === 404 ? '🔍 Espectro no encontrado'
+      : error.statusCode === 0   ? ' No se pudo conectar. Backend en localhost:8000?'
+      : error.statusCode === 404 ? ' Espectro no encontrado'
       : error.statusCode === 401 ? 'No autenticado. Inicia sesión de nuevo'
       : 'Error en el servidor';
   }

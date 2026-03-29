@@ -80,7 +80,7 @@
       </div>
 
       <button class="btn-compare" (click)="compare()" [disabled]="!querySpectrum || !refSpectrum || isComparingWithBackend">
-        {{ isComparingWithBackend ? 'Comparando...' : '🔄 Comparar' }}
+        {{ isComparingWithBackend ? 'Comparando...' : ' Comparar' }}
       </button>
 
       <button class="btn-clear" (click)="clearComparison()" *ngIf="compared">Limpiar Resultados</button>
@@ -89,7 +89,7 @@
 
     <!-- CHARTS SECTION -->
     <div class="charts-section" *ngIf="compared">
-      <h2>📊 Gráficas de Comparación</h2>
+      <h2> Gráficas de Comparación</h2>
 
       <div class="charts-grid">
         <div class="chart-container">
@@ -201,7 +201,7 @@
 
       <!-- Peaks Section -->
       <div class="peaks-section">
-        <h4>🎯 Análisis de Picos</h4>
+        <h4> Análisis de Picos</h4>
 
         <div class="peaks-summary">
           <div class="peak-stat matched">
@@ -293,7 +293,7 @@
 
       <!-- History Button -->
       <button class="btn-clear" (click)="showHistory = !showHistory" *ngIf="comparisonHistory.length > 0">
-        {{ showHistory ? '✕ Ocultar' : '📋 Ver' }} Historial ({{ comparisonHistory.length }})
+        {{ showHistory ? '✕ Ocultar' : ' Ver' }} Historial ({{ comparisonHistory.length }})
       </button>
 
       <!-- History List -->
@@ -313,7 +313,7 @@
 
     <!-- Empty State -->
     <div *ngIf="!compared" class="no-data">
-      <div class="no-data-icon">📊</div>
+      <div class="no-data-icon"></div>
       <h3>Selecciona dos espectros y compara</h3>
       <p>Los resultados y gráficas se mostrarán aquí</p>
     </div>
