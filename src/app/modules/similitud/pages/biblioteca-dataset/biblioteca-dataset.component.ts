@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpClientModule } from '@angular/common/http';
 import { Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
+import { takeUntil, debounceTime } from 'rxjs/operators';
 
 interface DatasetSpectrum {
   id: number;
@@ -36,7 +36,7 @@ export class BibliotecaDatasetComponent implements OnInit, OnDestroy {
   filterZeolite = '';
   filterEquipment = '';
   filterSampleCode = '';
-  
+
   page = 1;
   limit = 20;
   total = 0;
@@ -46,11 +46,16 @@ export class BibliotecaDatasetComponent implements OnInit, OnDestroy {
   showDetailsModal = false;
 
   private destroy$ = new Subject<void>();
+  private filterSubject$ = new Subject<void>();
 
   constructor(private http: HttpClient) {}
 
   ngOnInit() {
-    console.log('📚 Biblioteca Dataset cargada');
+    // Debounce filter to keep rendering smooth with large datasets
+    this.filterSubject$
+      .pipe(debounceTime(150), takeUntil(this.destroy$))
+      .subscribe(() => this.applyFilters());
+
     this.loadDatasetSpectra();
   }
 
@@ -64,10 +69,7 @@ export class BibliotecaDatasetComponent implements OnInit, OnDestroy {
     this.errorMessage = '';
 
     const token = localStorage.getItem('access_token');
-    const headers: any = {
-      'Content-Type': 'application/json'
-    };
-
+    const headers: any = { 'Content-Type': 'application/json' };
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
     }
@@ -79,37 +81,35 @@ export class BibliotecaDatasetComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (response) => {
-          console.log('✅ Espectros del dataset cargados:', response);
-
           if (response.success && Array.isArray(response.data)) {
             this.spectra = response.data;
             this.total = response.total || this.spectra.length;
-            this.totalPages = Math.ceil(this.total / this.limit);
             this.applyFilters();
           }
-
           this.loading = false;
         },
         error: (error) => {
-          console.error('❌ Error cargando dataset:', error);
-          this.errorMessage = '❌ Error al cargar espectros del dataset';
+          console.error('Error cargando dataset:', error);
+          this.errorMessage = 'Error al cargar espectros del dataset. Verifica que el servidor esté activo.';
           this.loading = false;
         }
       });
   }
 
+  onFilterChange() {
+    this.filterSubject$.next();
+  }
+
   applyFilters() {
+    const zFilter = this.filterZeolite.toLowerCase();
+    const eFilter = this.filterEquipment.toLowerCase();
+    const cFilter = this.filterSampleCode.toLowerCase();
+
     this.filteredSpectra = this.spectra.filter(s => {
-      const zeoliteMatch = !this.filterZeolite ||
-        s.zeolite_name.toLowerCase().includes(this.filterZeolite.toLowerCase());
-      
-      const equipmentMatch = !this.filterEquipment ||
-        s.equipment.toLowerCase().includes(this.filterEquipment.toLowerCase());
-      
-      const sampleMatch = !this.filterSampleCode ||
-        s.sample_code.toLowerCase().includes(this.filterSampleCode.toLowerCase());
-      
-      return zeoliteMatch && equipmentMatch && sampleMatch;
+      if (zFilter && !s.zeolite_name.toLowerCase().includes(zFilter)) return false;
+      if (eFilter && !s.equipment.toLowerCase().includes(eFilter)) return false;
+      if (cFilter && !s.sample_code.toLowerCase().includes(cFilter)) return false;
+      return true;
     });
 
     this.totalPages = Math.ceil(this.filteredSpectra.length / this.limit);
@@ -119,7 +119,6 @@ export class BibliotecaDatasetComponent implements OnInit, OnDestroy {
   viewDetails(spectrum: DatasetSpectrum) {
     this.selectedSpectrum = spectrum;
     this.showDetailsModal = true;
-    console.log('👁️ Ver detalles:', spectrum);
   }
 
   closeModal() {
@@ -129,7 +128,7 @@ export class BibliotecaDatasetComponent implements OnInit, OnDestroy {
 
   downloadSpectrum(spectrum: DatasetSpectrum) {
     if (!spectrum.spectrum_data?.wavenumbers || !spectrum.spectrum_data?.intensities) {
-      this.errorMessage = '❌ No hay datos para descargar';
+      this.errorMessage = 'No hay datos espectrales disponibles para descargar';
       return;
     }
 
@@ -146,26 +145,20 @@ export class BibliotecaDatasetComponent implements OnInit, OnDestroy {
     element.click();
     document.body.removeChild(element);
 
-    this.successMessage = '✅ Espectro descargado';
+    this.successMessage = `Espectro ${spectrum.sample_code} descargado correctamente`;
+    setTimeout(() => this.successMessage = '', 3000);
   }
 
   goToPage(newPage: number) {
     if (newPage >= 1 && newPage <= this.totalPages) {
       this.page = newPage;
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   }
 
   get paginatedSpectra(): DatasetSpectrum[] {
     const start = (this.page - 1) * this.limit;
     return this.filteredSpectra.slice(start, start + this.limit);
-  }
-
-  get pageNumbers(): number[] {
-    const pages = [];
-    for (let i = 1; i <= this.totalPages; i++) {
-      pages.push(i);
-    }
-    return pages;
   }
 
   get statistics() {
