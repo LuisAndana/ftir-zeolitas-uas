@@ -1,15 +1,15 @@
-<div class="dataset-container">
+<div class="biblioteca-container">
 
-  <!-- HEADER -->
-  <div class="content-header">
-    <h1>📚 Biblioteca Dataset FTIR</h1>
-    <p>Explora {{ statistics.total | number }} espectros de zeolitas del dataset</p>
+  <!-- ENCABEZADO -->
+  <div class="header">
+    <h1>Biblioteca Dataset FTIR</h1>
+    <p>Explora y filtra los espectros de zeolitas disponibles en el dataset</p>
   </div>
 
   <!-- ESTADÍSTICAS -->
   <div class="stats-grid">
     <div class="stat-card">
-      <span class="stat-icon">📊</span>
+      <div class="stat-icon">📊</div>
       <div class="stat-info">
         <p class="stat-label">Total Espectros</p>
         <p class="stat-value">{{ statistics.total | number }}</p>
@@ -17,15 +17,15 @@
     </div>
 
     <div class="stat-card">
-      <span class="stat-icon">🧬</span>
+      <div class="stat-icon">🧬</div>
       <div class="stat-info">
-        <p class="stat-label">Tipos de Zeolitas</p>
+        <p class="stat-label">Tipos de Zeolita</p>
         <p class="stat-value">{{ statistics.zeoliteTypes }}</p>
       </div>
     </div>
 
     <div class="stat-card">
-      <span class="stat-icon">⚙️</span>
+      <div class="stat-icon">⚙️</div>
       <div class="stat-info">
         <p class="stat-label">Equipos</p>
         <p class="stat-value">{{ statistics.equipmentTypes }}</p>
@@ -33,36 +33,36 @@
     </div>
 
     <div class="stat-card">
-      <span class="stat-icon">🔍</span>
+      <div class="stat-icon">🔍</div>
       <div class="stat-info">
-        <p class="stat-label">Mostrados</p>
+        <p class="stat-label">Resultados Filtrados</p>
         <p class="stat-value">{{ filteredSpectra.length | number }}</p>
       </div>
     </div>
   </div>
 
   <!-- FILTROS -->
-  <div class="filters-card">
-    <h3>🔎 Filtros</h3>
+  <div class="card filters-card">
+    <h3>Filtros de Búsqueda</h3>
     <div class="filters-grid">
-      <input 
-        type="text" 
+      <input
+        type="text"
         [(ngModel)]="filterSampleCode"
-        (ngModelChange)="applyFilters()"
-        placeholder="Buscar por código..."
+        (ngModelChange)="onFilterChange()"
+        placeholder="Buscar por código de muestra..."
         class="filter-input">
 
-      <input 
-        type="text" 
+      <input
+        type="text"
         [(ngModel)]="filterZeolite"
-        (ngModelChange)="applyFilters()"
-        placeholder="Filtrar por zeolita..."
+        (ngModelChange)="onFilterChange()"
+        placeholder="Filtrar por tipo de zeolita..."
         class="filter-input">
 
-      <input 
-        type="text" 
+      <input
+        type="text"
         [(ngModel)]="filterEquipment"
-        (ngModelChange)="applyFilters()"
+        (ngModelChange)="onFilterChange()"
         placeholder="Filtrar por equipo..."
         class="filter-input">
     </div>
@@ -74,36 +74,36 @@
       <thead>
         <tr>
           <th>ID</th>
-          <th>Código</th>
+          <th>Código de Muestra</th>
           <th>Zeolita</th>
           <th>Equipo</th>
-          <th>Fecha</th>
+          <th>Fecha de Medición</th>
           <th>Acciones</th>
         </tr>
       </thead>
       <tbody>
         <tr *ngFor="let spectrum of paginatedSpectra" class="spectrum-row">
-          <td class="id-cell">{{ spectrum.id }}</td>
+          <td class="id-cell">#{{ spectrum.id }}</td>
           <td class="code-cell">
             <strong>{{ spectrum.sample_code }}</strong>
           </td>
-          <td class="zeolite-cell">
+          <td>
             <span class="zeolite-badge">{{ spectrum.zeolite_name }}</span>
           </td>
           <td class="equipment-cell">{{ spectrum.equipment || '—' }}</td>
           <td class="date-cell">{{ spectrum.measurement_date || '—' }}</td>
           <td class="actions-cell">
-            <button 
+            <button
               class="btn-action btn-view"
               (click)="viewDetails(spectrum)"
               title="Ver detalles">
-              👁️
+              Ver
             </button>
-            <button 
+            <button
               class="btn-action btn-download"
               (click)="downloadSpectrum(spectrum)"
               title="Descargar CSV">
-              📥
+              Descargar
             </button>
           </td>
         </tr>
@@ -111,19 +111,20 @@
     </table>
   </div>
 
-  <!-- LOADING -->
+  <!-- ESTADO DE CARGA -->
   <div class="loading-state" *ngIf="loading">
-    <p>⏳ Cargando espectros del dataset...</p>
+    <div class="loading-spinner"></div>
+    <p>Cargando espectros del dataset...</p>
   </div>
 
-  <!-- EMPTY STATE -->
-  <div class="empty-state" *ngIf="!loading && paginatedSpectra.length === 0">
-    <p>📭 No hay espectros que coincidan con los filtros</p>
+  <!-- ESTADO VACÍO -->
+  <div class="empty-state" *ngIf="!loading && paginatedSpectra.length === 0 && !errorMessage">
+    <p>No hay espectros que coincidan con los filtros aplicados</p>
   </div>
 
   <!-- PAGINACIÓN -->
   <div class="pagination" *ngIf="totalPages > 1">
-    <button 
+    <button
       (click)="goToPage(page - 1)"
       [disabled]="page === 1"
       class="btn-page">
@@ -131,10 +132,10 @@
     </button>
 
     <span class="page-info">
-      Página {{ page }} de {{ totalPages }}
+      Página {{ page }} de {{ totalPages }} &nbsp;·&nbsp; {{ filteredSpectra.length | number }} resultados
     </span>
 
-    <button 
+    <button
       (click)="goToPage(page + 1)"
       [disabled]="page === totalPages"
       class="btn-page">
@@ -145,62 +146,65 @@
   <!-- MODAL DE DETALLES -->
   <div *ngIf="showDetailsModal && selectedSpectrum" class="modal-overlay" (click)="closeModal()">
     <div class="modal-content" (click)="$event.stopPropagation()">
+
       <div class="modal-header">
         <h2>{{ selectedSpectrum.sample_code }}</h2>
-        <button class="close-btn" (click)="closeModal()">✕</button>
+        <button class="close-btn" (click)="closeModal()" title="Cerrar">✕</button>
       </div>
 
       <div class="modal-body">
         <div class="detail-group">
-          <label>Zeolita:</label>
+          <label>Zeolita</label>
           <p>{{ selectedSpectrum.zeolite_name }}</p>
         </div>
 
         <div class="detail-group">
-          <label>Código:</label>
+          <label>Código de Muestra</label>
           <p>{{ selectedSpectrum.sample_code }}</p>
         </div>
 
         <div class="detail-group">
-          <label>Equipo:</label>
+          <label>Equipo</label>
           <p>{{ selectedSpectrum.equipment || '—' }}</p>
         </div>
 
         <div class="detail-group">
-          <label>Fecha de Medición:</label>
+          <label>Fecha de Medición</label>
           <p>{{ selectedSpectrum.measurement_date || '—' }}</p>
         </div>
 
         <div class="detail-group">
-          <label>Puntos de Datos:</label>
-          <p>{{ selectedSpectrum.spectrum_data?.wavenumbers?.length || 0 }}</p>
+          <label>Puntos de Datos</label>
+          <p>{{ selectedSpectrum.spectrum_data?.wavenumbers?.length || 0 | number }} puntos</p>
         </div>
       </div>
 
       <div class="modal-footer">
-        <button 
-          class="btn btn-primary"
-          (click)="downloadSpectrum(selectedSpectrum)">
-          📥 Descargar CSV
-        </button>
-        <button 
+        <button
           class="btn btn-secondary"
           (click)="closeModal()">
           Cerrar
+        </button>
+        <button
+          class="btn btn-primary"
+          (click)="downloadSpectrum(selectedSpectrum)">
+          Descargar CSV
         </button>
       </div>
     </div>
   </div>
 
-  <!-- MENSAJES -->
-  <div class="alert alert-error" *ngIf="errorMessage">
-    {{ errorMessage }}
-    <button (click)="errorMessage = ''">✕</button>
-  </div>
+  <!-- ALERTAS -->
+  <div class="alerts-container">
+    <div class="alert alert-error" *ngIf="errorMessage">
+      <span>{{ errorMessage }}</span>
+      <button (click)="errorMessage = ''">✕</button>
+    </div>
 
-  <div class="alert alert-success" *ngIf="successMessage">
-    {{ successMessage }}
-    <button (click)="successMessage = ''">✕</button>
+    <div class="alert alert-success" *ngIf="successMessage">
+      <span>{{ successMessage }}</span>
+      <button (click)="successMessage = ''">✕</button>
+    </div>
   </div>
 
 </div>
