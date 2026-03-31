@@ -9,7 +9,7 @@
   <!-- ESTADÍSTICAS -->
   <div class="stats-grid">
     <div class="stat-card">
-      <div class="stat-icon">📊</div>
+      
       <div class="stat-info">
         <p class="stat-label">Total Espectros</p>
         <p class="stat-value">{{ statistics.total | number }}</p>
@@ -17,7 +17,7 @@
     </div>
 
     <div class="stat-card">
-      <div class="stat-icon">🧬</div>
+      
       <div class="stat-info">
         <p class="stat-label">Tipos de Zeolita</p>
         <p class="stat-value">{{ statistics.zeoliteTypes }}</p>
@@ -25,7 +25,7 @@
     </div>
 
     <div class="stat-card">
-      <div class="stat-icon">⚙️</div>
+      
       <div class="stat-info">
         <p class="stat-label">Equipos</p>
         <p class="stat-value">{{ statistics.equipmentTypes }}</p>
@@ -33,7 +33,7 @@
     </div>
 
     <div class="stat-card">
-      <div class="stat-icon">🔍</div>
+      
       <div class="stat-info">
         <p class="stat-label">Resultados Filtrados</p>
         <p class="stat-value">{{ filteredSpectra.length | number }}</p>
@@ -41,30 +41,64 @@
     </div>
   </div>
 
-  <!-- FILTROS -->
+  <!-- FILTROS MEJORADOS -->
   <div class="card filters-card">
-    <h3>Filtros de Búsqueda</h3>
+    <div class="filters-header">
+      <h3>Filtros de Búsqueda</h3>
+      <button 
+        class="btn-clear-filters" 
+        (click)="clearFilters()"
+        [disabled]="!filterSampleCode && !filterZeolite && !filterEquipment"
+        title="Limpiar todos los filtros">
+        ✕ Limpiar filtros
+      </button>
+    </div>
+
     <div class="filters-grid">
-      <input
-        type="text"
-        [(ngModel)]="filterSampleCode"
-        (ngModelChange)="onFilterChange()"
-        placeholder="Buscar por código de muestra..."
-        class="filter-input">
+      <!-- FILTRO: CÓDIGO DE MUESTRA -->
+      <div class="filter-group">
+        <label for="filterSampleCode" class="filter-label">Código de Muestra</label>
+        <select
+          id="filterSampleCode"
+          [(ngModel)]="filterSampleCode"
+          (ngModelChange)="onFilterChange()"
+          class="filter-select">
+          <option value="">Todos los códigos</option>
+          <option *ngFor="let code of uniqueSampleCodes" [value]="code">
+            {{ code }}
+          </option>
+        </select>
+      </div>
 
-      <input
-        type="text"
-        [(ngModel)]="filterZeolite"
-        (ngModelChange)="onFilterChange()"
-        placeholder="Filtrar por tipo de zeolita..."
-        class="filter-input">
+      <!-- FILTRO: TIPO DE ZEOLITA -->
+      <div class="filter-group">
+        <label for="filterZeolite" class="filter-label">Tipo de Zeolita</label>
+        <select
+          id="filterZeolite"
+          [(ngModel)]="filterZeolite"
+          (ngModelChange)="onFilterChange()"
+          class="filter-select">
+          <option value="">Todos los tipos</option>
+          <option *ngFor="let zeolite of uniqueZeolites" [value]="zeolite">
+            {{ zeolite }}
+          </option>
+        </select>
+      </div>
 
-      <input
-        type="text"
-        [(ngModel)]="filterEquipment"
-        (ngModelChange)="onFilterChange()"
-        placeholder="Filtrar por equipo..."
-        class="filter-input">
+      <!-- FILTRO: EQUIPO -->
+      <div class="filter-group">
+        <label for="filterEquipment" class="filter-label">Equipo</label>
+        <select
+          id="filterEquipment"
+          [(ngModel)]="filterEquipment"
+          (ngModelChange)="onFilterChange()"
+          class="filter-select">
+          <option value="">Todos los equipos</option>
+          <option *ngFor="let equipment of uniqueEquipments" [value]="equipment">
+            {{ equipment }}
+          </option>
+        </select>
+      </div>
     </div>
   </div>
 

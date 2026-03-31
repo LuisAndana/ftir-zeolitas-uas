@@ -33,9 +33,15 @@ export class BibliotecaDatasetComponent implements OnInit, OnDestroy {
   errorMessage = '';
   successMessage = '';
 
+  // Filtros principales
+  filterSampleCode = '';
   filterZeolite = '';
   filterEquipment = '';
-  filterSampleCode = '';
+
+  // Opciones disponibles para los dropdowns
+  uniqueSampleCodes: string[] = [];
+  uniqueZeolites: string[] = [];
+  uniqueEquipments: string[] = [];
 
   page = 1;
   limit = 20;
@@ -84,6 +90,7 @@ export class BibliotecaDatasetComponent implements OnInit, OnDestroy {
           if (response.success && Array.isArray(response.data)) {
             this.spectra = response.data;
             this.total = response.total || this.spectra.length;
+            this.extractFilterOptions();
             this.applyFilters();
           }
           this.loading = false;
@@ -96,24 +103,55 @@ export class BibliotecaDatasetComponent implements OnInit, OnDestroy {
       });
   }
 
+  /**
+   * Extrae las opciones únicas para cada filtro
+   */
+  extractFilterOptions() {
+    // Extraer códigos de muestra únicos y ordenados
+    this.uniqueSampleCodes = Array.from(
+      new Set(this.spectra.map(s => s.sample_code))
+    ).sort();
+
+    // Extraer tipos de zeolita únicos y ordenados
+    this.uniqueZeolites = Array.from(
+      new Set(this.spectra.map(s => s.zeolite_name))
+    ).sort();
+
+    // Extraer equipos únicos y ordenados
+    this.uniqueEquipments = Array.from(
+      new Set(this.spectra.map(s => s.equipment).filter(e => e))
+    ).sort();
+  }
+
   onFilterChange() {
     this.filterSubject$.next();
   }
 
   applyFilters() {
+    const cFilter = this.filterSampleCode.toLowerCase();
     const zFilter = this.filterZeolite.toLowerCase();
     const eFilter = this.filterEquipment.toLowerCase();
-    const cFilter = this.filterSampleCode.toLowerCase();
 
     this.filteredSpectra = this.spectra.filter(s => {
+      // Si el filtro está vacío, incluir todas las opciones
+      if (cFilter && !s.sample_code.toLowerCase().includes(cFilter)) return false;
       if (zFilter && !s.zeolite_name.toLowerCase().includes(zFilter)) return false;
       if (eFilter && !s.equipment.toLowerCase().includes(eFilter)) return false;
-      if (cFilter && !s.sample_code.toLowerCase().includes(cFilter)) return false;
       return true;
     });
 
     this.totalPages = Math.ceil(this.filteredSpectra.length / this.limit);
     this.page = 1;
+  }
+
+  /**
+   * Limpia todos los filtros
+   */
+  clearFilters() {
+    this.filterSampleCode = '';
+    this.filterZeolite = '';
+    this.filterEquipment = '';
+    this.onFilterChange();
   }
 
   viewDetails(spectrum: DatasetSpectrum) {
