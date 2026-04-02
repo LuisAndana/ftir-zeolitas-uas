@@ -26,9 +26,8 @@
 
 /* ===== SECCIÓN DE CARGA ===== */
 .upload-section {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 2rem;
+  display: flex;
+  justify-content: center;
   margin-bottom: 2rem;
 }
 
@@ -39,13 +38,15 @@
   border-radius: 0.75rem;
   padding: 2rem;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  width: 100%;
+  max-width: 680px;
 }
 
 /* Zona de arrastre */
 .drop-zone {
   border: 2px dashed #d1d5db;
   border-radius: 0.75rem;
-  padding: 3rem 2rem;
+  padding: 5rem 3rem;
   text-align: center;
   background: linear-gradient(135deg, #f8fafc 0%, #f0f4f8 100%);
   cursor: pointer;
@@ -65,15 +66,15 @@
 }
 
 .drop-icon {
-  font-size: 3rem;
+  font-size: 4.5rem;
   display: block;
-  margin-bottom: 1rem;
+  margin-bottom: 1.25rem;
 }
 
 .drop-content h3 {
   margin: 0.5rem 0;
   color: #0f172a;
-  font-size: 1.25rem;
+  font-size: 1.6rem;
 }
 
 .drop-content p {
@@ -624,7 +625,7 @@
 
 /* ===== RESPONSIVE ===== */
 @media (max-width: 968px) {
-  .upload-section { grid-template-columns: 1fr; }
+  .upload-card { max-width: 100%; }
   .section-header { flex-direction: column; align-items: flex-start; }
   .filters { width: 100%; max-width: 100%; }
   .metadata-grid { grid-template-columns: 1fr; }
