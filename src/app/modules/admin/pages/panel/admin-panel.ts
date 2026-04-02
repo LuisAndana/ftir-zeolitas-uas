@@ -33,7 +33,7 @@ export class AdminPanelComponent implements OnInit {
     this.errorMsg = '';
     this.adminService.getUsers().subscribe({
       next: (res) => {
-        this.users = res.data;
+        this.users = res.data?.users ?? [];
         this.loading = false;
       },
       error: () => {

@@ -23,8 +23,8 @@ export class AdminService {
 
   constructor(private http: HttpClient, private auth: AuthBackendService) {}
 
-  getUsers(): Observable<{ success: boolean; data: AdminUser[] }> {
-    return this.http.get<{ success: boolean; data: AdminUser[] }>(
+  getUsers(): Observable<{ success: boolean; data: { users: AdminUser[] } }> {
+    return this.http.get<{ success: boolean; data: { users: AdminUser[] } }>(
       `${this.apiUrl}/users`,
       { headers: this.auth.getAuthHeaders() }
     );
