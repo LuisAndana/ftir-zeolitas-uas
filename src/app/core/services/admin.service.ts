@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { timeout } from 'rxjs/operators';
 import { AuthBackendService } from './auth-backend.service';
 
 const API_URL = 'http://localhost:8000/api';
@@ -27,7 +28,7 @@ export class AdminService {
     return this.http.get<{ success: boolean; data: { users: AdminUser[] } }>(
       `${this.apiUrl}/users`,
       { headers: this.auth.getAuthHeaders() }
-    );
+    ).pipe(timeout(10000));
   }
 
   updateUser(userId: number, data: { is_active?: boolean; role?: string }): Observable<any> {
