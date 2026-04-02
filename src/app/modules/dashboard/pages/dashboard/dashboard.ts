@@ -1,6 +1,9 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
+import { AuthBackendService, User } from '../../../../core/services/auth-backend.service';
 
 @Component({
   selector: 'app-dashboard',
@@ -9,34 +12,57 @@ import { Router, RouterOutlet, RouterLink, RouterLinkActive } from '@angular/rou
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.css'
 })
-export class DashboardComponent implements OnInit {
-  currentUser: any = null;
+export class DashboardComponent implements OnInit, OnDestroy {
+  currentUser: User | null = null;
   menuOpen = false;
   showLogoutModal = false;
+  userDropdownOpen = false;
 
-  constructor(private router: Router) {}
+  private destroy$ = new Subject<void>();
+
+  constructor(private router: Router, private auth: AuthBackendService) {}
 
   ngOnInit() {
-    this.loadCurrentUser();
+    this.auth.currentUser$.pipe(takeUntil(this.destroy$)).subscribe(user => {
+      if (!user) {
+        this.router.navigate(['/welcome']);
+        return;
+      }
+      this.currentUser = user;
+    });
   }
 
-  loadCurrentUser() {
-    const user = localStorage.getItem('current_user');
-    if (user) {
-      try {
-        this.currentUser = JSON.parse(user);
-        console.log('✅ Usuario cargado:', this.currentUser.name);
-      } catch (e) {
-        console.error('Error al cargar usuario:', e);
-        this.router.navigate(['/welcome']);
-      }
-    } else {
-      console.warn('No hay usuario en localStorage');
-      this.router.navigate(['/welcome']);
+  ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  get isAdmin(): boolean {
+    return this.currentUser?.role === 'administrador';
+  }
+
+  get userInitial(): string {
+    return this.currentUser?.name?.charAt(0)?.toUpperCase() ?? '?';
+  }
+
+  toggleMenu() {
+    this.menuOpen = !this.menuOpen;
+  }
+
+  toggleUserDropdown() {
+    this.userDropdownOpen = !this.userDropdownOpen;
+  }
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent) {
+    const target = event.target as HTMLElement;
+    if (!target.closest('.user-menu-wrapper')) {
+      this.userDropdownOpen = false;
     }
   }
 
   openLogoutModal() {
+    this.userDropdownOpen = false;
     this.showLogoutModal = true;
   }
 
@@ -45,17 +71,9 @@ export class DashboardComponent implements OnInit {
   }
 
   confirmLogout() {
-    // Limpiar localStorage
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
-    localStorage.removeItem('current_user');
-    localStorage.removeItem('token_expires_at');
-
-    console.log('✅ Sesión cerrada');
-    this.router.navigate(['/welcome']);
-  }
-
-  toggleMenu() {
-    this.menuOpen = !this.menuOpen;
+    this.auth.logout().subscribe({
+      next: () => this.router.navigate(['/welcome']),
+      error: () => this.router.navigate(['/welcome'])
+    });
   }
 }

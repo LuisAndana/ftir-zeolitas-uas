@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { AuthGuard } from './core/guards/auth.guard';
+import { adminGuard } from './core/guards/admin.guard';
 import { DashboardComponent } from './modules/dashboard/pages/dashboard/dashboard';
 
 export const routes: Routes = [
@@ -10,23 +11,29 @@ export const routes: Routes = [
     pathMatch: 'full'
   },
 
-  // Página de bienvenida (sin protección)
+  // Página de bienvenida
   {
     path: 'welcome',
     loadComponent: () =>
-      import('./modules/auth/pages/welcome/welcome')
-        .then(m => m.WelcomeComponent)
+      import('./modules/auth/pages/welcome/welcome').then(m => m.WelcomeComponent)
   },
 
-  // Página de registro (sin protección)
+  // Registro
   {
     path: 'register',
     loadComponent: () =>
-      import('./modules/auth/pages/register/register')
-        .then(m => m.Register)
+      import('./modules/auth/pages/register/register').then(m => m.Register)
   },
 
-  // Dashboard y sus sub-rutas (PROTEGIDAS con AuthGuard)
+  // Verificación de correo (enlace enviado por email)
+  {
+    path: 'verify-email',
+    loadComponent: () =>
+      import('./modules/auth/pages/verify-email/verify-email')
+        .then(m => m.VerifyEmailComponent)
+  },
+
+  // Dashboard y sub-rutas (protegidas con AuthGuard)
   {
     path: 'dashboard',
     component: DashboardComponent,
@@ -57,18 +64,24 @@ export const routes: Routes = [
             .then(m => m.Comparacion)
       },
       {
-        // ✅ PARÁMETROS CORRECTOS: queryId, referenceId, method
         path: 'comparacion-espectros/:queryId/:referenceId/:method',
         loadComponent: () =>
           import('./modules/analysis/pages/spectrum-comparison/spectrum-comparison.component')
             .then(m => m.SpectrumComparisonComponent)
       },
-      // ✅ NUEVA RUTA: Biblioteca Dataset
       {
         path: 'biblioteca-dataset',
         loadComponent: () =>
           import('./modules/similitud/pages/biblioteca-dataset/biblioteca-dataset.component')
             .then(m => m.BibliotecaDatasetComponent)
+      },
+      // Panel de administración (solo administradores)
+      {
+        path: 'admin',
+        canActivate: [adminGuard],
+        loadComponent: () =>
+          import('./modules/admin/pages/panel/admin-panel')
+            .then(m => m.AdminPanelComponent)
       },
       {
         path: '',
@@ -78,7 +91,7 @@ export const routes: Routes = [
     ]
   },
 
-  // Ruta comodín (redirigir a welcome)
+  // Wildcard
   {
     path: '**',
     redirectTo: 'welcome'

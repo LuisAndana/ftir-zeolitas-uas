@@ -54,10 +54,7 @@ export class WelcomeComponent implements OnInit {
   }
 
   handleRegisterSuccess(event: any) {
-    console.log('✅ Registro exitoso:', event);
-    this.showRegisterModal = false;
-    setTimeout(() => {
-      this.router.navigate(['/welcome'], { queryParams: { showLogin: true } });
-    }, 500);
+    // El modal de registro muestra el estado de éxito (email enviado)
+    // No cerramos el modal aquí; el usuario lo cierra manualmente
   }
 }

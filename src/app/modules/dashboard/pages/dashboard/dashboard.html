@@ -8,17 +8,50 @@
         </button>
         <h1 class="navbar-title">FTIR Zeolitas</h1>
       </div>
-      
+
       <div class="navbar-right">
-        <div class="user-info">
-          <div class="user-avatar" title="Perfil de usuario">
-            {{ currentUser?.name?.charAt(0)?.toUpperCase() }}
+        <!-- User menu -->
+        <div class="user-menu-wrapper">
+          <button class="user-trigger" (click)="toggleUserDropdown()" title="Menú de usuario">
+            <div class="user-avatar">{{ userInitial }}</div>
+            <span class="user-name">{{ currentUser?.name }}</span>
+            <span class="chevron" [class.open]="userDropdownOpen">▾</span>
+          </button>
+
+          <!-- Dropdown -->
+          <div class="user-dropdown" [class.visible]="userDropdownOpen" (click)="$event.stopPropagation()">
+            <!-- Perfil -->
+            <div class="dropdown-header">
+              <div class="dropdown-avatar">{{ userInitial }}</div>
+              <div class="dropdown-info">
+                <span class="dropdown-name">{{ currentUser?.name }}</span>
+                <span class="dropdown-email">{{ currentUser?.email }}</span>
+                <span class="role-badge" [class.role-admin]="isAdmin">
+                  {{ isAdmin ? 'Administrador' : 'Investigador' }}
+                </span>
+              </div>
+            </div>
+
+            <div class="dropdown-divider"></div>
+
+            <!-- Admin panel (solo administradores) -->
+            <a *ngIf="isAdmin"
+               routerLink="/dashboard/admin"
+               class="dropdown-item admin-item"
+               (click)="userDropdownOpen = false">
+              <span class="item-icon">⚙</span>
+              Panel de Administración
+            </a>
+
+            <div class="dropdown-divider" *ngIf="isAdmin"></div>
+
+            <!-- Cerrar sesión -->
+            <button class="dropdown-item logout-item" (click)="openLogoutModal()">
+              <span class="item-icon">→</span>
+              Cerrar Sesión
+            </button>
           </div>
-          <span class="user-name">{{ currentUser?.name }}</span>
         </div>
-        <button class="logout-btn" (click)="openLogoutModal()" title="Cerrar sesión">
-          Cerrar Sesión
-        </button>
       </div>
     </div>
   </nav>
@@ -30,53 +63,54 @@
         <h2>Navegación</h2>
         <button class="close-btn" (click)="toggleMenu()" title="Cerrar menú">×</button>
       </div>
-      
+
       <ul class="menu">
         <li class="menu-section">Espectros</li>
         <li>
-          <a routerLink="/dashboard/cargar" 
-             (click)="menuOpen = false" 
+          <a routerLink="/dashboard/cargar"
+             (click)="menuOpen = false"
              routerLinkActive="active"
-             title="Subir archivos de espectros">
-             Cargar Espectro
-          </a>
+             title="Subir archivos de espectros">Cargar Espectro</a>
         </li>
         <li>
-          <a routerLink="/dashboard/grafica" 
-             (click)="menuOpen = false" 
+          <a routerLink="/dashboard/grafica"
+             (click)="menuOpen = false"
              routerLinkActive="active"
-             title="Visualizar espectros">
-             Graficar Espectros
-          </a>
+             title="Visualizar espectros">Graficar Espectros</a>
         </li>
 
         <li class="menu-section">Análisis</li>
         <li>
-          <a routerLink="/dashboard/busqueda" 
-             (click)="menuOpen = false" 
+          <a routerLink="/dashboard/busqueda"
+             (click)="menuOpen = false"
              routerLinkActive="active"
-             title="Buscar espectros similares">
-             Búsqueda por Similitud
-          </a>
+             title="Buscar espectros similares">Búsqueda por Similitud</a>
         </li>
         <li>
-          <a routerLink="/dashboard/comparacion" 
-             (click)="menuOpen = false" 
+          <a routerLink="/dashboard/comparacion"
+             (click)="menuOpen = false"
              routerLinkActive="active"
-             title="Comparar dos espectros">
-             Comparación
-          </a>
+             title="Comparar dos espectros">Comparación</a>
         </li>
 
         <li class="menu-section">Biblioteca</li>
         <li>
-          <a routerLink="/dashboard/biblioteca-dataset" 
-             (click)="menuOpen = false" 
+          <a routerLink="/dashboard/biblioteca-dataset"
+             (click)="menuOpen = false"
              routerLinkActive="active"
-             title="Ver biblioteca de espectros y catálogo de zeolitas">
-             Biblioteca
-          </a>
+             title="Ver biblioteca de espectros">Biblioteca</a>
         </li>
+
+        <!-- Sección admin (solo administradores) -->
+        <ng-container *ngIf="isAdmin">
+          <li class="menu-section">Administración</li>
+          <li>
+            <a routerLink="/dashboard/admin"
+               (click)="menuOpen = false"
+               routerLinkActive="active"
+               title="Gestionar usuarios">Panel de Usuarios</a>
+          </li>
+        </ng-container>
       </ul>
     </aside>
 
@@ -107,4 +141,4 @@
 </div>
 
 <!-- Overlay para cerrar sidebar en móvil -->
-<div class="sidebar-overlay" [class.hidden]="!menuOpen" *ngIf="menuOpen" (click)="toggleMenu()"></div>
+<div class="sidebar-overlay" *ngIf="menuOpen" (click)="toggleMenu()"></div>

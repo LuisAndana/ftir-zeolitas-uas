@@ -5,6 +5,8 @@ import { AuthBackendService } from '../../../../core/services/auth-backend.servi
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
+type ErrorState = 'generic' | 'email_not_verified' | 'account_pending';
+
 @Component({
   selector: 'app-login-modal',
   standalone: true,
@@ -18,19 +20,13 @@ export class LoginModal implements OnDestroy {
 
   form!: FormGroup;
   loading = false;
+  errorState: ErrorState | null = null;
   errorMessage = '';
   showPassword = false;
 
   private destroy$ = new Subject<void>();
 
-  constructor(
-    private fb: FormBuilder,
-    private authService: AuthBackendService
-  ) {
-    this.initForm();
-  }
-
-  private initForm() {
+  constructor(private fb: FormBuilder, private authService: AuthBackendService) {
     this.form = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
       password: ['', [Validators.required, Validators.minLength(8)]]
@@ -39,50 +35,43 @@ export class LoginModal implements OnDestroy {
 
   submit() {
     if (this.form.invalid) {
+      this.errorState = 'generic';
       this.errorMessage = 'Por favor, completa todos los campos correctamente';
       return;
     }
 
     this.loading = true;
+    this.errorState = null;
     this.errorMessage = '';
 
     const { email, password } = this.form.value;
 
-    console.log('🔐 Iniciando sesión:', { email });
-
     this.authService.login(email, password)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: (response: any) => {
-          console.log('✅ Login EXITOSO:', response);
-          console.log('📦 Tokens guardados en localStorage:', {
-            access_token: localStorage.getItem('access_token')?.substring(0, 20) + '...',
-            refresh_token: localStorage.getItem('refresh_token')?.substring(0, 20) + '...',
-            current_user: localStorage.getItem('current_user')
-          });
-
-          this.loginSuccess.emit({
-            email: response.data.user.email,
-            name: response.data.user.name
-          });
-
+        next: (response) => {
           this.loading = false;
+          this.loginSuccess.emit({
+            email: response.data!.user.email,
+            name: response.data!.user.name
+          });
           this.form.reset();
         },
-        error: (error: any) => {
-          console.error('❌ Error en login:', error);
-
+        error: (error) => {
           this.loading = false;
+          const detail: string = error?.error?.detail ?? error?.detail ?? '';
 
-          if (error.status === 401) {
+          if (detail === 'EMAIL_NOT_VERIFIED') {
+            this.errorState = 'email_not_verified';
+          } else if (detail === 'ACCOUNT_PENDING_APPROVAL') {
+            this.errorState = 'account_pending';
+          } else if (error?.status === 401 || detail.includes('Credenciales')) {
+            this.errorState = 'generic';
             this.errorMessage = 'Email o contraseña incorrectos';
-          } else if (error.status === 422) {
-            this.errorMessage = 'Datos inválidos. Verifica el formulario';
           } else {
+            this.errorState = 'generic';
             this.errorMessage = 'Error en el servidor. Intenta más tarde';
           }
-
-          console.error('Error details:', this.errorMessage);
         }
       });
   }

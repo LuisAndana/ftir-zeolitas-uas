@@ -21,17 +21,12 @@ export class RegisterModal implements OnDestroy {
   errorMessage = '';
   showPassword = false;
   passwordStrength = 0;
+  /** Correo al que se envió la verificación, indica éxito */
+  verificationSentTo = '';
 
   private destroy$ = new Subject<void>();
 
-  constructor(
-    private fb: FormBuilder,
-    private authService: AuthBackendService
-  ) {
-    this.initForm();
-  }
-
-  private initForm() {
+  constructor(private fb: FormBuilder, private authService: AuthBackendService) {
     this.form = this.fb.group({
       name: ['', [Validators.required, Validators.minLength(2)]],
       email: ['', [Validators.required, Validators.email]],
@@ -41,27 +36,24 @@ export class RegisterModal implements OnDestroy {
   }
 
   passwordMatchValidator(group: FormGroup): { [key: string]: boolean } | null {
-    const password = group.get('password')?.value;
-    const passwordConfirm = group.get('passwordConfirm')?.value;
-    return password === passwordConfirm ? null : { passwordMismatch: true };
+    const pw  = group.get('password')?.value;
+    const cpw = group.get('passwordConfirm')?.value;
+    return pw === cpw ? null : { passwordMismatch: true };
   }
 
   checkPasswordStrength() {
-    const password = this.form.get('password')?.value || '';
-    let strength = 0;
-
-    if (password.length >= 8) strength++;
-    if (/[a-z]/.test(password) && /[A-Z]/.test(password)) strength++;
-    if (/\d/.test(password)) strength++;
-    if (/[^a-zA-Z\d]/.test(password)) strength++;
-
-    this.passwordStrength = strength;
+    const pw = this.form.get('password')?.value || '';
+    let s = 0;
+    if (pw.length >= 8) s++;
+    if (/[a-z]/.test(pw) && /[A-Z]/.test(pw)) s++;
+    if (/\d/.test(pw)) s++;
+    if (/[^a-zA-Z\d]/.test(pw)) s++;
+    this.passwordStrength = s;
   }
 
   submit() {
     if (this.form.invalid) {
       this.errorMessage = 'Por favor, completa todos los campos correctamente';
-      console.warn('❌ Formulario inválido');
       return;
     }
 
@@ -70,41 +62,25 @@ export class RegisterModal implements OnDestroy {
 
     const { name, email, password } = this.form.value;
 
-    console.log('📝 Registrando usuario:', { name, email });
-
     this.authService.register(name, email, password)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: (response: any) => {
-          console.log('✅ Registro EXITOSO:', response);
-          console.log('📦 Tokens guardados en localStorage:', {
-            access_token: localStorage.getItem('access_token')?.substring(0, 20) + '...',
-            refresh_token: localStorage.getItem('refresh_token')?.substring(0, 20) + '...',
-            current_user: localStorage.getItem('current_user')
-          });
-
-          this.registerSuccess.emit({
-            email: response.data.user.email,
-            name: response.data.user.name
-          });
-
+        next: () => {
           this.loading = false;
-          this.form.reset();
+          this.verificationSentTo = email;
+          // Emitir para que el padre sepa, pero no redirigir de inmediato
+          this.registerSuccess.emit({ email, name });
         },
-        error: (error: any) => {
-          console.error('❌ Error en registro:', error);
-
+        error: (error) => {
           this.loading = false;
-
-          if (error.status === 400) {
-            this.errorMessage = error.error?.detail || 'El email ya está registrado';
-          } else if (error.status === 422) {
+          const detail: string = error?.error?.detail ?? error?.detail ?? '';
+          if (detail.includes('ya está registrado')) {
+            this.errorMessage = 'Este correo ya está registrado. ¿Quieres iniciar sesión?';
+          } else if (error?.status === 422) {
             this.errorMessage = 'Datos inválidos. Verifica el formulario';
           } else {
             this.errorMessage = 'Error en el servidor. Intenta más tarde';
           }
-
-          console.error('Error details:', this.errorMessage);
         }
       });
   }

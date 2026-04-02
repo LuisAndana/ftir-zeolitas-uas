@@ -4,13 +4,13 @@ import { BehaviorSubject, Observable } from 'rxjs';
 import { tap, catchError } from 'rxjs/operators';
 import { throwError } from 'rxjs';
 
-// ✅ CORRECCIÓN: Agregar /api al URL base
 const API_URL = 'http://localhost:8000/api';
 
 export interface User {
   id: number;
   name: string;
   email: string;
+  role: 'investigador' | 'administrador';
   is_active: boolean;
   is_verified: boolean;
 }
@@ -24,14 +24,13 @@ export interface AuthResponse {
     refresh_token: string;
     token_type: string;
     expires_in: number;
-  };
+  } | null;
 }
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuthBackendService {
-  // ✅ CORRECCIÓN: Usar /api/auth en lugar de solo /auth
   private apiUrl = `${API_URL}/auth`;
   private currentUserSubject = new BehaviorSubject<User | null>(this.getUserFromStorage());
   public currentUser$ = this.currentUserSubject.asObservable();
@@ -40,53 +39,15 @@ export class AuthBackendService {
     this.checkTokenExpiration();
   }
 
-  /**
-   * Registrar nuevo usuario
-   */
   register(name: string, email: string, password: string): Observable<AuthResponse> {
-    console.log('📝 Registrando usuario:', { name, email });
-    console.log('📍 URL: POST', `${this.apiUrl}/register`);
-    
-    return this.http.post<AuthResponse>(`${this.apiUrl}/register`, {
-      name,
-      email,
-      password
-    }).pipe(
-      tap(response => {
-        console.log('✅ Respuesta del registro:', response);
-        if (response.success && response.data) {
-          console.log('💾 Guardando tokens en localStorage...');
-          this.setTokens(
-            response.data.access_token,
-            response.data.refresh_token,
-            response.data.expires_in
-          );
-          this.setCurrentUser(response.data.user);
-          console.log('✅ Datos guardados en localStorage');
-          console.log('📦 localStorage:', {
-            access_token: localStorage.getItem('access_token')?.substring(0, 20) + '...',
-            refresh_token: localStorage.getItem('refresh_token')?.substring(0, 20) + '...',
-            current_user: localStorage.getItem('current_user')
-          });
-        }
-      }),
+    return this.http.post<AuthResponse>(`${this.apiUrl}/register`, { name, email, password }).pipe(
       catchError(error => this.handleError(error))
     );
   }
 
-  /**
-   * Iniciar sesión
-   */
   login(email: string, password: string): Observable<AuthResponse> {
-    console.log('🔐 Iniciando sesión:', email);
-    console.log('📍 URL: POST', `${this.apiUrl}/login`);
-    
-    return this.http.post<AuthResponse>(`${this.apiUrl}/login`, {
-      email,
-      password
-    }).pipe(
+    return this.http.post<AuthResponse>(`${this.apiUrl}/login`, { email, password }).pipe(
       tap(response => {
-        console.log('✅ Login exitoso');
         if (response.success && response.data) {
           this.setTokens(
             response.data.access_token,
@@ -100,9 +61,6 @@ export class AuthBackendService {
     );
   }
 
-  /**
-   * Obtener usuario actual
-   */
   getCurrentUser(): Observable<AuthResponse> {
     const headers = this.getAuthHeaders();
     return this.http.get<AuthResponse>(`${this.apiUrl}/me`, { headers }).pipe(
@@ -115,15 +73,11 @@ export class AuthBackendService {
     );
   }
 
-  /**
-   * Refrescar token
-   */
   refreshAccessToken(): Observable<AuthResponse> {
     const refreshToken = localStorage.getItem('refresh_token');
     if (!refreshToken) {
       return throwError(() => new Error('No refresh token found'));
     }
-
     return this.http.post<AuthResponse>(`${this.apiUrl}/refresh`, {
       refresh_token: refreshToken
     }).pipe(
@@ -133,60 +87,57 @@ export class AuthBackendService {
         }
       }),
       catchError(error => {
-        this.logout();
+        this.clearTokens();
+        this.currentUserSubject.next(null);
         return this.handleError(error);
       })
     );
   }
 
-  /**
-   * Cerrar sesión
-   */
   logout(): Observable<any> {
     const headers = this.getAuthHeaders();
     return this.http.post(`${this.apiUrl}/logout`, {}, { headers }).pipe(
       tap(() => {
         this.clearTokens();
         this.currentUserSubject.next(null);
+      }),
+      catchError(() => {
+        // Si falla el logout del servidor, limpiar localmente de todas formas
+        this.clearTokens();
+        this.currentUserSubject.next(null);
+        return throwError(() => new Error('Logout fallback'));
       })
     );
   }
 
-  /**
-   * Verificar si el usuario está autenticado
-   */
   isAuthenticated(): boolean {
     const token = localStorage.getItem('access_token');
     const expiresAt = localStorage.getItem('token_expires_at');
-    
-    if (!token || !expiresAt) {
-      return false;
-    }
-
+    if (!token || !expiresAt) return false;
     return Date.now() < parseInt(expiresAt);
   }
 
-  /**
-   * Obtener token de acceso
-   */
+  isAdmin(): boolean {
+    const user = this.currentUserSubject.value;
+    return user?.role === 'administrador';
+  }
+
+  getCurrentUserSync(): User | null {
+    return this.currentUserSubject.value;
+  }
+
   getAccessToken(): string | null {
     return localStorage.getItem('access_token');
   }
 
-  /**
-   * Obtener headers con autenticación
-   */
   getAuthHeaders(): HttpHeaders {
     const token = this.getAccessToken();
     return new HttpHeaders({
-      'Authorization': `Bearer ${token}`,
+      Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json'
     });
   }
 
-  /**
-   * Privados - Helpers
-   */
   private setTokens(accessToken: string, refreshToken: string, expiresIn: number): void {
     localStorage.setItem('access_token', accessToken);
     localStorage.setItem('refresh_token', refreshToken);
@@ -213,9 +164,7 @@ export class AuthBackendService {
   private checkTokenExpiration(): void {
     setInterval(() => {
       if (this.isAuthenticated() && this.willExpireSoon()) {
-        this.refreshAccessToken().subscribe({
-          error: () => this.logout()
-        });
+        this.refreshAccessToken().subscribe({ error: () => {} });
       }
     }, 60000);
   }
@@ -223,13 +172,11 @@ export class AuthBackendService {
   private willExpireSoon(): boolean {
     const expiresAt = localStorage.getItem('token_expires_at');
     if (!expiresAt) return false;
-    const timeUntilExpiry = parseInt(expiresAt) - Date.now();
-    return timeUntilExpiry < 5 * 60 * 1000;
+    return parseInt(expiresAt) - Date.now() < 5 * 60 * 1000;
   }
 
   private handleError(error: any) {
-    console.error('❌ Auth error:', error);
-    const message = error?.error?.message || 'Error de autenticación';
-    return throwError(() => new Error(message));
+    const message = error?.error?.detail || error?.error?.message || 'Error de autenticación';
+    return throwError(() => ({ ...error, detail: message }));
   }
 }

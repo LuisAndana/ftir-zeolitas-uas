@@ -1,0 +1,136 @@
+<div class="admin-panel">
+  <!-- Header -->
+  <div class="panel-header">
+    <div class="header-left">
+      <h1 class="panel-title">Panel de Administración</h1>
+      <p class="panel-subtitle">Gestiona los usuarios del sistema FTIR Zeolitas UAS</p>
+    </div>
+    <button class="btn-refresh" (click)="loadUsers()" title="Recargar lista">
+      <span class="refresh-icon">↻</span> Recargar
+    </button>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-row" *ngIf="!loading && users.length > 0">
+    <div class="stat-card">
+      <span class="stat-num">{{ users.length }}</span>
+      <span class="stat-label">Total de usuarios</span>
+    </div>
+    <div class="stat-card active">
+      <span class="stat-num">{{ activeCount() }}</span>
+      <span class="stat-label">Activos</span>
+    </div>
+    <div class="stat-card pending" *ngIf="pendingCount() > 0">
+      <span class="stat-num">{{ pendingCount() }}</span>
+      <span class="stat-label">Pendientes de activación</span>
+    </div>
+  </div>
+
+  <!-- Alerts -->
+  <div class="alert alert-success" *ngIf="successMsg">✓ {{ successMsg }}</div>
+  <div class="alert alert-error" *ngIf="errorMsg">✕ {{ errorMsg }}</div>
+
+  <!-- Pending banner -->
+  <div class="pending-banner" *ngIf="!loading && pendingCount() > 0">
+    <span class="bell">🔔</span>
+    <span>Hay <strong>{{ pendingCount() }}</strong> usuario(s) con correo verificado esperando activación.</span>
+  </div>
+
+  <!-- Loading -->
+  <div class="loading-state" *ngIf="loading">
+    <div class="spinner"></div>
+    <p>Cargando usuarios...</p>
+  </div>
+
+  <!-- Empty -->
+  <div class="empty-state" *ngIf="!loading && users.length === 0 && !errorMsg">
+    <div class="empty-icon">👥</div>
+    <p>No hay usuarios registrados todavía.</p>
+  </div>
+
+  <!-- Table -->
+  <div class="table-wrapper" *ngIf="!loading && users.length > 0">
+    <table class="users-table">
+      <thead>
+        <tr>
+          <th>Usuario</th>
+          <th>Estado</th>
+          <th>Rol</th>
+          <th>Registro</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let user of users"
+            [class.is-me]="user.id === currentUserId"
+            [class.row-pending]="user.is_verified && !user.is_active">
+
+          <!-- Usuario -->
+          <td class="user-cell">
+            <div class="user-avatar">{{ user.name.charAt(0).toUpperCase() }}</div>
+            <div class="user-info">
+              <span class="user-name">
+                {{ user.name }}
+                <span class="me-badge" *ngIf="user.id === currentUserId">tú</span>
+              </span>
+              <span class="user-email">{{ user.email }}</span>
+            </div>
+          </td>
+
+          <!-- Estado -->
+          <td>
+            <span class="badge" [ngClass]="getStatusClass(user)">
+              {{ getStatusLabel(user) }}
+            </span>
+          </td>
+
+          <!-- Rol -->
+          <td>
+            <select class="role-select"
+                    [value]="user.role"
+                    [disabled]="user.id === currentUserId"
+                    (change)="changeRole(user, $any($event.target).value)">
+              <option value="investigador">Investigador</option>
+              <option value="administrador">Administrador</option>
+            </select>
+          </td>
+
+          <!-- Registro -->
+          <td class="date-cell">
+            {{ user.created_at | date:'dd/MM/yyyy' }}
+          </td>
+
+          <!-- Acciones -->
+          <td class="actions-cell">
+            <ng-container *ngIf="user.id !== currentUserId">
+              <!-- Toggle activo -->
+              <button class="btn-action"
+                      [class.btn-activate]="!user.is_active"
+                      [class.btn-deactivate]="user.is_active"
+                      (click)="toggleActive(user)"
+                      [title]="user.is_active ? 'Desactivar cuenta' : 'Activar cuenta'">
+                {{ user.is_active ? 'Desactivar' : 'Activar' }}
+              </button>
+
+              <!-- Eliminar -->
+              <ng-container *ngIf="confirmDeleteId !== user.id">
+                <button class="btn-action btn-delete" (click)="confirmDelete(user.id)" title="Eliminar usuario">
+                  Eliminar
+                </button>
+              </ng-container>
+              <ng-container *ngIf="confirmDeleteId === user.id">
+                <span class="confirm-text">¿Confirmar?</span>
+                <button class="btn-action btn-delete" (click)="deleteUser(user)">Sí</button>
+                <button class="btn-action btn-cancel" (click)="cancelDelete()">No</button>
+              </ng-container>
+            </ng-container>
+
+            <span class="current-user-note" *ngIf="user.id === currentUserId">
+              Tu cuenta
+            </span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
