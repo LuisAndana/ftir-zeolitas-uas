@@ -37,8 +37,6 @@
   max-width: 100%;
   padding: 2rem;
   animation: fadeIn 0.3s ease;
-  background: #f5f5f5;
-  min-height: 100vh;
 }
 
 /* ===== HEADER ===== */
@@ -814,7 +812,6 @@
 @media (max-width: 768px) {
   .comparacion-container {
     padding: 1rem;
-    background: #f5f5f5;
   }
 
   .content-header h1 {
@@ -969,10 +966,6 @@
 /* ========================================
    TEMA OSCURO
    ======================================== */
-
-:host-context(body.dark-theme) .comparacion-container {
-  background: #0F172A;
-}
 
 :host-context(body.dark-theme) .compare-selectors,
 :host-context(body.dark-theme) .compare-config,

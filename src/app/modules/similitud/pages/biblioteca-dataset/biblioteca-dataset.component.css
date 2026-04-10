@@ -10,8 +10,6 @@
   font-family: var(--font-body, 'Inter', sans-serif);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: var(--color-white, #FFFFFF);
-  min-height: 100vh;
 }
 
 /* ========================================
@@ -793,10 +791,6 @@
 /* ========================================
    TEMA OSCURO
    ======================================== */
-
-:host-context(body.dark-theme) .biblioteca-container {
-  background-color: #0F172A;
-}
 
 :host-context(body.dark-theme) .header h1 {
   color: #F1F5F9;

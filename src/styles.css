@@ -735,10 +735,6 @@ body.dark-theme .btn-delete:hover {
    GRÁFICA ESPECTRO
    ======================================== */
 
-body.dark-theme .grafica-espectro-container {
-  background: #0F172A;
-}
-
 body.dark-theme .title-area h1 {
   color: #F1F5F9;
 }
@@ -938,10 +934,6 @@ body.dark-theme .alert-close:hover {
 /* ========================================
    COMPARACIÓN
    ======================================== */
-
-body.dark-theme .comparacion-container {
-  background: #0F172A;
-}
 
 body.dark-theme .compare-selectors {
   background: #1E293B;
@@ -1470,10 +1462,6 @@ body.dark-theme .alert-box.alert-info {
 /* ========================================
    COMPARACIÓN DE ESPECTROS (spectrum-comparison)
    ======================================== */
-
-body.dark-theme .spectrum-comparison-container {
-  background: #0F172A;
-}
 
 body.dark-theme .spectrum-comparison-container .header-section {
   border-bottom-color: #334155;

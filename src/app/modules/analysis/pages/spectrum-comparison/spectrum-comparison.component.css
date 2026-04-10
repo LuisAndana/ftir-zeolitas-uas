@@ -6,8 +6,6 @@
 
 .spectrum-comparison-container {
   padding: 2rem;
-  background: #f5f5f5;
-  min-height: 100vh;
   font-family: 'Inter', sans-serif;
 }
 
@@ -492,10 +490,6 @@
 /* ========================================
    TEMA OSCURO
    ======================================== */
-
-:host-context(body.dark-theme) .spectrum-comparison-container {
-  background: #0F172A;
-}
 
 :host-context(body.dark-theme) .header-section {
   border-color: #334155;
