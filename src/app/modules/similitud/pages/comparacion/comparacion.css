@@ -16,6 +16,23 @@
   --gray-900: #0f172a;
 }
 
+/* Modo oscuro: reasignar la escala de grises */
+:host-context(body.dark-theme) {
+  --primary: #3B82F6;
+  --primary-dark: #2E75B6;
+  --success: #34D399;
+  --warning: #FBBF24;
+  --danger: #F87171;
+  --gray-50: #162032;
+  --gray-100: #1E293B;
+  --gray-200: #334155;
+  --gray-300: #475569;
+  --gray-600: #94A3B8;
+  --gray-700: #CBD5E1;
+  --gray-800: #E2E8F0;
+  --gray-900: #F1F5F9;
+}
+
 .comparacion-container {
   max-width: 100%;
   padding: 2rem;

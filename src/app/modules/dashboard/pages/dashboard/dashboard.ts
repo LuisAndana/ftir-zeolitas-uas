@@ -4,6 +4,7 @@ import { Router, RouterOutlet, RouterLink, RouterLinkActive } from '@angular/rou
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { AuthBackendService, User } from '../../../../core/services/auth-backend.service';
+import { ThemeService } from '../../../../core/services/theme.service';
 
 @Component({
   selector: 'app-dashboard',
@@ -20,7 +21,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   private destroy$ = new Subject<void>();
 
-  constructor(private router: Router, private auth: AuthBackendService) {}
+  constructor(
+    private router: Router,
+    private auth: AuthBackendService,
+    public themeService: ThemeService
+  ) {}
 
   ngOnInit() {
     this.auth.currentUser$.pipe(takeUntil(this.destroy$)).subscribe(user => {

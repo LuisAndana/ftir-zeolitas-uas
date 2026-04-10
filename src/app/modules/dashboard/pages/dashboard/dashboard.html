@@ -10,6 +10,15 @@
       </div>
 
       <div class="navbar-right">
+        <!-- Toggle de tema claro / oscuro -->
+        <button
+          class="theme-toggle-btn"
+          (click)="themeService.toggle()"
+          [title]="themeService.isDark() ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'"
+          [attr.aria-label]="themeService.isDark() ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'">
+          {{ themeService.isDark() ? '☀' : '☾' }}
+        </button>
+
         <!-- User menu -->
         <div class="user-menu-wrapper">
           <button class="user-trigger" (click)="toggleUserDropdown()" title="Menú de usuario">
