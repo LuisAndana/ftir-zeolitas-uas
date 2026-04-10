@@ -623,6 +623,275 @@
 
 .format-card .note { font-size: 0.8rem; color: #9ca3af; font-style: italic; margin: 0.75rem 0 0; }
 
+/* ===== TEMA OSCURO ===== */
+
+:host-context(body.dark-theme) .content-header {
+  border-bottom-color: #334155;
+}
+
+:host-context(body.dark-theme) .content-header h1 {
+  color: #F1F5F9;
+}
+
+:host-context(body.dark-theme) .content-header p {
+  color: #94A3B8;
+}
+
+:host-context(body.dark-theme) .upload-card,
+:host-context(body.dark-theme) .metadata-card {
+  background: #1E293B;
+  border-color: #334155;
+}
+
+:host-context(body.dark-theme) .drop-zone {
+  background: linear-gradient(135deg, #162032 0%, #1a2a42 100%);
+  border-color: #334155;
+}
+
+:host-context(body.dark-theme) .drop-zone:hover {
+  background: linear-gradient(135deg, #1a2d50 0%, #1e3a6e 100%);
+  border-color: #2E75B6;
+}
+
+:host-context(body.dark-theme) .drop-zone.dragover {
+  background: linear-gradient(135deg, #1a2d50 0%, #1e3a6e 100%);
+  border-color: #2E75B6;
+}
+
+:host-context(body.dark-theme) .drop-content h3 {
+  color: #F1F5F9;
+}
+
+:host-context(body.dark-theme) .drop-content p {
+  color: #94A3B8;
+}
+
+:host-context(body.dark-theme) .drop-formats {
+  color: #64748B;
+}
+
+:host-context(body.dark-theme) .metadata-card h3 {
+  color: #F1F5F9;
+}
+
+:host-context(body.dark-theme) .form-group label {
+  color: #94A3B8;
+}
+
+:host-context(body.dark-theme) .form-group input,
+:host-context(body.dark-theme) .form-group select,
+:host-context(body.dark-theme) .form-group textarea {
+  background: #162032;
+  border-color: #334155;
+  color: #E2E8F0;
+}
+
+:host-context(body.dark-theme) .form-group input:focus,
+:host-context(body.dark-theme) .form-group select:focus,
+:host-context(body.dark-theme) .form-group textarea:focus {
+  border-color: #2E75B6;
+  box-shadow: 0 0 0 3px rgba(46, 117, 182, 0.15);
+}
+
+:host-context(body.dark-theme) .queue-section {
+  background: #1E293B;
+  border-color: #334155;
+}
+
+:host-context(body.dark-theme) .queue-title h2 {
+  color: #F1F5F9;
+}
+
+:host-context(body.dark-theme) .queue-item {
+  border-color: #334155;
+}
+
+:host-context(body.dark-theme) .queue-item.status-pending {
+  background: #162032;
+}
+
+:host-context(body.dark-theme) .queue-item.status-uploading {
+  background: #1a2d50;
+  border-color: #2d4a7a;
+}
+
+:host-context(body.dark-theme) .queue-item.status-success {
+  background: #0d2418;
+  border-color: #065f46;
+}
+
+:host-context(body.dark-theme) .queue-item.status-error {
+  background: #2a0d0d;
+  border-color: #7f1d1d;
+}
+
+:host-context(body.dark-theme) .queue-filename {
+  color: #F1F5F9;
+}
+
+:host-context(body.dark-theme) .queue-size {
+  color: #64748B;
+}
+
+:host-context(body.dark-theme) .queue-message {
+  color: #94A3B8;
+}
+
+:host-context(body.dark-theme) .stat-pending  { background: #243346; color: #94A3B8; }
+:host-context(body.dark-theme) .stat-uploading { background: #1a2d50; color: #93C5FD; }
+:host-context(body.dark-theme) .stat-success  { background: #0d2418; color: #34D399; }
+:host-context(body.dark-theme) .stat-error    { background: #2a0d0d; color: #fca5a5; }
+
+:host-context(body.dark-theme) .btn-retry {
+  background: #1a2d50;
+  color: #93C5FD;
+}
+
+:host-context(body.dark-theme) .btn-retry:hover {
+  background: #2E75B6;
+  color: white;
+}
+
+:host-context(body.dark-theme) .btn-clear {
+  background: #243346;
+  color: #94A3B8;
+}
+
+:host-context(body.dark-theme) .btn-clear:hover {
+  background: #334155;
+  color: #CBD5E1;
+}
+
+:host-context(body.dark-theme) .queue-remove {
+  color: #475569;
+}
+
+:host-context(body.dark-theme) .queue-remove:hover {
+  background: #3B1A1A;
+  color: #fca5a5;
+}
+
+:host-context(body.dark-theme) .section-header h2 {
+  color: #F1F5F9;
+}
+
+:host-context(body.dark-theme) .filter-input,
+:host-context(body.dark-theme) .filter-select {
+  background: #162032;
+  border-color: #334155;
+  color: #E2E8F0;
+}
+
+:host-context(body.dark-theme) .filter-input:focus,
+:host-context(body.dark-theme) .filter-select:focus {
+  border-color: #2E75B6;
+  box-shadow: 0 0 0 2px rgba(46, 117, 182, 0.15);
+}
+
+:host-context(body.dark-theme) .empty-state {
+  background: linear-gradient(135deg, #162032 0%, #1a2a42 100%);
+  border-color: #334155;
+  color: #64748B;
+}
+
+:host-context(body.dark-theme) .spectra-table {
+  background: #1E293B;
+  border-color: #334155;
+}
+
+:host-context(body.dark-theme) .spectra-table thead {
+  background: #162032;
+  border-bottom-color: #334155;
+}
+
+:host-context(body.dark-theme) .spectra-table th {
+  color: #94A3B8;
+}
+
+:host-context(body.dark-theme) .spectra-table tbody tr {
+  border-bottom-color: #243346;
+}
+
+:host-context(body.dark-theme) .spectra-table tbody tr:hover {
+  background: #243346;
+}
+
+:host-context(body.dark-theme) .spectra-table td {
+  color: #CBD5E1;
+}
+
+:host-context(body.dark-theme) .filename {
+  color: #F1F5F9;
+}
+
+:host-context(body.dark-theme) .date-cell {
+  color: #64748B;
+}
+
+:host-context(body.dark-theme) .btn-download {
+  background: #1a2d50;
+  color: #93C5FD;
+  border-color: #2d4a7a;
+}
+
+:host-context(body.dark-theme) .btn-download:hover {
+  background: #2E75B6;
+  border-color: #2E75B6;
+  color: white;
+}
+
+:host-context(body.dark-theme) .btn-delete {
+  background: #2a0d0d;
+  color: #fca5a5;
+  border-color: #7f1d1d;
+}
+
+:host-context(body.dark-theme) .btn-delete:hover {
+  background: #dc2626;
+  border-color: #dc2626;
+  color: white;
+}
+
+:host-context(body.dark-theme) .alert-success { background: #0d2418; color: #34D399; border-left-color: #10b981; }
+:host-context(body.dark-theme) .alert-error   { background: #2a0d0d; color: #fca5a5; border-left-color: #ef4444; }
+:host-context(body.dark-theme) .alert-info    { background: #1a2d50; color: #93C5FD; border-left-color: #3b82f6; }
+
+:host-context(body.dark-theme) .info-section {
+  background: #1E293B;
+  border-color: #334155;
+}
+
+:host-context(body.dark-theme) .info-section h3 {
+  color: #F1F5F9;
+}
+
+:host-context(body.dark-theme) .format-card {
+  background: linear-gradient(135deg, #162032 0%, #1a2a42 100%);
+  border-color: #334155;
+}
+
+:host-context(body.dark-theme) .format-card:hover {
+  border-color: #2E75B6;
+}
+
+:host-context(body.dark-theme) .format-card h4 {
+  color: #F1F5F9;
+}
+
+:host-context(body.dark-theme) .format-card p {
+  color: #94A3B8;
+}
+
+:host-context(body.dark-theme) .format-card code {
+  background: #0F172A;
+  border-color: #334155;
+  color: #93C5FD;
+}
+
+:host-context(body.dark-theme) .format-card .note {
+  color: #64748B;
+}
+
 /* ===== RESPONSIVE ===== */
 @media (max-width: 968px) {
   .upload-card { max-width: 100%; }
